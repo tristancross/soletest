@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Reset password</title>
+</head>
+<body>
+
+  <h2>Reset your password</h2>
+
+  <input id="newPassword" type="password" placeholder="New password" />
+  <button id="resetBtn">Update password</button>
+  <p id="status"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const sb = supabase.createClient(
+      "https://kmnutzpbbvrfizwimcpk.supabase.co",
+      "sb_publishable_yr1M07ih1yEbqHma0cihdw_t7nDQDbU"
+    );
+
+    const newPasswordEl = document.getElementById("newPassword");
+    const resetBtn = document.getElementById("resetBtn");
+    const statusEl = document.getElementById("status");
+
+    let recoveryReady = false;
+    resetBtn.disabled = true;
+    statusEl.textContent = "Checking recovery session...";
+
+    sb.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event, session);
+
+      if (event === "PASSWORD_RECOVERY" || session) {
+        recoveryReady = true;
+        resetBtn.disabled = false;
+        statusEl.textContent = "Recovery session ready. You can update your password.";
+      }
+    });
+
+    (async () => {
+      const { data, error } = await sb.auth.getSession();
+
+      if (error) {
+        console.error(error);
+        statusEl.textContent = "Could not read session.";
+        return;
+      }
+
+      if (data.session) {
+        recoveryReady = true;
+        resetBtn.disabled = false;
+        statusEl.textContent = "Recovery session ready. You can update your password.";
+      } else {
+        statusEl.textContent = "No recovery session detected yet.";
+      }
+    })();
+
+    resetBtn.onclick = async () => {
+      if (!recoveryReady) {
+        alert("Recovery session is still loading. Please wait a moment and try again.");
+        return;
+      }
+
+      const password = newPasswordEl.value.trim();
+      if (!password) {
+        alert("Enter a new password.");
+        return;
+      }
+
+      const { error } = await sb.auth.updateUser({ password });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      alert("Password updated. You can now log in.");
+      statusEl.textContent = "Password updated.";
+    };
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Internal Chat MVP</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+<div id="authScreen" class="authScreen">
+  <div class="authBox">
+    <h2 id="authTitle">Log in</h2>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <input id="loginIdentifier" type="text" placeholder="Email or username" />
+<div class="passwordField">
+  <input id="loginPassword" type="password" placeholder="Password">
+  <button class="togglePassword" type="button">👁</button>
+</div>
+
+      <button id="forgotPasswordBtn" class="btnGhost small" type="button">
+        Forgot password?
+      </button>
+
+      <button id="loginBtn" type="button">Log in</button>
+      <button id="showSignupBtn" class="btnGhost" type="button">Sign up</button>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signupForm" hidden>
+      <input id="signupUsername" type="text" placeholder="Username" />
+      <input id="signupEmail" type="email" placeholder="Email" />
+<div class="passwordField">
+  <input id="signupPassword" type="password" placeholder="Password">
+  <button class="togglePassword" type="button">👁</button>
+</div>
+
+<div class="passwordField">
+  <input id="signupPasswordRepeat" type="password" placeholder="Repeat password">
+  <button class="togglePassword" type="button">👁</button>
+</div>
+
+      <button id="createAccountBtn" type="button">Create account</button>
+      <button id="showLoginBtn" class="btnGhost" type="button">Back to log in</button>
+    </div>
+
+    <p id="authError"></p>
+  </div>
+</div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebarTop">
+        <div class="brand">Sole</div>
+        <div class="me" id="meLabel">Not logged in</div>
+      </div>
+
+      <div class="sectionTitle">Chats</div>
+      <div class="userList" id="userList"></div>
+
+      <div class="sidebarBottom">
+        <button class="btn btnGhost" id="switchUserBtn">Logout</button>
+        <button class="btn btnGhost" id="adminToggleBtn" hidden>Admin view</button>
+      </div>
+    </aside>
+
+    <main class="main">
+<header class="header">
+  <div class="headerLeft">
+    <div class="chatTitle" id="chatTitle">Select a user</div>
+    <div class="chatSubtitle" id="chatSubtitle"></div>
+  </div>
+
+  <!-- ADMIN ONLY UI (hidden by default) -->
+  <div class="headerRight" id="adminControls" hidden>
+    <div class="adminRow">
+      <label class="smallLabel">View thread:</label>
+      <select id="adminA"></select>
+      <span class="muted">↔</span>
+      <select id="adminB"></select>
+      <button class="btn" id="adminLoadBtn">Load</button>
+      <button class="btn btnGhost" id="adminBlockBtn">Block</button>
+<button class="btn btnGhost" id="adminUnblockBtn">Unblock</button>
+    </div>
+  </div>
+</header>
+
+      <section class="messages" id="messages">
+        <div id="typingIndicator" class="typing"></div>
+      </section>
+
+<footer class="composer">
+  <div class="composerInner" id="composerInner">
+
+    <textarea
+      class="input"
+      id="textInput"
+      placeholder="Message…"
+      rows="1"
+    ></textarea>
+
+    <button class="deleteRecordBtn" id="deleteRecordBtn" hidden aria-label="Delete recording">
+      <i class="fa-regular fa-trash-can"></i>
+    </button>
+
+    <div class="recordingMeta" id="recordingMeta" hidden>
+      <span class="recordDot"></span>
+      <span class="recordingTimer" id="recordingTimer">0:00</span>
+    </div>
+
+    <div class="recordingPreview" id="recordingPreview" hidden>
+<button id="previewPlayBtn" class="previewPlayBtn" type="button" aria-label="Play recording">
+  <i class="fa-solid fa-play"></i>
+</button>
+      <div class="previewProgress" id="previewProgress">
+        <div class="previewProgressFill" id="previewProgressFill"></div>
+      </div>
+    </div>
+
+    <button class="micBtn" id="micBtn" aria-label="Record voice message">
+      <i class="fa-solid fa-microphone"></i>
+    </button>
+
+    <button class="sendBtnIcon" id="sendBtn" aria-label="Send" disabled>
+      <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+  </div>
+</footer>
+    </main>
+  </div>
+
+  <!-- Supabase JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

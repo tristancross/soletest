@@ -264,7 +264,7 @@ forgotPasswordBtn.onclick = async () => {
   }
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://soletest.vercel.app/reset.html"
+    redirectTo: window.location.origin + "/reset.html"
   });
 
   if (error) {
@@ -1848,3 +1848,4 @@ adminUnblockBtn.onclick = async () => {
   alert("Unblocked.");
 
 };
+

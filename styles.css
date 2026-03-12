@@ -900,15 +900,29 @@ padding-bottom: 25px;
   }
 
   .header{
-    padding:12px 14px;
+      position:sticky;
+  top:0;
+  z-index:10;
+    padding: 6px 8px;
+  }
+
+  .chatSubtitle{
+    font-size: 0.8rem;
   }
 
   .messages{
     padding:12px;
+     min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
   }
 
 .composer{
-  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+    position:sticky;
+  bottom:0;
+  z-index:10;
+  background:var(--panel);
+  padding-bottom: calc(5px + env(safe-area-inset-bottom));
 }
 
   .composerInner{

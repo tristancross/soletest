@@ -890,6 +890,7 @@ padding-bottom: 25px;
   .main{
     order:1;
     min-width:0;
+      position:relative;
   }
 
   .sidebar{
@@ -899,24 +900,29 @@ padding-bottom: 25px;
     padding-top:20px;
   }
 
-  .header{
-      position:sticky;
+.header{
+  position:fixed;
+  width: 100vw;
   top:0;
-  z-index:10;
-    padding: 6px 8px;
-  }
+  left:0;
+  right:0;
+  z-index:20;
+  padding:6px 8px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+}
 
   .chatSubtitle{
     font-size: 0.8rem;
   }
 
-  .messages{
-    padding:12px;
-     min-height:0;
+.messages{
+  padding:12px;
+  padding-top:60px; /* adjust if header height differs */
+  min-height:0;
   overflow-y:auto;
   overflow-x:hidden;
-  }
-
+}
 .composer{
     position:sticky;
   bottom:0;

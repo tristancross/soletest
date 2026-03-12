@@ -42,9 +42,8 @@ const mainEl = document.querySelector(".main");
 const composerEl = document.querySelector(".composer");
 
 const mobileMenuUnreadBadge = document.getElementById("mobileMenuUnreadBadge");
-const isMobile =
-  window.matchMedia("(pointer: coarse)").matches ||
-  navigator.maxTouchPoints > 0;
+const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
 const createAccountBtn = document.getElementById("createAccountBtn");
 
 function showLoginForm(clearMessage = true) {
@@ -2235,16 +2234,14 @@ lastDraftSentAt = 0;
 
 sendBtn.onclick = sendText;
 textInput.addEventListener("keydown", (e) => {
-
-  // On mobile: Enter always inserts newline
+  // On touch devices: Enter should make a newline
   if (isMobile) return;
 
-  // Desktop: Enter sends, Shift+Enter = newline
+  // On desktop: Enter sends, Shift+Enter makes a newline
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    sendMessage();
+    sendText();
   }
-
 });
 // ====== ADMIN VIEWER ======
 function setupAdminUI(){

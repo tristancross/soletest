@@ -42,6 +42,7 @@ const mainEl = document.querySelector(".main");
 const composerEl = document.querySelector(".composer");
 
 const mobileMenuUnreadBadge = document.getElementById("mobileMenuUnreadBadge");
+const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
 const createAccountBtn = document.getElementById("createAccountBtn");
 
@@ -2233,12 +2234,17 @@ lastDraftSentAt = 0;
 
 sendBtn.onclick = sendText;
 textInput.addEventListener("keydown", (e) => {
+
+  // On mobile: Enter always inserts newline
+  if (isMobile) return;
+
+  // Desktop: Enter sends, Shift+Enter = newline
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    sendText();
+    sendMessage();
   }
-});
 
+});
 // ====== ADMIN VIEWER ======
 function setupAdminUI(){
   adminToggleBtn.onclick = () => toggleAdminMode();

@@ -42,8 +42,9 @@ const mainEl = document.querySelector(".main");
 const composerEl = document.querySelector(".composer");
 
 const mobileMenuUnreadBadge = document.getElementById("mobileMenuUnreadBadge");
-const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
+const isMobile =
+  window.matchMedia("(pointer: coarse)").matches ||
+  navigator.maxTouchPoints > 0;
 const createAccountBtn = document.getElementById("createAccountBtn");
 
 function showLoginForm(clearMessage = true) {

@@ -298,6 +298,14 @@ forgotPasswordBtn.onclick = async () => {
 
 // ====== HELPERS ======
 
+function syncAppHeightToViewport() {
+  const h = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  document.documentElement.style.setProperty("--app-height", `${h}px`);
+}
+
 document.addEventListener("visibilitychange", async () => {
   if (isCurrentChatActuallyVisible()) {
     await markThreadAsRead(me.id, them.id);
@@ -1196,6 +1204,15 @@ previewProgress.onclick = (e) => {
 
 // ====== INIT CHAT ======
 async function initChat() {
+syncAppHeightToViewport();
+
+window.addEventListener("resize", syncAppHeightToViewport);
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", syncAppHeightToViewport);
+  window.visualViewport.addEventListener("scroll", syncAppHeightToViewport);
+}
+
   const { data: { session }, error: sessionError } = await sb.auth.getSession();
   if (sessionError || !session?.user) {
     authScreen.style.display = "grid";
@@ -1273,7 +1290,6 @@ async function renderSidebar(activeId){
   userList.innerHTML = "";
 
   // In normal mode we list non-admin profiles (excluding self).
-  // If you want admins to DM too, remove the !p.is_admin filter.
 profiles
   .filter(p => p.id !== me.id && !p.is_admin)
   .filter(p => !blockedPairs.has(pairKey(me.id, p.id)))

@@ -859,14 +859,14 @@ padding-bottom: 25px;
     min-width:0;
   } */
 
-  .app{
-    display:flex;
-    width:200vw;
-    height:100vh;
-    overflow:hidden;
-    transform:translateX(0);
-    transition:transform 260ms ease;
-  }
+.app{
+  display:flex;
+  width:200vw;
+  height:100dvh;
+  overflow:hidden;
+  transform:translateX(0);
+  transition:transform 260ms ease;
+}
 
   .app.mobileSidebarOpen{
     transform:translateX(-100vw);
@@ -880,12 +880,12 @@ padding-bottom: 25px;
     display:none;
   }
 
-  .main,
-  .sidebar{
-    width:100vw;
-    height:100vh;
-    flex:0 0 100vw;
-  }
+.main,
+.sidebar{
+  width:100vw;
+  height:100dvh;
+  flex:0 0 100vw;
+}
 
   .main{
     order:1;
@@ -907,9 +907,9 @@ padding-bottom: 25px;
     padding:12px;
   }
 
-  .composer{
-    padding:10px;
-  }
+.composer{
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+}
 
   .composerInner{
     max-width:none;

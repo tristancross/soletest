@@ -35,6 +35,13 @@ const italicBtn = document.getElementById("italicBtn");
 const underlineBtn = document.getElementById("underlineBtn");
 const bulletBtn = document.getElementById("bulletBtn");
 
+const appEl = document.querySelector(".app");
+const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+const mobileSidebarBackdrop = document.getElementById("mobileSidebarBackdrop");
+const mainEl = document.querySelector(".main");
+const composerEl = document.querySelector(".composer");
+
+const mobileMenuUnreadBadge = document.getElementById("mobileMenuUnreadBadge");
 
 const createAccountBtn = document.getElementById("createAccountBtn");
 
@@ -292,16 +299,14 @@ forgotPasswordBtn.onclick = async () => {
 // ====== HELPERS ======
 
 document.addEventListener("visibilitychange", async () => {
-  if (
-    document.visibilityState === "visible" &&
-    them &&
-    !adminMode
-  ) {
+  if (isCurrentChatActuallyVisible()) {
     await markThreadAsRead(me.id, them.id);
     await renderSidebar(them.id);
     await updateConversationStatus();
+    updateMobileMenuUnreadBadge();
   }
 });
+
 
 function setAuthError(message) {
   authError.textContent = message;
@@ -452,6 +457,8 @@ function renderWelcomePanel(){
   textInput.style.height = "auto";
   textInput.style.overflowY = "hidden";
   updateSendButton();
+  them = null;
+updateNoChatState();
 }
 
 function autoResizeTextarea() {
@@ -668,6 +675,83 @@ function formatMessageText(text) {
     })
     .join("");
 }
+// ====== MOBILE ======
+function isMobileLayout() {
+  return window.innerWidth <= 768;
+}
+
+function isCurrentChatActuallyVisible() {
+  if (document.visibilityState !== "visible") return false;
+
+  if (adminMode || !them) return false;
+
+  if (isMobileLayout() && appEl.classList.contains("mobileSidebarOpen")) {
+    return false;
+  }
+
+  return true;
+}
+
+async function updateMobileMenuUnreadBadge() {
+  if (!mobileMenuUnreadBadge) return;
+
+  const unreadCounts = await getUnreadCounts();
+
+  let total = 0;
+
+  for (const [senderId, count] of unreadCounts.entries()) {
+    if (them && senderId === them.id) continue;
+    total += count;
+  }
+
+  if (total > 0) {
+    mobileMenuUnreadBadge.hidden = false;
+    mobileMenuUnreadBadge.textContent = total > 99 ? "99+" : String(total);
+  } else {
+    mobileMenuUnreadBadge.hidden = true;
+    mobileMenuUnreadBadge.textContent = "";
+  }
+}
+
+function openMobileSidebar() {
+  if (!isMobileLayout()) return;
+  appEl.classList.add("mobileSidebarOpen");
+}
+
+async function closeMobileSidebar() {
+  appEl.classList.remove("mobileSidebarOpen");
+
+  if (isCurrentChatActuallyVisible()) {
+    await markThreadAsRead(me.id, them.id);
+    await renderSidebar(them?.id);
+    await updateConversationStatus();
+    updateMobileMenuUnreadBadge();
+  }
+}
+
+function updateNoChatState() {
+  const noChat = !them && !adminMode;
+  mainEl.classList.toggle("noChatSelected", noChat);
+}
+
+mobileMenuBtn.addEventListener("click", () => {
+  if (appEl.classList.contains("mobileSidebarOpen")) {
+    closeMobileSidebar();
+  } else {
+    openMobileSidebar();
+  }
+});
+
+mobileSidebarBackdrop.addEventListener("click", () => {
+  closeMobileSidebar();
+});
+
+window.addEventListener("resize", () => {
+  if (!isMobileLayout()) {
+    closeMobileSidebar();
+  }
+});
+
 // ====== VOICE MESSAGE ======
 const recordingMeta = document.getElementById("recordingMeta");
 const recordingPreview = document.getElementById("recordingPreview");
@@ -1142,6 +1226,7 @@ async function initChat() {
   await subscribeInboxRealtime();
   autoResizeTextarea();
   updateSendButton();
+  updateNoChatState();
 }
 
 // ====== BOOT ======
@@ -1183,6 +1268,7 @@ async function renderSidebar(activeId){
     totalUnread += count;
   }
   updateDocumentTitle(totalUnread);
+  await updateMobileMenuUnreadBadge();
 
   userList.innerHTML = "";
 
@@ -1389,7 +1475,14 @@ updateConversationStatus();
 
   // composer enabled
   textInput.disabled = false;
-updateSendButton();
+  autoResizeTextarea();
+  updateSendButton();
+  updateNoChatState();
+  closeMobileSidebar();
+
+    requestAnimationFrame(() => {
+    scrollToBottom();
+  });
 }
 
 // ====== LOAD + RENDER THREAD ======
@@ -1412,7 +1505,13 @@ lastRenderedWrap = null;
   if (error) return alert(error.message);
 
   for (const m of msgs) await renderMessage(m, alignAsSenderId, false);
-  scrollToBottom();
+
+  requestAnimationFrame(() => {
+    scrollToBottom();
+    requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+  });
 }
 
 async function renderMessage(m, alignAsSenderId, animate = false){
@@ -1662,7 +1761,7 @@ async function subscribeInboxRealtime() {
 
         // if I'm already looking at this thread, mark this message read immediately
           if (
-            document.visibilityState === "visible" &&
+            isCurrentChatActuallyVisible() &&
             activeThreadOpen &&
             m.sender_id === them.id
           ) {
@@ -1840,9 +1939,7 @@ if (!promoted) {
 // if I'm currently viewing this thread and the message came from the other user,
 // mark this specific message as read immediately
 if (
-    document.visibilityState === "visible" &&
-  !adminMode &&
-  them &&
+ isCurrentChatActuallyVisible() &&
   m.sender_id === them.id &&
   m.recipient_id === me.id
 ) {
@@ -2176,6 +2273,9 @@ updateSendButton();
 renderWelcomePanel();
     them = null;
   }
+
+  updateNoChatState();
+closeMobileSidebar();
 }
 
 async function loadAdminThread(){

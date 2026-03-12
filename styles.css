@@ -815,3 +815,127 @@ padding-bottom: 25px;
   margin-top:4px;
 } */
 
+/* MOBILE */
+.mobileMenuBtn{
+  display:none;
+  width:36px;
+  height:36px;
+  border:none;
+  background:transparent;
+  color:var(--text);
+  border-radius:10px;
+  cursor:pointer;
+  font-size:18px;
+  place-items:center;
+  flex:0 0 auto;
+}
+
+.mobileMenuBtn:hover{
+  background:var(--hover);
+}
+
+.mobileSidebarBackdrop{
+  display:none;
+}
+/* .main.noChatSelected .composer{
+  display:none;
+} */
+
+@media (max-width: 768px){
+
+  html,
+  body{
+    overflow:hidden;
+  }
+
+  .chatTitle{
+    font-size: 1.3rem;
+  }
+
+  /* .headerLeft{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  } */
+
+  .app{
+    display:flex;
+    width:200vw;
+    height:100vh;
+    overflow:hidden;
+    transform:translateX(0);
+    transition:transform 260ms ease;
+  }
+
+  .app.mobileSidebarOpen{
+    transform:translateX(-100vw);
+  }
+
+  .mobileMenuBtn{
+    display:grid;
+  }
+
+  .mobileSidebarBackdrop{
+    display:none;
+  }
+
+  .main,
+  .sidebar{
+    width:100vw;
+    height:100vh;
+    flex:0 0 100vw;
+  }
+
+  .main{
+    order:1;
+    min-width:0;
+  }
+
+  .sidebar{
+    order:2;
+    position:relative;
+    border-right:none;
+    padding-top:20px;
+  }
+
+  .header{
+    padding:12px 14px;
+  }
+
+  .messages{
+    padding:12px;
+  }
+
+  .composer{
+    padding:10px;
+  }
+
+  .composerInner{
+    max-width:none;
+  }
+
+  .messages > .row{
+    max-width:none;
+  }
+
+  .mobileMenuBtn{
+  position:relative;
+}
+
+.mobileMenuUnreadBadge{
+  position:absolute;
+  top:-2px;
+  right:-2px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  background:#ff3b30;
+  color:#fff;
+  font-size:11px;
+  font-weight:600;
+  line-height:18px;
+  text-align:center;
+}
+}

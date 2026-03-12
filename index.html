@@ -66,6 +66,7 @@
         <button class="btn btnGhost" id="adminToggleBtn" hidden>Admin view</button>
       </div>
     </aside>
+    <div class="mobileSidebarBackdrop" id="mobileSidebarBackdrop"></div>
 
     <main class="main">
 <header class="header">
@@ -73,6 +74,10 @@
     <div class="chatTitle" id="chatTitle">Select a user</div>
     <div class="chatSubtitle" id="chatSubtitle"></div>
   </div>
+<button class="mobileMenuBtn" id="mobileMenuBtn" aria-label="Open chats">
+  <i class="fa-regular fa-message"></i>
+  <span class="mobileMenuUnreadBadge" id="mobileMenuUnreadBadge" hidden></span>
+</button>
 
   <!-- ADMIN ONLY UI (hidden by default) -->
   <div class="headerRight" id="adminControls" hidden>

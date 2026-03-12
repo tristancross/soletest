@@ -6,6 +6,7 @@
   <title>Internal Chat MVP</title>
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="authScreen" class="authScreen">
@@ -92,6 +93,14 @@
       </section>
 
 <footer class="composer">
+  <div class="formatBar" id="formatBar" hidden>
+<button type="button" class="formatBtn" id="boldBtn" aria-label="Bold"><strong>B</strong></button>
+<button type="button" class="formatBtn" id="italicBtn" aria-label="Italic"><em>I</em></button>
+<button type="button" class="formatBtn" id="underlineBtn" aria-label="Underline"><u>U</u></button>
+<button type="button" class="formatBtn" id="bulletBtn" aria-label="Bulleted list">•</button>
+
+</div>
+
   <div class="composerInner" id="composerInner">
 
     <textarea

@@ -29,6 +29,13 @@ const loginIdentifier = document.getElementById("loginIdentifier");
 const loginPassword = document.getElementById("loginPassword");
 const authError = document.getElementById("authError");
 
+const formatBar = document.getElementById("formatBar");
+const boldBtn = document.getElementById("boldBtn");
+const italicBtn = document.getElementById("italicBtn");
+const underlineBtn = document.getElementById("underlineBtn");
+const bulletBtn = document.getElementById("bulletBtn");
+
+
 const createAccountBtn = document.getElementById("createAccountBtn");
 
 function showLoginForm(clearMessage = true) {
@@ -96,6 +103,13 @@ let previewAudioUrl = null;
 let recordingState = "idle"; // idle | recording | preview
 let pausedElapsedMs = 0;
 let pauseStartedAt = null;
+let typingTimeout;
+let liveDraftRow = null;
+let liveDraftBubble = null;
+let liveDraftClearTimeout = null;
+let lastDraftSentAt = 0;
+let lastDraftTextSent = "";
+let liveDraftText = "";
 
 const recordingTimerEl = document.getElementById("recordingTimer");
 
@@ -277,6 +291,18 @@ forgotPasswordBtn.onclick = async () => {
 
 // ====== HELPERS ======
 
+document.addEventListener("visibilitychange", async () => {
+  if (
+    document.visibilityState === "visible" &&
+    them &&
+    !adminMode
+  ) {
+    await markThreadAsRead(me.id, them.id);
+    await renderSidebar(them.id);
+    await updateConversationStatus();
+  }
+});
+
 function setAuthError(message) {
   authError.textContent = message;
   authError.classList.remove("success");
@@ -452,6 +478,196 @@ function updateSendButton(){
   sendBtn.disabled = !(hasText || hasVoicePreview || hasPendingRecording);
 }
 
+function broadcastDraftClearForCurrentThread(){
+  if (!channel || !them || adminMode || !me) return;
+
+  channel.send({
+    type: "broadcast",
+    event: "draft_clear",
+    payload: {
+      sender: me.id,
+      recipient: them.id
+    }
+  });
+}
+
+textInput.addEventListener("blur", () => {
+  if (!textInput.value.trim()) {
+    broadcastDraftClearForCurrentThread();
+  }
+});
+
+textInput.addEventListener("focus", () => {
+  formatBar.hidden = false;
+});
+
+textInput.addEventListener("blur", () => {
+  setTimeout(() => {
+    if (!document.activeElement.closest("#formatBar")) {
+      formatBar.hidden = true;
+    }
+  }, 120);
+});
+
+formatBar.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+});
+
+function setSelectionAndFocus(start, end) {
+  textInput.focus();
+  textInput.setSelectionRange(start, end);
+}
+
+function wrapSelection(before, after = before) {
+  const start = textInput.selectionStart;
+  const end = textInput.selectionEnd;
+  const value = textInput.value;
+  const selected = value.slice(start, end);
+
+  let replacement;
+  let newStart;
+  let newEnd;
+
+  if (selected.length > 0) {
+    replacement = before + selected + after;
+    textInput.value = value.slice(0, start) + replacement + value.slice(end);
+    newStart = start + before.length;
+    newEnd = start + before.length + selected.length;
+  } else {
+    replacement = before + after;
+    textInput.value = value.slice(0, start) + replacement + value.slice(end);
+    newStart = start + before.length;
+    newEnd = newStart;
+  }
+
+  setSelectionAndFocus(newStart, newEnd);
+  autoResizeTextarea();
+  updateSendButton();
+  textInput.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function applyBulletList() {
+  const start = textInput.selectionStart;
+  const end = textInput.selectionEnd;
+  const value = textInput.value;
+
+  const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+  const lineEnd = value.indexOf("\n", end);
+  const actualLineEnd = lineEnd === -1 ? value.length : lineEnd;
+
+  const block = value.slice(lineStart, actualLineEnd);
+  const lines = block.split("\n");
+
+  const updated = lines.map(line => {
+    if (!line.trim()) return line;
+    return line.startsWith("- ") ? line : `- ${line}`;
+  }).join("\n");
+
+  textInput.value =
+    value.slice(0, lineStart) +
+    updated +
+    value.slice(actualLineEnd);
+
+  setSelectionAndFocus(lineStart, lineStart + updated.length);
+  autoResizeTextarea();
+  updateSendButton();
+  textInput.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+boldBtn.addEventListener("click", () => {
+  wrapSelection("*", "*");
+});
+
+italicBtn.addEventListener("click", () => {
+  wrapSelection("_", "_");
+});
+
+underlineBtn.addEventListener("click", () => {
+  wrapSelection("++", "++");
+});
+
+bulletBtn.addEventListener("click", () => {
+  applyBulletList();
+});
+
+function formatInlineText(text) {
+  let formatted = text
+    .replace(/\*(.+?)\*/g, "<strong>$1</strong>")
+    .replace(/_(.+?)_/g, "<em>$1</em>")
+    .replace(/\+\+(.+?)\+\+/g, "<u>$1</u>");
+
+  formatted = linkifyText(formatted);
+
+  return formatted;
+}
+
+function linkifyText(text) {
+  return text.replace(
+    /\b(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi,
+    (match) => {
+      const href = match.startsWith("http") ? match : `https://${match}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+    }
+  );
+}
+
+function formatMessageText(text) {
+  const escaped = escapeHtml(text || "");
+  const normalized = escaped.replace(/\r\n/g, "\n");
+
+  const lines = normalized.split("\n");
+  const hasBullets = lines.some(line => /^-\s+/.test(line));
+
+  // If there are bullets anywhere, keep the simpler line-by-line handling
+  if (hasBullets) {
+    let html = "";
+    let inList = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isBullet = /^-\s+/.test(line);
+
+      if (isBullet) {
+        if (!inList) {
+          html += "<ul>";
+          inList = true;
+        }
+
+        const itemText = line.replace(/^-\s+/, "");
+        html += `<li>${formatInlineText(itemText)}</li>`;
+      } else {
+        if (inList) {
+          html += "</ul>";
+          inList = false;
+        }
+
+        if (line.trim() === "") {
+          html += '<div class="msgParagraphBreak"></div>';
+        } else {
+          html += `<div>${formatInlineText(line)}</div>`;
+        }
+      }
+    }
+
+    if (inList) html += "</ul>";
+
+    return html;
+  }
+
+  // No bullets: treat double newlines as paragraph breaks
+  const paragraphs = normalized.split(/\n{2,}/);
+
+  return paragraphs
+    .map(paragraph => {
+      const htmlParagraph = paragraph
+        .split("\n")
+        .map(line => formatInlineText(line))
+        .join("<br>");
+
+      return `<p>${htmlParagraph}</p>`;
+    })
+    .join("");
+}
 // ====== VOICE MESSAGE ======
 const recordingMeta = document.getElementById("recordingMeta");
 const recordingPreview = document.getElementById("recordingPreview");
@@ -1147,6 +1363,11 @@ function startSubtitleStateLoop() {
 
 // ====== NORMAL CHAT ======
 async function openChat(profile){
+  broadcastDraftClearForCurrentThread();
+clearLiveDraft();
+lastDraftTextSent = "";
+lastDraftSentAt = 0;
+
 typingIndicator.textContent = "";
 typingIndicator.classList.remove("show");
   them = profile;
@@ -1410,11 +1631,7 @@ if (m.is_system) {
     messagesEl.appendChild(row);
   }
 
-  if (animate) {
-    await typeOnText(bubble, m.text, 24);
-  } else {
-    bubble.textContent = m.text;
-  }
+bubble.innerHTML = formatMessageText(m.text);
 
   lastRendered = m;
   lastRenderedWrap = wrap;
@@ -1444,20 +1661,132 @@ async function subscribeInboxRealtime() {
           );
 
         // if I'm already looking at this thread, mark this message read immediately
-           if (activeThreadOpen && m.sender_id === them.id) {
-          const { error } = await sb
-            .from("messages")
-            .update({ read_at: new Date().toISOString() })
-            .eq("id", m.id);
+          if (
+            document.visibilityState === "visible" &&
+            activeThreadOpen &&
+            m.sender_id === them.id
+          ) {
+            const { error } = await sb
+              .from("messages")
+              .update({ read_at: new Date().toISOString() })
+              .eq("id", m.id);
 
-          if (error) console.warn("inbox mark-as-read failed", error);
-        }
-
+            if (error) console.warn("inbox mark-as-read failed", error);
+          }
         await renderSidebar(them?.id);
         await updateConversationStatus();
       }
     )
     .subscribe();
+}
+
+function clearLiveDraft(){
+  if (liveDraftClearTimeout) {
+    clearTimeout(liveDraftClearTimeout);
+    liveDraftClearTimeout = null;
+  }
+
+  if (liveDraftRow) {
+    liveDraftRow.remove();
+    liveDraftRow = null;
+    liveDraftBubble = null;
+    liveDraftText = "";
+    scrollToBottomIfNear();
+  }
+}
+
+function ensureLiveDraftRow(){
+  if (liveDraftRow && liveDraftBubble) return;
+
+  const row = document.createElement("div");
+  row.className = "row them liveDraft";
+
+  const wrap = document.createElement("div");
+  wrap.className = "msgWrap";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+
+  wrap.appendChild(bubble);
+  row.appendChild(wrap);
+
+  if (typingIndicator && typingIndicator.parentNode === messagesEl) {
+    messagesEl.insertBefore(row, typingIndicator);
+  } else {
+    messagesEl.appendChild(row);
+  }
+
+  liveDraftRow = row;
+  liveDraftBubble = bubble;
+}
+
+function renderLiveDraft(text){
+  const safeText = (text || "").replace(/\r\n/g, "\n");
+
+  if (!safeText.trim()) {
+    clearLiveDraft();
+    return;
+  }
+
+  ensureLiveDraftRow();
+liveDraftBubble.innerHTML = formatMessageText(safeText);
+  liveDraftText = safeText;
+
+  scrollToBottomIfNear();
+
+  if (liveDraftClearTimeout) clearTimeout(liveDraftClearTimeout);
+  liveDraftClearTimeout = setTimeout(() => {
+    clearLiveDraft();
+  }, 6000);
+}
+
+function promoteLiveDraftToMessage(m, alignAsSenderId){
+  if (!liveDraftRow || !liveDraftBubble) return false;
+
+  const mine = m.sender_id === alignAsSenderId;
+  if (mine) return false;
+
+  const incomingText = (m.text || "").replace(/\r\n/g, "\n");
+  if (incomingText !== liveDraftText) return false;
+
+  const wrap = liveDraftRow.querySelector(".msgWrap");
+  if (!wrap) return false;
+
+  // If grouped, remove the previous timestamp so it moves to this newest message
+  const grouped =
+    lastRendered &&
+    lastRendered.sender_id === m.sender_id &&
+    (new Date(m.created_at) - new Date(lastRendered.created_at)) < 120000;
+
+  if (grouped && lastRenderedWrap) {
+    const oldMeta = lastRenderedWrap.querySelector(".meta");
+    if (oldMeta) oldMeta.remove();
+  }
+
+  liveDraftRow.classList.remove("liveDraft");
+  liveDraftRow.className = "row them";
+
+  liveDraftBubble.innerHTML = formatMessageText(incomingText);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = fmtTime(m.created_at);
+  wrap.appendChild(meta);
+
+  lastRendered = m;
+  lastRenderedWrap = wrap;
+
+  if (liveDraftClearTimeout) {
+    clearTimeout(liveDraftClearTimeout);
+    liveDraftClearTimeout = null;
+  }
+
+  liveDraftRow = null;
+  liveDraftBubble = null;
+  liveDraftText = "";
+
+  scrollToBottomIfNear();
+  return true;
 }
 
 async function subscribeRealtime(aId, bId, alignAsSenderId){
@@ -1489,7 +1818,8 @@ channel = sb
       return;
     }
 
-const shouldAnimate = m.sender_id !== me.id;
+// const shouldAnimate = m.sender_id !== me.id;
+const shouldAnimate = false;
 
 if (m.sender_id !== me.id) {
   clearTimeout(typingTimeout);
@@ -1497,11 +1827,20 @@ if (m.sender_id !== me.id) {
   typingIndicator.classList.remove("show");
 }
 
-await renderMessage(m, alignAsSenderId, shouldAnimate);
+let promoted = false;
+
+if (m.sender_id !== me.id) {
+  promoted = promoteLiveDraftToMessage(m, alignAsSenderId);
+}
+
+if (!promoted) {
+  await renderMessage(m, alignAsSenderId, shouldAnimate);
+}
 
 // if I'm currently viewing this thread and the message came from the other user,
 // mark this specific message as read immediately
 if (
+    document.visibilityState === "visible" &&
   !adminMode &&
   them &&
   m.sender_id === them.id &&
@@ -1565,27 +1904,92 @@ await updateConversationStatus();
   typingIndicator.textContent = "";
   typingIndicator.classList.remove("show");
 })
+.on("broadcast", { event: "draft_update" }, ({ payload }) => {
+  if (payload.sender !== them?.id) return;
+  if (payload.recipient !== me.id) return;
+
+  typingIndicator.textContent = `${them.display_name} is thinking...`;
+  typingIndicator.classList.add("show");
+
+  reactingUntil = Date.now() + 4000;
+  updateConversationStatus();
+
+  renderLiveDraft(payload.text || "");
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    reactingUntil = 0;
+    updateConversationStatus();
+    typingIndicator.textContent = "";
+    typingIndicator.classList.remove("show");
+    clearLiveDraft();
+  }, 4000);
+})
+.on("broadcast", { event: "draft_clear" }, ({ payload }) => {
+  if (payload.sender !== them?.id) return;
+  if (payload.recipient !== me.id) return;
+
+  clearTimeout(typingTimeout);
+  reactingUntil = 0;
+  updateConversationStatus();
+  typingIndicator.textContent = "";
+  typingIndicator.classList.remove("show");
+  clearLiveDraft();
+})
     .subscribe();
 }
 
-let typingTimeout;
 
 textInput.addEventListener("input", () => {
-
   autoResizeTextarea();
   updateSendButton();
 
-  if (!channel || !them) return;
+  if (!channel || !them || adminMode) return;
+
+  const rawText = textInput.value;
+  const trimmed = rawText.trim();
+  const now = Date.now();
 
   channel.send({
-    type:"broadcast",
-    event:"typing",
-    payload:{
-      sender:me.id,
-      recipient:them.id
+    type: "broadcast",
+    event: "typing",
+    payload: {
+      sender: me.id,
+      recipient: them.id
     }
   });
 
+  if (!trimmed) {
+    lastDraftTextSent = "";
+
+    channel.send({
+      type: "broadcast",
+      event: "draft_clear",
+      payload: {
+        sender: me.id,
+        recipient: them.id
+      }
+    });
+
+    return;
+  }
+
+const enoughTimePassed = now - lastDraftSentAt > 90;
+
+if (!enoughTimePassed) return;
+
+  lastDraftSentAt = now;
+  lastDraftTextSent = rawText;
+
+  channel.send({
+    type: "broadcast",
+    event: "draft_update",
+    payload: {
+      sender: me.id,
+      recipient: them.id,
+      text: rawText
+    }
+  });
 });
 
 async function sendSystemMessage(){
@@ -1675,16 +2079,30 @@ async function sendText() {
   await renderMessage(tempMsg, me.id, false);
   scrollToBottom();
 
-  if (channel && them) {
-    channel.send({
-      type: "broadcast",
-      event: "stop_typing",
-      payload: {
-        sender: me.id,
-        recipient: them.id
-      }
-    });
-  }
+if (channel && them) {
+  channel.send({
+    type: "broadcast",
+    event: "stop_typing",
+    payload: {
+      sender: me.id,
+      recipient: them.id
+    }
+  });
+
+  channel.send({
+    type: "broadcast",
+    event: "draft_clear",
+    payload: {
+      sender: me.id,
+      recipient: them.id
+    }
+  });
+}
+
+clearLiveDraft();
+lastDraftTextSent = "";
+lastDraftSentAt = 0;
+
 
   const { error } = await sb.from("messages").insert({
     sender_id: me.id,
@@ -1846,6 +2264,4 @@ adminUnblockBtn.onclick = async () => {
   await refreshBlockedPairs();
   await renderSidebar(them?.id);
   alert("Unblocked.");
-
 };
-

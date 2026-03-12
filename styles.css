@@ -2,8 +2,12 @@
 
   /* Background layers */
   --bg:#ffffff;
-  --panel:#f7f7f7;
-  --panel2:#f0f0f0;
+  --panel:#F7F5EF;
+--panel2:#F2EFE7;
+
+  /* Chat bubbles */
+--bubbleMe:#EAE7DF;
+--bubbleThem:#F3F1EA;
 
   /* UI structure */
   --border:#d9d9d9;
@@ -12,9 +16,6 @@
   --text:#111111;
   --muted:#6b6b6b;
 
-  /* Chat bubbles */
-  --bubbleMe:#e6e6e6;
-  --bubbleThem:#f2f2f2;
 
   /* Accent (very subtle) */
   --accent:#000000;
@@ -36,6 +37,8 @@ html,body{height:100%}
 body{
   margin:0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    font-family: "Source Serif 4", serif;
+  font-weight: 400;
   background:var(--bg);
   color:var(--text);
   overflow:hidden;
@@ -108,7 +111,7 @@ body{
 }
 
 .sidebarTop{display:flex; flex-direction:column; gap:6px;}
-.brand{font-weight:700; letter-spacing:.2px}
+.brand{font-weight:700; letter-spacing:.2px; font-size: 1.5rem;}
 .me{color:var(--text); font-size:13px}
 
 .sectionTitle{
@@ -177,7 +180,7 @@ body{
   gap:12px;
 }
 
-.chatTitle{font-weight:700}
+.chatTitle{font-weight:700; font-size: 1.5rem;}
 .chatSubtitle{
   position: relative;
   color: var(--muted);
@@ -252,10 +255,18 @@ select:focus{border-color:#2b4a70}
   display:flex;
   flex-direction:column;
   gap:3px;
+  align-items:center; /* centers the conversation column */
 }
+
+.messages > .row{
+  width:100%;
+  max-width:950px; /* adjust to taste */
+}
+
 .messages > .row:first-child{
   margin-top:auto;
 }
+
 
 .row{display:flex}
 .row.me{justify-content:flex-end}
@@ -274,8 +285,24 @@ select:focus{border-color:#2b4a70}
   padding: 10px 12px;
   /* background: var(--bubbleThem); */
   white-space: pre-wrap;
-  font-size: 15px;
+  font-size: 1rem;
   line-height: 1.6;
+}
+.bubble p{
+  margin: 0;
+}
+
+.bubble p + p{
+  margin-top: 0.9em;
+}
+.bubble a{
+  color: inherit;
+  text-decoration: underline;
+  word-break: break-word;
+}
+
+.bubble a:hover{
+  opacity: 0.8;
 }
 .row.me .bubble{ background: var(--bubbleMe); }
 .meta{
@@ -292,14 +319,16 @@ select:focus{border-color:#2b4a70}
 }
 
 .composer{
-  border-top:1px solid var(--border);
+  /* border-top:1px solid var(--border); */
+  position: relative;
   padding:10px;
- background: var(--panel2);
-
+  padding-top: 0px;
+ /* background: var(--panel2); */
+padding-bottom: 25px;
   display:flex;
   align-items:center;
   gap:10px;
-
+ justify-content:center;
   width:100%;
   flex:0 0 auto;
 }
@@ -313,10 +342,13 @@ select:focus{border-color:#2b4a70}
   background:var(--bg);
   padding:8px;
   width:100%;
+  max-width: 950px;
 }
 .composerInner:focus-within{
   border-color:#000;
 }
+
+
 
 .sendBtnIcon{
   width:38px;
@@ -492,7 +524,7 @@ select:focus{border-color:#2b4a70}
 
 .systemMessage{
   text-align: center;
-  margin: 18px 0;
+  margin: 8px 0;
 }
 
 .systemLabel{
@@ -508,7 +540,7 @@ select:focus{border-color:#2b4a70}
   border-radius: 10px;
   background: var(--systemBg);
   color: var(--systemText);
-  font-size: 13px;
+  font-size: 1rem;
 }
 
 .micBtn{
@@ -698,3 +730,88 @@ select:focus{border-color:#2b4a70}
   background: var(--red);
   display:inline-block;
 }
+
+.row.liveDraft .bubble{
+  color: #8b857b;
+  opacity: 0.82;
+}
+
+.row.liveDraft .meta{
+  display:none;
+}
+
+.row.liveDraft .bubble::after{
+  /* content: "▋";
+  display: inline-block;
+  vertical-align: baseline;
+  margin-left: 2px;
+  opacity: 0.65;
+  animation: blink 0.8s steps(1) infinite; */
+  display: none;
+}
+.formatBar{
+  position:absolute;
+  left:50%;
+  bottom:100%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:var(--bg);
+  box-shadow:0 6px 20px rgba(0,0,0,0.08);
+  margin-bottom:8px;
+  z-index:20;
+}
+
+.formatBtn{
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  font:inherit;
+}
+
+.formatBtn:hover{
+  background:var(--hover);
+  color:var(--text);
+}
+
+.formatBtn strong,
+.formatBtn em,
+.formatBtn u{
+  pointer-events:none;
+}
+
+.bubble strong{
+  font-weight:700;
+}
+
+.bubble em{
+  font-style:italic;
+}
+
+.bubble u{
+  text-decoration:underline;
+}
+
+.bubble ul{
+  margin:6px 0 6px 18px;
+  padding:0;
+}
+
+.bubble li{
+  margin:2px 0;
+}
+
+/* .bubble div + div{
+  margin-top:4px;
+} */
+

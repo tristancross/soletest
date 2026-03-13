@@ -54,7 +54,7 @@
   <div class="app">
     <aside class="sidebar">
       <div class="sidebarTop">
-        <div class="brand">Sole</div>
+        <div class="brand" id="brandHome">Sole</div>
         <div class="me" id="meLabel">Not logged in</div>
       </div>
 
@@ -70,27 +70,35 @@
 
     <main class="main">
 <header class="header">
-  <div class="headerLeft">
-    <div class="chatTitle" id="chatTitle">Select a user</div>
+<div class="chatMeta">
+  <div class="chatMetaInner is-active" id="chatMetaInner">
+    <div class="chatTitle" id="chatTitle"></div>
     <div class="chatSubtitle" id="chatSubtitle"></div>
   </div>
+</div>
 <button class="mobileMenuBtn" id="mobileMenuBtn" aria-label="Open chats">
   <i class="fa-regular fa-message"></i>
   <span class="mobileMenuUnreadBadge" id="mobileMenuUnreadBadge" hidden></span>
 </button>
 
   <!-- ADMIN ONLY UI (hidden by default) -->
-  <div class="headerRight" id="adminControls" hidden>
-    <div class="adminRow">
-      <label class="smallLabel">View thread:</label>
-      <select id="adminA"></select>
-      <span class="muted">↔</span>
-      <select id="adminB"></select>
-      <button class="btn" id="adminLoadBtn">Load</button>
-      <button class="btn btnGhost" id="adminBlockBtn">Block</button>
-<button class="btn btnGhost" id="adminUnblockBtn">Unblock</button>
-    </div>
+<div class="headerRight" id="adminControls" hidden>
+  <div class="adminRow">
+    <label class="smallLabel">View thread:</label>
+    <select id="adminA"></select>
+    <span class="muted">↔</span>
+    <select id="adminB"></select>
+    <button class="btn" id="adminLoadBtn">Load</button>
+    <button class="btn btnGhost" id="adminBlockBtn">Block</button>
+    <button class="btn btnGhost" id="adminUnblockBtn">Unblock</button>
   </div>
+
+  <div class="adminRow">
+    <label class="smallLabel">View dashboard:</label>
+    <select id="adminDashboardUser"></select>
+    <button class="btn" id="adminLoadDashboardBtn">Load dashboard</button>
+  </div>
+</div>
 </header>
 
       <section class="messages" id="messages">
@@ -148,6 +156,7 @@
 
   <!-- Supabase JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="dashboard.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

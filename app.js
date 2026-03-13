@@ -46,6 +46,11 @@ const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
 const createAccountBtn = document.getElementById("createAccountBtn");
 
+const brandHome = document.getElementById("brandHome");
+
+const adminDashboardUser = document.getElementById("adminDashboardUser");
+const adminLoadDashboardBtn = document.getElementById("adminLoadDashboardBtn");
+
 function showLoginForm(clearMessage = true) {
   authTitle.textContent = "Log in";
   loginForm.hidden = false;
@@ -100,6 +105,7 @@ let adminMode = false;
 let blockedPairs = new Set();
 let lastRendered = null;
 let lastRenderedWrap = null;
+let adminDashboardProfile = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
@@ -299,6 +305,22 @@ forgotPasswordBtn.onclick = async () => {
 
 // ====== HELPERS ======
 
+brandHome.addEventListener("click", async () => {
+
+  currentConversationId = null;
+
+  document
+    .querySelectorAll(".conversationItem.active")
+    .forEach(el => el.classList.remove("active"));
+
+  await renderWelcomePanel();
+
+});
+
+function setThreadLoading(isLoading) {
+  messagesEl.classList.toggle("threadLoading", isLoading);
+}
+
 function syncAppHeightToViewport() {
   const h = window.visualViewport
     ? window.visualViewport.height
@@ -306,6 +328,10 @@ function syncAppHeightToViewport() {
 
   document.documentElement.style.setProperty("--app-height", `${h}px`);
 }
+
+const chatMetaInner = document.getElementById("chatMetaInner");
+
+
 
 document.addEventListener("visibilitychange", async () => {
   if (isCurrentChatActuallyVisible()) {
@@ -425,8 +451,7 @@ function updateDocumentTitle(totalUnread){
 
 }
 
-function renderWelcomePanel(){
-
+async function renderWelcomePanel() {
   if (ambientStateTimer) {
     clearTimeout(ambientStateTimer);
     ambientStateTimer = null;
@@ -444,30 +469,20 @@ function renderWelcomePanel(){
   chatTitle.textContent = "Sole";
   chatSubtitle.textContent = "System console";
 
-  messagesEl.innerHTML = `
-    <div class="welcomePanel">
-      <h2>Welcome, ${escapeHtml(me.display_name)}</h2>
-
-      <p>
-      You are currently interacting with experimental conversational models.
-      </p>
-
-      <p>
-      Response latency may vary as models integrate conversational context.
-      </p>
-
-      <p class="welcomeHint">
-      Select a model from the left to begin.
-      </p>
-    </div>
-  `;
+await window.dashboardUI.mountWelcomeDashboard({
+  messagesEl,
+  mainEl,
+  sb,
+  me,
+  escapeHtml
+});
 
   textInput.value = "";
   textInput.style.height = "auto";
   textInput.style.overflowY = "hidden";
   updateSendButton();
   them = null;
-updateNoChatState();
+  updateNoChatState();
 }
 
 function autoResizeTextarea() {
@@ -739,9 +754,11 @@ async function closeMobileSidebar() {
 }
 
 function updateNoChatState() {
-  const noChat = !them && !adminMode;
+  const showingDashboardPreview = adminMode && !!adminDashboardProfile;
+  const noChat = (!them && !adminMode) || showingDashboardPreview;
   mainEl.classList.toggle("noChatSelected", noChat);
 }
+
 
 mobileMenuBtn.addEventListener("click", () => {
   if (appEl.classList.contains("mobileSidebarOpen")) {
@@ -760,6 +777,7 @@ window.addEventListener("resize", () => {
     closeMobileSidebar();
   }
 });
+
 
 // ====== VOICE MESSAGE ======
 const recordingMeta = document.getElementById("recordingMeta");
@@ -1239,7 +1257,7 @@ if (window.visualViewport) {
 
   await refreshBlockedPairs();
   await renderSidebar();
-  renderWelcomePanel();
+await renderWelcomePanel();
   setupAdminUI();
   await subscribeInboxRealtime();
   autoResizeTextarea();
@@ -1467,39 +1485,64 @@ function startSubtitleStateLoop() {
 // ====== NORMAL CHAT ======
 async function openChat(profile){
   broadcastDraftClearForCurrentThread();
-clearLiveDraft();
-lastDraftTextSent = "";
-lastDraftSentAt = 0;
+  clearLiveDraft();
+  lastDraftTextSent = "";
+  lastDraftSentAt = 0;
 
-typingIndicator.textContent = "";
-typingIndicator.classList.remove("show");
-  them = profile;
+  adminDashboardProfile = null;
+
+  typingIndicator.textContent = "";
+  typingIndicator.classList.remove("show");
+
+  const nextProfile = profile;
+
+  if (ambientStateTimer) {
+    clearTimeout(ambientStateTimer);
+    ambientStateTimer = null;
+  }
+
+  if (subtitleStateTimer) {
+    clearInterval(subtitleStateTimer);
+    subtitleStateTimer = null;
+  }
+
+  reactingUntil = 0;
+  lastStatusText = "";
+  ambientState = "";
+
   viewA = null;
   viewB = null;
 
-  chatTitle.textContent = them.display_name;
-  chatSubtitle.textContent = "Running life experience training cycle";
-  await renderSidebar(them.id);
+  messagesEl.innerHTML = `
+    <div class="messagesLoadingState">
+      Loading conversation...
+    </div>
+  `;
 
-await loadThread(me.id, them.id, me.id);
+  clearChatSubtitleStatus();
+
+await loadThread(me.id, nextProfile.id, me.id);
+
+them = nextProfile;
+
+chatTitle.textContent = them.display_name;
+chatSubtitle.textContent = "Running life experience training cycle";
+
 await markThreadAsRead(me.id, them.id);
 await renderSidebar(them.id);
 await subscribeRealtime(me.id, them.id, me.id);
 
-startAmbientStateRotation();
-startSubtitleStateLoop();
-updateConversationStatus();
+  startAmbientStateRotation();
+  startSubtitleStateLoop();
+  updateConversationStatus();
 
-  // composer enabled
   textInput.disabled = false;
   autoResizeTextarea();
   updateSendButton();
   updateNoChatState();
   closeMobileSidebar();
 
-    requestAnimationFrame(() => {
-    scrollToBottom();
-  });
+  scrollToBottom();
 }
 
 // ====== LOAD + RENDER THREAD ======
@@ -2228,6 +2271,14 @@ lastDraftSentAt = 0;
     alert(error.message);
   } else {
     await updateConversationStatus();
+await refreshWelcomeDashboard({
+  mainEl,
+  messagesEl,
+  sb,
+  me,
+  escapeHtml,
+  animateMetrics: true
+});
   }
 }
 
@@ -2247,8 +2298,11 @@ textInput.addEventListener("keydown", (e) => {
 function setupAdminUI(){
   adminToggleBtn.onclick = () => toggleAdminMode();
   adminLoadBtn.onclick = () => loadAdminThread();
-}
 
+  if (adminLoadDashboardBtn) {
+    adminLoadDashboardBtn.onclick = () => loadAdminDashboard();
+  }
+}
 async function toggleAdminMode(){
   if (!me?.is_admin) {
     adminControls.hidden = true;
@@ -2285,12 +2339,22 @@ updateSendButton();
       adminB.value = profiles[1].id;
     }
 
+        adminDashboardUser.innerHTML = profiles
+      .map(p => `<option value="${p.id}">${escapeHtml(p.display_name)}</option>`)
+      .join("");
+
+    if (profiles.length >= 1) {
+      adminDashboardUser.value = profiles[0].id;
+    }
+
+    adminDashboardProfile = null;
+
     // stop realtime subscription until they load a thread
     if (channel) await sb.removeChannel(channel);
     channel = null;
   } else {
     // leaving admin mode: reset to normal view
-renderWelcomePanel();
+await renderWelcomePanel();
     them = null;
   }
 
@@ -2307,6 +2371,8 @@ async function loadAdminThread(){
   if (!viewA || !viewB || viewA === viewB){
     return alert("Pick two different users.");
   }
+
+  adminDashboardProfile = null;
 
   // Get names for header
   const { data: profs, error } = await sb
@@ -2325,6 +2391,56 @@ async function loadAdminThread(){
   await loadThread(viewA, viewB, /*alignAs*/ viewA);
   await subscribeRealtime(viewA, viewB, /*alignAs*/ viewA);
   updateSendButton();
+  textInput.disabled = false;
+}
+
+async function loadAdminDashboard(){
+  if (!adminMode) return;
+
+  const userId = adminDashboardUser.value;
+  if (!userId) {
+    alert("Pick a user.");
+    return;
+  }
+
+  const { data: profile, error } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error || !profile) {
+    alert(error?.message || "Could not load profile.");
+    return;
+  }
+
+  adminDashboardProfile = profile;
+  them = null;
+  viewA = null;
+  viewB = null;
+
+  chatTitle.textContent = `ADMIN: ${profile.display_name}`;
+  chatSubtitle.textContent = "Dashboard preview";
+
+  if (channel) {
+    await sb.removeChannel(channel);
+    channel = null;
+  }
+
+  textInput.disabled = true;
+  updateSendButton();
+
+  await window.dashboardUI.mountWelcomeDashboard({
+    messagesEl,
+    mainEl,
+    sb,
+    me: profile,
+    escapeHtml,
+    adminPreview: true
+  });
+
+  updateNoChatState();
+  closeMobileSidebar();
 }
 
 // ====== SWITCH USER ======

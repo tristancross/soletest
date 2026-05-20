@@ -1678,6 +1678,25 @@ function formatConfidence(value) {
   return `${num.toFixed(2)}%`;
 }
 
+function setMetricRingProgress(ringEl, percent) {
+  if (!ringEl) return;
+
+  const radius = 24;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+
+  ringEl.style.strokeDasharray = String(circumference);
+  ringEl.style.strokeDashoffset = String(
+    circumference - (clamped / 100) * circumference
+  );
+}
+
+function formatPoolPercent(remainingCandidates) {
+  const remaining = Number(remainingCandidates) || 0;
+  const percent = (remaining / DEFAULT_CANDIDATE_POOL) * 100;
+  return `${percent.toFixed(0)}%`;
+}
+
 function getConversationStyleLabel(value) {
   if (value <= 30) return "Playful";
   if (value >= 70) return "Reflective";
@@ -2953,55 +2972,8 @@ return `
 
   <div class="welcomePanel">
     <h2>Welcome, ${escapeHtml(me.display_name)}</h2>
-
-    <p>
-      You are currently interacting with experimental conversational models.
-    </p>
-
-    <p>
-      Response latency may vary as models integrate conversational context.
-    </p>
-
-    <p class="welcomeHint">
-      Select a model from the left to begin.
-    </p>
   </div>
 
-  <section class="dashboardPanel" aria-label="Compatibility analysis console">
-    <div class="dashboardHeading">
-      <div class="dashboardEyebrow">System analysis</div>
-      <h3>Compatibility Analysis Console</h3>
-    </div>
-
-    <div class="dashboardGrid">
-      <article class="dashCard">
-        <div class="dashLabel">Candidate Pool</div>
-        <div class="dashValue" data-metric="candidatePool">
-          ${formatCandidateCount(dash.remainingCandidates)}
-        </div>
-        <div class="dashMeta">remaining from ${formatCandidateCount(DEFAULT_CANDIDATE_POOL)} candidates</div>
-        <div class="dashNote">${escapeHtml(dash.stage)}</div>
-      </article>
-
-      <article class="dashCard">
-        <div class="dashLabel">Compatibility Confidence</div>
-        <div class="dashValue" data-metric="confidence">
-          ${formatConfidence(dash.confidence)}
-        </div>
-        <div class="dashMeta">model confidence</div>
-        <div class="dashNote">Refining behavioural compatibility signals</div>
-      </article>
-
-      <article class="dashCard">
-        <div class="dashLabel">Conversational Sample</div>
-        <div class="dashValue">${messageCount}</div>
-        <div class="dashMeta">messages sent in the last 24 hours</div>
-        <div class="dashNote">
-          Sample strength: ${escapeHtml(sample.label)} — ${escapeHtml(sample.note)}
-        </div>
-      </article>
-    </div>
-  </section>
 
 ${await renderAssignments(me, runtimeAssignments, escapeHtml, { adminPreview, sb })}
 
@@ -4133,11 +4105,40 @@ function animateNumber(el, from, to, format = "integer", duration = 700) {
   requestAnimationFrame(tick);
 }
 
-function animateDashboardMetrics(nextSnapshot, shouldAnimate = false) {
-  const candidateEl = document.querySelector('[data-metric="candidatePool"]');
-  const confidenceEl = document.querySelector('[data-metric="confidence"]');
+function updateMetricRings(snapshot) {
+  const confidenceRing = document.getElementById("topConfidenceRing");
+  const candidateRing = document.getElementById("topCandidateRing");
+  const topCandidatePool = document.getElementById("topCandidatePool");
 
-  if (!candidateEl || !confidenceEl) {
+  const remainingCandidates = Number(snapshot.remainingCandidates) || 0;
+
+  setMetricRingProgress(confidenceRing, snapshot.confidence);
+
+  // Pool ring represents refinement progress:
+  // 0% = full pool remaining, 100% = narrowed to the final candidate.
+  const poolRefinementPercent =
+    100 - ((remainingCandidates / DEFAULT_CANDIDATE_POOL) * 100);
+
+  setMetricRingProgress(candidateRing, poolRefinementPercent);
+
+  // But the visible text remains the actual candidate count.
+  if (topCandidatePool) {
+    topCandidatePool.textContent = formatCandidateCount(remainingCandidates);
+  }
+}
+
+function animateDashboardMetrics(nextSnapshot, shouldAnimate = false) {
+  const candidateEls = [
+    document.querySelector('[data-metric="candidatePool"]'),
+    document.getElementById("topCandidatePool")
+  ].filter(Boolean);
+
+  const confidenceEls = [
+    document.querySelector('[data-metric="confidence"]'),
+    document.getElementById("topCompatibilityConfidence")
+  ].filter(Boolean);
+
+  if (!candidateEls.length || !confidenceEls.length) {
     lastRenderedMetricSnapshot = nextSnapshot;
     return;
   }
@@ -4150,25 +4151,38 @@ function animateDashboardMetrics(nextSnapshot, shouldAnimate = false) {
     typeof previous.remainingCandidates === "number" &&
     typeof previous.confidence === "number"
   ) {
-    animateNumber(
-      candidateEl,
-      previous.remainingCandidates,
-      nextSnapshot.remainingCandidates,
-      "integer",
-      850
-    );
+    candidateEls.forEach(el => {
+      animateNumber(
+        el,
+        previous.remainingCandidates,
+        nextSnapshot.remainingCandidates,
+        "integer",
+        850
+      );
+    });
 
-    animateNumber(
-      confidenceEl,
-      previous.confidence,
-      nextSnapshot.confidence,
-      "percent",
-      850
-    );
+    confidenceEls.forEach(el => {
+      animateNumber(
+        el,
+        previous.confidence,
+        nextSnapshot.confidence,
+        "percent",
+        850
+      );
+    });
   } else {
-    candidateEl.textContent = formatAnimatedValue(nextSnapshot.remainingCandidates, "integer");
-    confidenceEl.textContent = formatAnimatedValue(nextSnapshot.confidence, "percent");
+    candidateEls.forEach(el => {
+      el.textContent = formatAnimatedValue(nextSnapshot.remainingCandidates, "integer");
+    });
+
+    confidenceEls.forEach(el => {
+      el.textContent = formatAnimatedValue(nextSnapshot.confidence, "percent");
+    });
+
+updateMetricRings(nextSnapshot);
   }
+
+  updateMetricRings(nextSnapshot);
 
   lastRenderedMetricSnapshot = {
     remainingCandidates: Number(nextSnapshot.remainingCandidates),
@@ -4276,9 +4290,10 @@ async function refreshWelcomeDashboard({
   escapeHtml,
   animateMetrics = false,
   adminPreview = false,
-  adminHome = false
+  adminHome = false,
+  force = false
 }) {
-  if (!mainEl.classList.contains("noChatSelected")) return;
+  if (!force && !mainEl.classList.contains("noChatSelected")) return;
 
   await mountWelcomeDashboard({
     messagesEl,

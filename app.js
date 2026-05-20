@@ -106,6 +106,7 @@ let blockedPairs = new Set();
 let lastRendered = null;
 let lastRenderedWrap = null;
 let adminDashboardProfile = null;
+let assignedPartner = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
@@ -114,7 +115,7 @@ let recordingTimerInterval = null;
 let recordingBlob = null;
 let recordingDurationSeconds = 0;
 let previewAudioUrl = null;
-let recordingState = "idle"; // idle | recording | preview
+let recordingState = "idle"; 
 let pausedElapsedMs = 0;
 let pauseStartedAt = null;
 let typingTimeout;
@@ -124,6 +125,7 @@ let liveDraftClearTimeout = null;
 let lastDraftSentAt = 0;
 let lastDraftTextSent = "";
 let liveDraftText = "";
+
 
 const recordingTimerEl = document.getElementById("recordingTimer");
 
@@ -138,6 +140,7 @@ const userList = document.getElementById("userList");
 const chatTitle = document.getElementById("chatTitle");
 const chatSubtitle = document.getElementById("chatSubtitle");
 const messagesEl = document.getElementById("messages");
+const consoleMessagesEl = document.getElementById("consoleMessages");
 const textInput = document.getElementById("textInput");
 const sendBtn = document.getElementById("sendBtn");
 const switchUserBtn = document.getElementById("switchUserBtn");
@@ -388,6 +391,355 @@ function threadFilter(aId, bId){
   return `and(or(and(sender_id.eq.${aId},recipient_id.eq.${bId}),and(sender_id.eq.${bId},recipient_id.eq.${aId})))`;
 }
 
+let responseState = "idle";
+let responseStateTimer = null;
+let responseThinkingCycleTimer = null;
+let responseNeuralRow = null;
+let responseNeuralRaf = null;
+
+const RESPONSE_LISTENING_DELAY_MS = 6000;
+const RESPONSE_TYPING_TIMEOUT_MS = 6000;
+
+const RESPONSE_THINKING_VERBS = [
+  "thinking",
+  "thinking",
+  "thinking",
+  "thinking",
+  "thinking",
+  "reflecting",
+  "reflecting",
+  "reflecting",
+  "reflecting",
+  "digesting your message",
+  "considering your response",
+  "processing conversational context",
+  "reviewing recent exchanges",
+  "updating their perspective",
+  "absorbing relational context",
+  "integrating your perspective",
+  "adapting to your personality",
+  "running a life experience cycle",
+  "simulating lived context",
+  "clarifying compatibility tests",
+  "integrating social memory",
+  "reordering their thoughts",
+  "trying to articulate themselves",
+  "searching for the right words",
+  "integrating emotional chat center",
+  "recalibrating emotional tone",
+  "mapping behavioural patterns",
+  "processing social nuance",
+  "integrating emotional signals",
+ "simulating continuity",
+   "modelling interpersonal dynamics",
+  "reprocessing interaction patterns",
+    "running a life experience cycle",
+      "recalibrating emotional tone",
+"integrating social memory",
+  "holding your message in mind"
+];
+
+function getResponseName() {
+  return them?.display_name || "Sole";
+}
+
+function clearResponseTimers() {
+  clearTimeout(responseStateTimer);
+  clearTimeout(responseThinkingCycleTimer);
+  responseStateTimer = null;
+  responseThinkingCycleTimer = null;
+}
+
+function ensureTypingIndicatorStructure() {
+  let textEl = typingIndicator.querySelector(".typingText");
+
+  if (!textEl) {
+    typingIndicator.innerHTML = `
+      <span class="typingDot"></span>
+      <span class="typingText"></span>
+    `;
+
+    textEl = typingIndicator.querySelector(".typingText");
+  }
+
+  return textEl;
+}
+
+function ensureTypingIndicatorStructure() {
+  let textEl = typingIndicator.querySelector(".typingText");
+
+  if (!textEl) {
+    typingIndicator.innerHTML = `
+      <span class="typingDot"></span>
+      <span class="typingText"></span>
+    `;
+
+    textEl = typingIndicator.querySelector(".typingText");
+  }
+
+  return textEl;
+}
+
+let typingVerbAnimationToken = 0;
+let currentTypingPrefix = "";
+let currentTypingVerb = "";
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function setTypingIndicatorText(text, animateChange = false) {
+  typingVerbAnimationToken++;
+
+  currentTypingPrefix = "";
+  currentTypingVerb = "";
+
+  typingIndicator.textContent = text;
+  typingIndicator.classList.add("show");
+
+  requestAnimationFrame(() => {
+    scrollToBottom();
+    requestAnimationFrame(scrollToBottom);
+  });
+}
+
+async function setTypingIndicatorVerb(prefix, nextVerb, animateChange = true) {
+  const token = ++typingVerbAnimationToken;
+
+  typingIndicator.classList.add("show");
+
+  if (!animateChange || currentTypingPrefix !== prefix) {
+    currentTypingPrefix = prefix;
+    currentTypingVerb = nextVerb;
+    typingIndicator.textContent = prefix + nextVerb;
+    return;
+  }
+
+  const oldVerb = currentTypingVerb || "";
+
+  // animate OUT right → left
+  for (let i = oldVerb.length; i >= 0; i--) {
+    if (token !== typingVerbAnimationToken) return;
+    typingIndicator.textContent = prefix + oldVerb.slice(0, i);
+    await sleep(28);
+  }
+
+  await sleep(100);
+
+  // animate IN left → right
+  for (let i = 0; i <= nextVerb.length; i++) {
+    if (token !== typingVerbAnimationToken) return;
+    typingIndicator.textContent = prefix + nextVerb.slice(0, i);
+    await sleep(38);
+  }
+
+  currentTypingPrefix = prefix;
+  currentTypingVerb = nextVerb;
+}
+
+function hideTypingIndicator() {
+  typingVerbAnimationToken++;
+  currentTypingPrefix = "";
+  currentTypingVerb = "";
+
+  typingIndicator.textContent = "";
+  typingIndicator.classList.remove("show", "isReacting");
+}
+
+function removeResponseNeuralRow() {
+  if (!responseNeuralRow) return;
+
+  const row = responseNeuralRow;
+  responseNeuralRow = null;
+
+  row.classList.add("isLeaving");
+
+  if (responseNeuralRaf) {
+    cancelAnimationFrame(responseNeuralRaf);
+    responseNeuralRaf = null;
+  }
+
+  setTimeout(() => {
+    row.remove();
+  }, 520);
+}
+
+function ensureResponseNeuralRow() {
+  if (responseNeuralRow) {
+    responseNeuralRow.classList.remove("isVisuallyHidden");
+    return;
+  }
+
+  const row = document.createElement("div");
+  row.className = "row them responseNeuralRow";
+
+  const wrap = document.createElement("div");
+  wrap.className = "responseNeuralWrap";
+
+  const field = document.createElement("div");
+  field.className = "responseNeuralField";
+
+  wrap.appendChild(field);
+  row.appendChild(wrap);
+
+  if (typingIndicator?.parentNode === messagesEl) {
+    typingIndicator.insertAdjacentElement("afterend", row);
+  } else {
+    messagesEl.appendChild(row);
+  }
+
+  responseNeuralRow = row;
+  buildResponseNeuralField(field);
+
+  requestAnimationFrame(() => {
+    scrollToBottom();
+    requestAnimationFrame(scrollToBottom);
+  });
+}
+
+function setResponseStateIdle() {
+  clearResponseTimers();
+  responseState = "idle";
+  hideTypingIndicator();
+  removeResponseNeuralRow();
+  clearLiveDraft();
+}
+
+function setResponseStateListening() {
+  if (adminMode || !them) return;
+
+  clearResponseTimers();
+  removeResponseNeuralRow();
+  clearLiveDraft();
+
+  responseState = "listening";
+  setTypingIndicatorText(`${getResponseName()} is listening`, false);
+
+  responseStateTimer = setTimeout(() => {
+    setResponseStateThinking();
+  }, RESPONSE_LISTENING_DELAY_MS);
+}
+
+function setResponseStateThinking() {
+  if (adminMode || !them) return;
+
+  clearResponseTimers();
+  clearLiveDraft();
+
+  responseState = "thinking";
+
+const verb = RESPONSE_THINKING_VERBS[
+  Math.floor(Math.random() * RESPONSE_THINKING_VERBS.length)
+];
+
+setTypingIndicatorVerb(`${getResponseName()} is `, verb, true);
+  ensureResponseNeuralRow();
+
+responseThinkingCycleTimer = setTimeout(() => {
+  if (responseState === "thinking") setResponseStateThinking();
+}, 10000 + Math.random() * 35000);
+}
+
+function setResponseStateReacting() {
+  if (adminMode || !them) return;
+
+  clearResponseTimers();
+  removeResponseNeuralRow();
+
+  responseState = "reacting";
+  typingIndicator.classList.add("isReacting");
+  setTypingIndicatorText(`${getResponseName()} is reacting`);
+
+  responseStateTimer = setTimeout(() => {
+    if (responseState === "reacting") {
+      clearLiveDraft();
+      setResponseStateThinking();
+    }
+  }, RESPONSE_TYPING_TIMEOUT_MS);
+}
+function syncResponseStateForLatestMessage(latestMsg, alignAsSenderId) {
+  if (!latestMsg || adminMode || !them) {
+    setResponseStateIdle();
+    return;
+  }
+
+  const mine = latestMsg.sender_id === alignAsSenderId;
+
+if (mine) {
+  setResponseStateThinking();
+} else {
+  setResponseStateIdle();
+}
+}
+
+function buildResponseNeuralField(field) {
+const size = 120;
+const center = size / 2;
+const spacing = 8.25;
+const radius = 45;
+  const points = [];
+
+  for (let y = -radius; y <= radius; y += spacing) {
+    for (let x = -radius; x <= radius; x += spacing) {
+      if (Math.sqrt(x * x + y * y) > radius) continue;
+
+      const dot = document.createElement("div");
+      dot.className = "responseNeuralDot";
+      dot.style.left = `${x + center}px`;
+      dot.style.top = `${y + center}px`;
+
+      field.appendChild(dot);
+      points.push({ x, y, el: dot });
+    }
+  }
+
+  let origin = points[Math.floor(Math.random() * points.length)];
+  let start = performance.now();
+  let coolingDown = false;
+
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  function beginPulse(now) {
+    origin = points[Math.floor(Math.random() * points.length)];
+    start = now;
+    coolingDown = false;
+  }
+
+  function animate(now) {
+    if (!responseNeuralRow) return;
+
+    const elapsed = now - start;
+    const speed = 0.072;
+    const waveRadius = elapsed * speed;
+    const waveWidth = 10;
+    const fadeTail = 24;
+
+    points.forEach(point => {
+      const dist = Math.hypot(point.x - origin.x, point.y - origin.y);
+
+      const leading = 1 - smoothstep(waveRadius, waveRadius + waveWidth, dist);
+      const trailing = smoothstep(waveRadius - fadeTail, waveRadius, dist);
+      const intensity = Math.max(0, Math.min(1, leading * trailing));
+
+      point.el.style.setProperty("--opacity", (0.12 + intensity * 0.82).toFixed(3));
+      point.el.style.setProperty("--scale", (1 + intensity * 1.8).toFixed(3));
+      point.el.style.setProperty("--glow", intensity.toFixed(3));
+    });
+
+    if (waveRadius > radius * 2.3 && !coolingDown) {
+      coolingDown = true;
+      setTimeout(() => beginPulse(performance.now()), 260);
+    }
+
+    responseNeuralRaf = requestAnimationFrame(animate);
+  }
+
+  responseNeuralRaf = requestAnimationFrame(animate);
+}
+
 async function typeOnText(el, text, speed = 18) {
   el.textContent = "";
   el.classList.add("typewriter");
@@ -441,12 +793,28 @@ async function getUnreadCounts(){
 
 }
 
+async function latestMessageWasMine() {
+  if (!me || !them) return false;
+
+  const { data, error } = await sb
+    .from("messages")
+    .select("sender_id")
+    .or(threadFilter(me.id, them.id))
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return false;
+
+  return data.sender_id === me.id;
+}
+
 function updateDocumentTitle(totalUnread){
 
   if (totalUnread > 0){
-    document.title = `(${totalUnread}) Internal Chat`;
+    document.title = `(${totalUnread}) Sole`;
   } else {
-    document.title = "Internal Chat";
+    document.title = "Sole";
   }
 
 }
@@ -483,6 +851,20 @@ await window.dashboardUI.mountWelcomeDashboard({
   updateSendButton();
   them = null;
   updateNoChatState();
+}
+
+async function renderSystemConsole(animateMetrics = false) {
+  if (!consoleMessagesEl || !window.dashboardUI?.mountWelcomeDashboard) return;
+
+  await window.dashboardUI.mountWelcomeDashboard({
+    messagesEl: consoleMessagesEl,
+    mainEl,
+    sb,
+    me,
+    escapeHtml,
+    animateMetrics,
+    force: true
+  });
 }
 
 function autoResizeTextarea() {
@@ -1255,10 +1637,20 @@ if (window.visualViewport) {
   me = profile;
   applyMe();
 
-  await refreshBlockedPairs();
-  await renderSidebar();
-await renderWelcomePanel();
-  setupAdminUI();
+await refreshBlockedPairs();
+await renderSidebar();
+setupAdminUI();
+
+await renderSystemConsole(false);
+
+assignedPartner = await getAssignedPartner(me.id);
+
+if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
+  await openChat(assignedPartner);
+} else {
+  await renderWelcomePanel();
+}
+
   await subscribeInboxRealtime();
   autoResizeTextarea();
   updateSendButton();
@@ -1311,6 +1703,11 @@ async function renderSidebar(activeId){
   // In normal mode we list non-admin profiles (excluding self).
 profiles
   .filter(p => p.id !== me.id && !p.is_admin)
+  .filter(p => {
+    if (me.is_admin) return true;
+    if (!assignedPartner) return true; // testing fallback
+    return p.id === assignedPartner.id;
+  })
   .filter(p => !blockedPairs.has(pairKey(me.id, p.id)))
     .forEach(p => {
       const div = document.createElement("div");
@@ -1484,6 +1881,15 @@ function startSubtitleStateLoop() {
 
 // ====== NORMAL CHAT ======
 async function openChat(profile){
+ setResponseStateIdle();
+  if (
+  assignedPartner &&
+  !me.is_admin &&
+  profile.id !== assignedPartner.id
+) {
+  alert("This model is not currently assigned to you.");
+  return;
+}
   broadcastDraftClearForCurrentThread();
   clearLiveDraft();
   lastDraftTextSent = "";
@@ -1491,8 +1897,7 @@ async function openChat(profile){
 
   adminDashboardProfile = null;
 
-  typingIndicator.textContent = "";
-  typingIndicator.classList.remove("show");
+hideTypingIndicator();
 
   const nextProfile = profile;
 
@@ -1519,11 +1924,11 @@ async function openChat(profile){
     </div>
   `;
 
-  clearChatSubtitleStatus();
-
-await loadThread(me.id, nextProfile.id, me.id);
+clearChatSubtitleStatus();
 
 them = nextProfile;
+
+await loadThread(me.id, nextProfile.id, me.id);
 
 chatTitle.textContent = them.display_name;
 chatSubtitle.textContent = "Running life experience training cycle";
@@ -1549,8 +1954,7 @@ await subscribeRealtime(me.id, them.id, me.id);
 async function loadThread(aId, bId, alignAsSenderId){
   messagesEl.innerHTML = "";
   messagesEl.appendChild(typingIndicator);
-  typingIndicator.textContent = "";
-  typingIndicator.classList.remove("show");
+hideTypingIndicator();
 
   lastRendered = null;
 lastRenderedWrap = null;
@@ -1565,6 +1969,7 @@ lastRenderedWrap = null;
   if (error) return alert(error.message);
 
   for (const m of msgs) await renderMessage(m, alignAsSenderId, false);
+  syncResponseStateForLatestMessage(msgs[msgs.length - 1], alignAsSenderId);
 
   requestAnimationFrame(() => {
     scrollToBottom();
@@ -1869,12 +2274,11 @@ function ensureLiveDraftRow(){
   wrap.appendChild(bubble);
   row.appendChild(wrap);
 
-  if (typingIndicator && typingIndicator.parentNode === messagesEl) {
-    messagesEl.insertBefore(row, typingIndicator);
-  } else {
-    messagesEl.appendChild(row);
-  }
-
+if (typingIndicator && typingIndicator.parentNode === messagesEl) {
+  messagesEl.insertBefore(row, responseNeuralRow || typingIndicator.nextSibling);
+} else {
+  messagesEl.appendChild(row);
+}
   liveDraftRow = row;
   liveDraftBubble = bubble;
 }
@@ -1981,9 +2385,8 @@ channel = sb
 const shouldAnimate = false;
 
 if (m.sender_id !== me.id) {
+  setResponseStateIdle();
   clearTimeout(typingTimeout);
-  typingIndicator.textContent = "";
-  typingIndicator.classList.remove("show");
 }
 
 let promoted = false;
@@ -2022,8 +2425,7 @@ await updateConversationStatus();
   if (payload.sender !== them?.id) return;
   if (payload.recipient !== me.id) return;
 
-  typingIndicator.textContent = `${them.display_name} is thinking...`;
-  typingIndicator.classList.add("show");
+setResponseStateReacting();
 
   reactingUntil = Date.now() + 4000;
   updateConversationStatus();
@@ -2043,30 +2445,34 @@ await updateConversationStatus();
     reactingUntil = 0;
     updateConversationStatus();
 
-    typingIndicator.textContent = "";
-    typingIndicator.classList.remove("show");
+hideTypingIndicator();
 
     requestAnimationFrame(() => {
       scrollToBottomIfNear();
     });
   }, 4000);
 })
-.on("broadcast", { event: "stop_typing" }, ({ payload }) => {
+.on("broadcast", { event: "stop_typing" }, async ({ payload }) => {
   if (payload.sender !== them?.id) return;
   if (payload.recipient !== me.id) return;
 
   clearTimeout(typingTimeout);
   reactingUntil = 0;
   updateConversationStatus();
-  typingIndicator.textContent = "";
-  typingIndicator.classList.remove("show");
+
+  clearLiveDraft();
+
+  if (await latestMessageWasMine()) {
+    setResponseStateThinking();
+  } else {
+    setResponseStateIdle();
+  }
 })
 .on("broadcast", { event: "draft_update" }, ({ payload }) => {
   if (payload.sender !== them?.id) return;
   if (payload.recipient !== me.id) return;
 
-  typingIndicator.textContent = `${them.display_name} is thinking...`;
-  typingIndicator.classList.add("show");
+setResponseStateReacting();
 
   reactingUntil = Date.now() + 4000;
   updateConversationStatus();
@@ -2077,21 +2483,25 @@ await updateConversationStatus();
   typingTimeout = setTimeout(() => {
     reactingUntil = 0;
     updateConversationStatus();
-    typingIndicator.textContent = "";
-    typingIndicator.classList.remove("show");
+   hideTypingIndicator();
     clearLiveDraft();
   }, 4000);
 })
-.on("broadcast", { event: "draft_clear" }, ({ payload }) => {
+.on("broadcast", { event: "draft_clear" }, async ({ payload }) => {
   if (payload.sender !== them?.id) return;
   if (payload.recipient !== me.id) return;
 
   clearTimeout(typingTimeout);
   reactingUntil = 0;
   updateConversationStatus();
-  typingIndicator.textContent = "";
-  typingIndicator.classList.remove("show");
+
   clearLiveDraft();
+
+  if (await latestMessageWasMine()) {
+    setResponseStateThinking();
+  } else {
+    setResponseStateIdle();
+  }
 })
     .subscribe();
 }
@@ -2205,6 +2615,14 @@ async function sendText() {
   }
 
   if (!me || !them) return;
+  if (
+  assignedPartner &&
+  !me.is_admin &&
+  them.id !== assignedPartner.id
+) {
+  alert("This thread is not currently assigned to you.");
+  return;
+}
   if (blockedPairs.has(pairKey(me.id, them.id))){
     alert("This thread has been disabled by an admin.");
     return;
@@ -2235,6 +2653,7 @@ async function sendText() {
   };
   await renderMessage(tempMsg, me.id, false);
   scrollToBottom();
+ setResponseStateListening();
 
 if (channel && them) {
   channel.send({
@@ -2271,14 +2690,7 @@ lastDraftSentAt = 0;
     alert(error.message);
   } else {
     await updateConversationStatus();
-await refreshWelcomeDashboard({
-  mainEl,
-  messagesEl,
-  sb,
-  me,
-  escapeHtml,
-  animateMetrics: true
-});
+await renderSystemConsole(true);
   }
 }
 
@@ -2316,16 +2728,15 @@ async function toggleAdminMode(){
 textInput.disabled = false;
 updateSendButton();
 
-  if (adminMode){
-    chatTitle.textContent = "Admin view";
-    chatSubtitle.textContent = "Read-only thread viewer";
-    messagesEl.innerHTML = "";
+if (adminMode){
+  chatTitle.textContent = "Admin dashboard";
+  chatSubtitle.textContent = "Quiz templates and system tools";
 
-    const { data: profiles, error } = await sb
-      .from("profiles")
-      .select("*")
-      .eq("is_admin", false)
-      .order("display_name");
+  const { data: profiles, error } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("is_admin", false)
+    .order("display_name");
 
     if (error) return alert(error.message);
 
@@ -2333,11 +2744,22 @@ updateSendButton();
     adminA.innerHTML = profiles.map(p => `<option value="${p.id}">${escapeHtml(p.display_name)}</option>`).join("");
     adminB.innerHTML = profiles.map(p => `<option value="${p.id}">${escapeHtml(p.display_name)}</option>`).join("");
 
+    pairUserA.innerHTML = profiles
+  .map(p => `<option value="${p.id}">${escapeHtml(p.display_name)}</option>`)
+  .join("");
+
+pairUserB.innerHTML = profiles
+  .map(p => `<option value="${p.id}">${escapeHtml(p.display_name)}</option>`)
+  .join("");
+
     // default A/B different if possible
-    if (profiles.length >= 2){
-      adminA.value = profiles[0].id;
-      adminB.value = profiles[1].id;
-    }
+if (profiles.length >= 2){
+  adminA.value = profiles[0].id;
+  adminB.value = profiles[1].id;
+
+  pairUserA.value = profiles[0].id;
+  pairUserB.value = profiles[1].id;
+}
 
         adminDashboardUser.innerHTML = profiles
       .map(p => `<option value="${p.id}">${escapeHtml(p.display_name)}</option>`)
@@ -2347,11 +2769,24 @@ updateSendButton();
       adminDashboardUser.value = profiles[0].id;
     }
 
-    adminDashboardProfile = null;
+adminDashboardProfile = null;
+them = null;
+viewA = null;
+viewB = null;
 
-    // stop realtime subscription until they load a thread
-    if (channel) await sb.removeChannel(channel);
-    channel = null;
+// stop realtime subscription until they load a thread
+if (channel) await sb.removeChannel(channel);
+channel = null;
+
+// show the admin dashboard home / quiz builder
+await window.dashboardUI.mountWelcomeDashboard({
+  messagesEl,
+  mainEl,
+  sb,
+  me,
+  escapeHtml,
+  adminHome: true
+});
   } else {
     // leaving admin mode: reset to normal view
 await renderWelcomePanel();
@@ -2460,8 +2895,97 @@ async function refreshBlockedPairs(){
   blockedPairs = new Set(data.map(r => pairKey(r.user_a, r.user_b)));
 }
 
+async function getAssignedPartner(userId) {
+  const { data, error } = await sb
+    .from("user_pairings")
+    .select("user_a,user_b")
+    .eq("is_active", true)
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("getAssignedPartner failed", error);
+    return null;
+  }
+
+  if (!data) return null;
+
+  const partnerId = data.user_a === userId ? data.user_b : data.user_a;
+
+  const { data: partner, error: partnerError } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("id", partnerId)
+    .maybeSingle();
+
+  if (partnerError) {
+    console.warn("Could not load assigned partner", partnerError);
+    return null;
+  }
+
+  return partner || null;
+}
+
+async function createUserPairing(userA, userB) {
+  if (!userA || !userB || userA === userB) {
+    alert("Pick two different users.");
+    return;
+  }
+
+  const { error: deactivateError } = await sb
+    .from("user_pairings")
+    .update({ is_active: false })
+    .eq("is_active", true)
+    .or(`user_a.eq.${userA},user_b.eq.${userA},user_a.eq.${userB},user_b.eq.${userB}`);
+
+  if (deactivateError) {
+    alert(deactivateError.message);
+    return;
+  }
+
+  const { error } = await sb
+    .from("user_pairings")
+    .insert({
+      user_a: userA,
+      user_b: userB,
+      created_by: me.id,
+      is_active: true
+    });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Pair created.");
+}
+
+async function clearUserPairing(userA, userB) {
+  if (!userA || !userB || userA === userB) {
+    alert("Pick two different users.");
+    return;
+  }
+
+  const { error } = await sb
+    .from("user_pairings")
+    .update({ is_active: false })
+    .eq("is_active", true)
+    .or(`and(user_a.eq.${userA},user_b.eq.${userB}),and(user_a.eq.${userB},user_b.eq.${userA})`);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Pair cleared.");
+}
+
 const adminBlockBtn = document.getElementById("adminBlockBtn");
 const adminUnblockBtn = document.getElementById("adminUnblockBtn");
+const pairUserA = document.getElementById("pairUserA");
+const pairUserB = document.getElementById("pairUserB");
+const createPairBtn = document.getElementById("createPairBtn");
+const clearPairBtn = document.getElementById("clearPairBtn");
 
 adminBlockBtn.onclick = async () => {
   const a = adminA.value, b = adminB.value;
@@ -2500,4 +3024,12 @@ adminUnblockBtn.onclick = async () => {
   await refreshBlockedPairs();
   await renderSidebar(them?.id);
   alert("Unblocked.");
+};
+
+createPairBtn.onclick = async () => {
+  await createUserPairing(pairUserA.value, pairUserB.value);
+};
+
+clearPairBtn.onclick = async () => {
+  await clearUserPairing(pairUserA.value, pairUserB.value);
 };

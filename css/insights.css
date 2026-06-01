@@ -1,0 +1,249 @@
+/* insights.css — insight cards, unread dots, insight editor */
+.insightsPanel{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:0 2px 24px;
+}
+
+
+.insightCard{
+  position:relative;
+  border:1px solid rgba(255,242,231,.12);
+  border-radius:22px;
+  padding: 10px 18px;
+  background:
+    radial-gradient(circle at top left, rgba(255,137,104,.10), transparent 38%),
+    rgba(255,242,231,.035);
+  box-shadow:
+    0 18px 42px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  overflow:hidden;
+}
+
+
+.insightCard::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,.08),
+    transparent 30%,
+    transparent 70%,
+    rgba(255,137,104,.06)
+  );
+}
+
+
+.insightCard .dashboardEyebrow{
+  color:var(--accent);
+  margin-bottom: 0;
+}
+
+
+.insightCard h4{
+  position:relative;
+  margin:4px 0;
+  font-size:18px;
+  line-height:1.1;
+  letter-spacing:-.01em;
+}
+
+
+.insightBody{
+  position:relative;
+  /* color:var(--muted); */
+  font-size:14px;
+  line-height:1.65;
+}
+
+
+.insightBody p{
+  margin:0 0 12px;
+}
+
+
+.insightBody p:last-child{
+  margin-bottom:0;
+}
+
+
+.insightBody strong{
+  color:var(--text);
+  font-weight:700;
+}
+
+
+.insightBody em{
+  color:rgba(255,242,231,.88);
+}
+
+
+.insightBody ul{
+  margin:10px 0 0;
+  padding-left:18px;
+}
+
+
+.insightBody li{
+  margin:6px 0;
+}
+
+
+.insightBody a{
+  color:var(--accent);
+}
+
+
+.insightEditorToolbar{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+
+
+.insightRichEditor{
+  min-height:180px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px;
+  background:rgba(0,0,0,.16);
+  color:var(--text);
+  line-height:1.6;
+  outline:none;
+}
+
+
+.insightRichEditor:focus{
+  border-color:rgba(255,137,104,.45);
+  box-shadow:0 0 0 3px rgba(255,137,104,.10);
+}
+
+
+.insightRichEditor:empty::before{
+  content:"Write the insight here...";
+  color:var(--muted);
+}
+
+
+.insightMeta{
+  position:absolute;
+  top:18px;
+  right:20px;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:rgba(255,242,231,.38);
+  font-variant-numeric:tabular-nums;
+}
+
+.insightCard{
+  position:relative;
+}
+
+
+.insightCard{
+  cursor:pointer;
+  transition:border-color .18s ease, background .18s ease, opacity .18s ease;
+}
+
+
+.insightCard.isUnread{
+  background:
+    radial-gradient(circle at top left, rgba(255,137,104,.16), transparent 42%),
+    rgba(255,242,231,.055);
+  border-color:rgba(255,137,104,.62);
+}
+
+
+.insightCard:not(.isUnread){
+  background:
+    radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
+    rgba(255,242,231,.026);
+  opacity:.82;
+}
+
+
+
+.insightTitleRow{
+  display:flex;
+  align-items:center;
+  /* justify-content: space-between; */
+  gap:8px;
+}
+
+
+.insightExpandIcon{
+  color:rgba(255,242,231,.42);
+  font-size:18px;
+  line-height:1;
+  margin-left: auto;
+  margin-right: 3px;
+  transition:transform .18s ease;
+}
+
+
+.insightCard.isOpen .insightExpandIcon{
+  transform:translateY(1px) rotate(90deg);
+}
+
+
+.insightBody{
+  max-height:0;
+  overflow:hidden;
+  opacity:0;
+  margin-top:0;
+  transition:max-height .28s ease, opacity .22s ease, margin-top .22s ease;
+}
+
+
+.insightCard.isOpen .insightBody{
+  max-height:400px;
+  opacity:1;
+}
+
+
+.hasUnreadInsight::after{
+  content:"";
+  position:absolute;
+  top:-1px;
+  right:-1px;
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#ff6b5c;
+  box-shadow:0 0 0 3px rgba(255,107,92,.14), 0 0 12px rgba(255,107,92,.55);
+  z-index:5;
+}
+
+
+.insightUnreadDot{
+  width:7px;
+  height:7px;
+  border-radius:999px;
+  background:var(--accent);
+  box-shadow:0 0 12px rgba(255,137,104,.55);
+  flex:0 0 auto;
+}
+
+
+.insightCard:not(.isUnread) .insightUnreadDot{
+  display: none;
+}
+
+/* COMMITTED REDESIGN INSIGHT SURFACES ----------------------------------- */
+.insightCard{
+  background:var(--sole-card);
+  border-color:var(--sole-line);
+  box-shadow:var(--sole-shadow);
+  color:var(--sole-ink);
+}
+
+.insightRichEditor{
+  background:rgba(255,255,255,.62);
+  color:var(--sole-ink);
+}

@@ -156,8 +156,8 @@ async function loadManifestImagesForUsers(sb) {
 
 function getManifestEffectProfile() {
   return {
-    blur: 8 + Math.random() * 18,           // 8px → 26px
-    jitter: 8 + Math.random() * 24,         // 8px → 32px
+    blur: 8 + Math.random() * 18,           
+    jitter: 8 + Math.random() * 24,       
     ghostOpacity: 0.08 + Math.random() * 0.28,
     scale: 1.01 + Math.random() * 0.08,
     overlayOpacity: 0.05 + Math.random() * 0.2
@@ -271,7 +271,7 @@ async function renderAdminManifestManager({ sb, profiles, escapeHtml, escapeAttr
             <div class="adminManifestStatus">
               ${
                 manifest
-  ? (manifest.is_enabled === false ? "Image uploaded · warp off" : "Image uploaded · warp on")
+    ? (manifest.is_enabled === false ? "Image uploaded · warp off" : "Image uploaded · warp on")
   : "No image uploaded"
               }
             </div>
@@ -475,3 +475,6 @@ window.manifestUI = {
   renderAdminManifestManager,
   bindManifestManagerActions
 };
+
+
+

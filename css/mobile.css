@@ -1,0 +1,305 @@
+/* mobile.css — mobile-only selectors and all media-query overrides */
+@media (max-width: 768px){
+  .dashboardGrid{
+    grid-template-columns:1fr;
+  }
+
+  .dashboardPanel{
+    padding:0;
+    margin:0 auto 24px auto;
+  }
+
+  .dashCard{
+    min-height:auto;
+  }
+}
+
+
+@media (max-width: 768px){
+  .quizScale7{
+    gap:7px;
+  }
+
+  .quizScale7Btn[data-value="1"],
+  .quizScale7Btn[data-value="7"]{
+    --size:48px;
+  }
+
+  .quizScale7Btn[data-value="2"],
+  .quizScale7Btn[data-value="6"]{
+    --size:40px;
+  }
+
+  .quizScale7Btn[data-value="3"],
+  .quizScale7Btn[data-value="5"]{
+    --size:32px;
+  }
+}
+
+
+@media (max-width: 768px){
+  .quizPanel{
+    padding:0;
+    margin:0 auto 24px auto;
+  }
+}
+
+
+@media (max-width:1000px){
+  .soleMatrixPanel {
+    padding: 14px 8px;
+    border-radius: 18px;
+  }
+
+    .soleMatrixHeader {
+    margin-bottom: 0;
+  }
+
+  .soleMatrixChartWrap {
+    margin-top: -8px;
+  }
+
+
+  .soleMatrixSvg {
+    min-height: 0;
+    height: min(112vw, 520px);
+    transform: scale(1.1);
+    transform-origin: center center;
+  }
+
+  .soleMatrixHeader{
+    flex-direction:column;
+  }
+
+  .soleMatrixSvg{
+    min-height:380px;
+  }
+}
+
+@media (max-width:768px){
+  .soleMatrixPanel {
+    padding: 14px 8px;
+    border-radius: 18px;
+  }
+
+    .soleMatrixHeader {
+    margin-bottom: 0;
+  }
+
+  .soleMatrixChartWrap {
+    margin-top: -8px;
+  }
+
+
+  .soleMatrixSvg {
+    min-height: 0;
+    height: min(112vw, 520px);
+    transform: scale(1.12);
+    transform-origin: center center;
+  }
+
+  .soleMatrixHeader{
+    flex-direction:column;
+  }
+
+  .soleMatrixSvg{
+    min-height:380px;
+  }
+}
+
+
+/* MOBILE */
+
+@media (max-width: 768px){
+  .adminQuizFieldRow{
+    grid-template-columns:1fr;
+  }
+
+  .adminQuizQuestionTop{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+}
+
+
+@media (max-width: 620px) {
+  .soleThinkingBubble {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .miniNeuralField {
+    width: 112px;
+    height: 112px;
+  }
+}
+
+
+
+
+
+
+@media (max-width: 720px) {
+  .moduleCalibrationTaskCard {
+    padding: 12px;
+  }
+
+  .moduleCalibrationTaskAction {
+    gap: 7px;
+  }
+
+  .moduleCalibrationTaskStart {
+    padding: 6px 11px;
+  }
+}
+
+
+/* MOBILE */
+.mobileMenuBtn{
+  display:none;
+  width:36px;
+  height:36px;
+  border:none;
+  background:transparent;
+  color:var(--text);
+  border-radius:10px;
+  cursor:pointer;
+  font-size:18px;
+  place-items:center;
+  flex:0 0 auto;
+}
+
+
+.mobileMenuBtn:hover{
+  background:var(--hover);
+}
+
+
+.mobileSidebarBackdrop{
+  display:none;
+}
+
+/* .main.noChatSelected .composer{
+  display:none;
+} */
+
+@media (max-width: 768px){
+
+  html,
+  body{
+    overflow:hidden;
+  }
+
+  .chatTitle{
+    font-size: 1.3rem;
+  }
+
+  /* .headerLeft{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  } */
+
+.app{
+  display:flex;
+  width:200vw;
+  height:100dvh;
+  overflow:hidden;
+  transform:translateX(0);
+  transition:transform 260ms ease;
+}
+
+  .app.mobileSidebarOpen{
+    transform:translateX(-100vw);
+  }
+
+  .mobileMenuBtn{
+    display:grid;
+  }
+
+  .mobileSidebarBackdrop{
+    display:none;
+  }
+
+.main,
+.sidebar{
+  width:100vw;
+  height:100dvh;
+  flex:0 0 100vw;
+}
+
+.main{
+  order:1;
+  min-width:0;
+  min-height:0;
+  position:relative;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  height:var(--app-height, 100dvh);
+  overflow:hidden;
+}
+
+.sidebar{
+  order:2;
+  position:relative;
+  border-right:none;
+  padding-top:20px;
+  min-height:0;
+  overflow:auto;
+  gap: 0;
+}
+.header{
+  position:relative;
+  z-index:2;
+  padding:6px 8px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+}
+
+  .chatSubtitle{
+    font-size: 0.8rem;
+  }
+
+.messages{
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:12px;
+}
+.composer{
+    position:relative;
+  bottom:0;
+  z-index:2;
+  background:var(--panel);
+  padding-bottom: calc(5px + env(safe-area-inset-bottom));
+}
+
+  .composerInner{
+    max-width:none;
+  }
+
+  .messages > .row{
+    max-width:none;
+  }
+
+  .mobileMenuBtn{
+  position:relative;
+}
+
+.mobileMenuUnreadBadge{
+  position:absolute;
+  top:-2px;
+  right:-2px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  background:#ff3b30;
+  color:#fff;
+  font-size:11px;
+  font-weight:600;
+  line-height:18px;
+  text-align:center;
+}
+}

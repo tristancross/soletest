@@ -1,0 +1,1013 @@
+/* modules.css — Connection/Attraction module screens, tabs, calibration cards, profile matrix */
+.sidebarModuleCard{
+  width:100%;
+  border:1px solid var(--border);
+  background:rgba(255, 242, 231, 0.035);
+  color:var(--text);
+  border-radius:16px;
+  padding:14px;
+  display:grid;
+  grid-template-columns:56px 1fr auto;
+  align-items:center;
+  gap:14px;
+  text-align:left;
+  cursor:pointer;
+}
+
+
+.sidebarModuleCard:hover{
+  background:rgba(255, 221, 200, 0.08);
+  border-color:rgba(255, 137, 104, 0.35);
+}
+
+
+.sidebarModuleIcon{
+  width:56px;
+  height:56px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  background:rgba(255, 137, 104, 0.12);
+  color:var(--accent);
+  font-size:22px;
+}
+
+
+.sidebarModuleTitle{
+  font-weight:700;
+  font-size:16px;
+  margin-bottom:4px;
+}
+
+
+.sidebarModuleDesc{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.35;
+}
+
+
+.sidebarModuleArrow{
+  color:var(--muted);
+}
+
+
+.sidebarScreenHeader{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding-bottom:14px;
+  border-bottom:1px solid rgba(255, 242, 231, 0.08);
+}
+
+
+.sidebarScreenHeader h3{
+  margin:4px 0 6px;
+  font-size:18px;
+}
+
+
+.sidebarScreenHeader p{
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.4;
+}
+
+
+.sidebarBackBtn{
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:rgba(255, 242, 231, 0.035);
+  color:var(--text);
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+}
+
+
+.sidebarBackBtn:hover{
+  border-color:rgba(255, 137, 104, 0.35);
+  background:rgba(255, 221, 200, 0.08);
+}
+
+
+.sidebarScreenBody{
+  padding-top:14px;
+}
+
+
+.topMetrics {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+
+.metricRingMini {
+  width: 76px;
+  display: grid;
+ grid-template-rows: 62px auto;
+  justify-items: center;
+  position: relative;
+}
+
+
+.metricRing {
+  grid-row: 1;
+  width: 62px;
+  height: 62px;
+  transform: rotate(90deg) scaleX(-1);
+  overflow: visible;
+}
+
+
+.metricRingTrack,
+.metricRingFill {
+  fill: none;
+  stroke-width: 3;
+}
+
+
+.metricRingTrack {
+  stroke: rgba(255, 242, 231, 0.08);
+}
+
+
+.metricRingFill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-dasharray: 150.796;
+  stroke-dashoffset: 150.796;
+  filter: drop-shadow(0 0 5px rgba(255, 137, 104, 0.55));
+  transition: stroke-dashoffset 850ms cubic-bezier(.16, 1, .3, 1);
+}
+
+
+.metricRingValue {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 62px;
+  height: 62px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11.5px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  pointer-events: none;
+}
+
+
+.metricLabel {
+  grid-row: 2;
+  margin-top: 7px;
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+
+/* MATRIX */
+
+.moduleProfileMatrixList{
+  margin-top: 8px;
+}
+
+
+.soleMatrixPanel{
+  width:100%;
+  max-width:950px;
+  margin:0 auto 16px;
+  padding:24px;
+  border:1px solid rgba(50,36,28,.09);
+  border-radius:28px;
+  color:var(--sole-ink);
+  position:relative;
+  overflow:hidden;
+background:
+radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
+    rgba(255,242,231,.026);
+  box-shadow:
+    0 28px 80px rgba(76,49,31,.10),
+    inset 0 1px 0 rgba(255,255,255,.82),
+    inset 0 -1px 0 rgba(255,118,95,.06);
+}
+
+
+.soleMatrixPanel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255,255,255,.70) 0%,
+      rgba(255,255,255,.22) 28%,
+      transparent 54%
+    ),
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,.48), transparent 32%);
+
+  opacity:.72;
+}
+
+.soleMatrixPanel::after{
+  content:"";
+  position:absolute;
+  inset:1px;
+  pointer-events:none;
+  border-radius:27px;
+
+  background:
+    radial-gradient(circle at 50% 50%, transparent 52%, rgba(120,70,42,.045) 100%);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.42);
+}
+
+.soleMatrixHeader {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  overflow: visible;
+}
+
+
+.soleMatrixHeader h3{
+  margin:0 0 6px;
+  font-size:24px;
+  font-weight:400;
+  letter-spacing:-.02em;
+}
+
+
+.soleMatrixHeader p{
+  margin:0;
+  max-width:560px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
+
+
+.soleMatrixConfidence{
+  color:#e18b67;
+
+  border:1px solid rgba(225,139,103,.18);
+  background:rgba(225,139,103,.08);
+
+  border-radius:999px;
+  padding:8px 14px;
+
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.soleMatrixChartWrap{
+  position:relative;
+  z-index:2;
+}
+
+
+.soleMatrixSvg{
+  width:100%;
+  display:block;
+  min-height:450px;
+  overflow:visible;
+}
+
+
+.soleMatrixPoint{
+  cursor:help;
+  transition:r .14s ease;
+}
+
+
+.soleMatrixTooltip{
+  position:absolute;
+  display:none;
+  width:min(280px, calc(100vw - 28px));
+  padding:12px 14px;
+  border-radius:15px;
+  background:rgba(18, 7, 5, .97);
+  color:var(--text);
+  font-size:13px;
+  line-height:1.42;
+  box-shadow:0 18px 44px rgba(0,0,0,.38);
+  border:1px solid rgba(255,221,200,.16);
+  pointer-events:none;
+  z-index:90;
+  max-width: 280px;
+  max-height: min(420px, calc(100vh - 160px));
+  overflow-y: auto;
+}
+
+
+.soleMatrixTooltipTitle {
+  margin-bottom: 8px;
+  color: rgba(255,159,125,.98);
+}
+
+
+.soleMatrixTooltipBody {
+  display: grid;
+  gap: 7px;
+  color: rgba(255,242,231,.76);
+  line-height: 1.35;
+}
+
+
+.soleMatrixTooltipPole strong {
+  color: rgba(255,242,231,.92);
+}
+
+
+.soleMatrixTooltip strong{
+  display:block;
+  color:var(--accent);
+  font-size:14px;
+  margin-bottom:4px;
+}
+
+
+.soleMatrixHeader {
+  z-index: 50;
+}
+
+
+.soleMatrixHeader > div:first-child {
+  z-index: 70;
+}
+
+
+.soleMatrixTitleSwitcher {
+  z-index: 100;
+}
+
+
+.soleMatrixSwitcherMenu {
+  z-index: 9999;
+}
+
+
+.soleMatrixAxisLabel {
+  cursor: help;
+}
+
+
+.soleMatrixAxisLabel text {
+  pointer-events: auto;
+}
+
+
+.soleMatrixTooltipTitle strong {
+  color: var(--accent);
+}
+
+
+.soleMatrixTooltipScore {
+  color: rgba(123,229,205,.95);
+  font-weight: 700;
+}
+
+
+.soleMatrixTitleSwitcher h3 {
+  margin: 0 0 2px;
+}
+
+
+.soleMatrixTitleSwitcherBtn{
+  appearance:none;
+  border:1px solid rgba(255,118,95,.18);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.9), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.66), rgba(255,226,217,.42));
+
+  color:var(--sole-ink);
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 12px 8px;
+  border-radius:999px;
+  font:inherit;
+  font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    0 10px 24px rgba(76,49,31,.05);
+}
+
+.soleMatrixTitleSwitcherBtn:hover{
+  border-color:rgba(255,118,95,.28);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.95), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.78), rgba(255,214,205,.52));
+}
+
+.soleMatrixTitleChevron{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,118,95,.12);
+  color:transparent;
+  position:relative;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+}
+
+.soleMatrixTitleChevron::after{
+  content:"";
+  width:6px;
+  height:6px;
+    display:grid;
+  place-items:center;
+  position:absolute;
+  border-radius:999px;
+  background:var(--sole-coral);
+  box-shadow:0 0 10px rgba(255,118,95,.35);
+}
+
+.soleMatrixSwitcherMenu {
+  position: absolute;
+  top: calc(100% + 0px);
+  left: 0;
+  z-index: 9999;
+
+  min-width: 220px;
+  padding: 7px;
+
+  border-radius: 14px;
+  border: 1px solid rgba(255,242,231,.13);
+  background: rgba(18,7,5,.98);
+  box-shadow: 0 18px 44px rgba(0,0,0,.36);
+
+  pointer-events: auto;
+}
+
+
+.soleMatrixSwitcherOption {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: rgba(255,242,231,.62);
+  border-radius: 10px;
+  padding: 10px 11px;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+
+.soleMatrixSwitcherOption:hover,
+.soleMatrixSwitcherOption.isActive {
+  color: var(--text);
+  background: rgba(255,159,125,.10);
+}
+
+
+
+/* SIDEBAR TASKS */
+
+.sidebarScreenHeaderEnhanced{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:start;
+}
+
+
+.sidebarScreenHeaderMain h3{
+  margin:4px 0 6px;
+}
+
+
+.moduleHero{
+  position:relative;
+  /* border-bottom:1px solid var(--border); */
+ /* padding:28px 0 18px; */
+  /* margin-bottom:24px; */
+}
+
+
+.moduleHeroTop{
+  position:sticky;
+  top:18px;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+
+.moduleHeroRingWrap{
+  display:flex;
+  justify-content:center;
+   margin:0 0 10px;
+}
+
+
+
+.moduleMiniRing{
+  position:relative;
+  width:128px;
+  height:128px;
+  display:grid;
+  place-items:center;
+}
+
+
+.moduleMiniRing svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+}
+
+
+.moduleRingTrack,
+.moduleRingFill{
+  fill:none;
+  stroke-width:11;
+  stroke-linecap:round;
+  transform-origin:60px 60px;
+}
+
+
+.moduleRingTrack{
+  stroke:rgba(255,242,231,.08);
+}
+
+
+.moduleRingFill{
+  stroke:var(--accent);
+  transform:rotate(-90deg);
+  stroke-dasharray:0 999;
+  transition:stroke-dasharray 1400ms cubic-bezier(.16, 1, .3, 1);
+  filter:drop-shadow(0 0 7px rgba(255,137,104,.28));
+}
+
+
+.moduleMiniRingInner{
+  position:relative;
+  width:88px;
+  height:88px;
+  border-radius:999px;
+  background:var(--bg);
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:5px;
+  line-height:1;
+}
+
+
+.moduleMiniRingInner i{
+  font-size:13px;
+  color:var(--muted);
+}
+
+
+.moduleMiniRingInner strong{
+  font-size:24px;
+}
+
+
+.moduleHeroText{
+  text-align:center;
+}
+
+
+.moduleHeroText h3{
+ margin:4px 0 4px;
+  font-size:20px;
+}
+
+
+.moduleHeroText p{
+ margin:0 auto 16px;
+  max-width:420px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
+
+
+.moduleSubviewTabs{
+   width:max-content;
+  margin:0 auto 22px;
+  padding:4px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:rgba(255,242,231,.03);
+  display:flex;
+  gap:4px;
+}
+
+
+.moduleSubviewTab{
+  /* border:1px solid var(--border);
+  background:rgba(255,242,231,.03); */
+  color:var(--muted);
+  border-radius:999px;
+  letter-spacing:.04em;
+  cursor:pointer;
+   min-width:108px;
+  border:none;
+  background:transparent;
+  padding:10px 18px;
+  font-size:12px;
+  transition:all .25s ease;
+}
+
+
+.moduleSubviewTab.active{
+  background:rgba(255,137,104,.12);
+  color:var(--text);
+  box-shadow:0 0 0 1px rgba(255,137,104,.18) inset;
+}
+
+
+[data-progress-card],
+.moduleSubviewTab{
+  position:relative;
+}
+
+
+.moduleCalibrationList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+
+.moduleCalibrationSectionEyebrow {
+  margin: 18px 0 4px;
+}
+
+
+.moduleCalibrationTaskCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  min-height: 72px;
+  padding: 12px 14px;
+
+  border-radius: 18px;
+  border: 1px solid rgba(255, 242, 231, 0.08);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 242, 231, 0.035),
+      rgba(255, 242, 231, 0.018)
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 10px 34px rgba(0,0,0,.12);
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+
+.moduleCalibrationTaskCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,159,125,.22);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 242, 231, 0.05),
+      rgba(255, 242, 231, 0.022)
+    );
+}
+
+
+.moduleCalibrationTaskMain {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+
+.moduleCalibrationTaskIcon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 14px;
+  color: rgba(255,159,125,.95);
+  background: rgba(255,159,125,.11);
+}
+
+
+.moduleCalibrationTaskText {
+  min-width: 0;
+}
+
+
+.moduleCalibrationTaskText h4 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  line-height: 1.18;
+  font-weight: 700;
+}
+
+
+.moduleCalibrationTaskText p {
+  margin: 0;
+  /* color: rgba(255,242,231,.56); */
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+
+.moduleCalibrationTaskAction {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+
+.moduleCalibrationTaskStart {
+  border: 1px solid rgba(255,159,125,.45);
+  color: rgba(255,159,125,.98);
+  background: rgba(255,159,125,.07);
+
+  border-radius: 999px;
+  padding: 6px 14px;
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+.moduleCalibrationTaskStart:hover {
+  background: rgba(255,159,125,.14);
+}
+
+
+.moduleCalibrationTaskArrow {
+  color: rgba(255,242,231,.72);
+  font-size: 24px;
+  line-height: 1;
+}
+
+
+.moduleCalibrationTaskTick {
+  width: 24px;
+  height: 24px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 999px;
+  border: 1px solid rgba(123,229,205,.45);
+  color: rgba(123,229,205,.95);
+  font-size: 14px;
+}
+
+
+.moduleCalibrationTaskCard.isCompleted {
+  opacity: .68;
+}
+
+
+.moduleCalibrationTaskCard.isCompleted h4 {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(255,242,231,.55);
+}
+
+
+.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskIcon {
+  color: rgba(123,229,205,.95);
+  background: rgba(123,229,205,.08);
+}
+
+
+.moduleCalibrationTaskCard {
+  cursor: pointer;
+}
+
+
+.moduleCalibrationTaskCard.isCompleted {
+  cursor: default;
+}
+
+/* PREMIUM MODULE MASTHEAD ------------------------------------------------ */
+
+.moduleHeroMasthead{
+  width:min(720px, 100%);
+  margin:18px auto 26px;
+  position:relative;
+}
+
+.moduleHeroMasthead .moduleHeroTop{
+  position:relative;
+  top:auto;
+  left:auto;
+  right:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.moduleHeroMain{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) 190px;
+  align-items:end;
+  gap:28px;
+}
+
+.moduleHeroCopy{
+  min-width:0;
+}
+
+.moduleHeroEyebrow{
+  margin:0 0 5px;
+  color:var(--sole-coral);
+  font-size:11px;
+  font-weight:650;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.moduleHeroCopy h2{
+  margin:0 0 9px;
+  font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
+  font-size:34px;
+  line-height:1;
+  font-weight:400;
+  color:var(--sole-ink);
+}
+
+.moduleHeroCopy p{
+  margin:0;
+  max-width:390px;
+  color:var(--sole-soft-ink);
+  font-size:13px;
+  line-height:1.45;
+}
+
+.moduleHeroProgress{
+  min-width:0;
+  padding-bottom:3px;
+}
+
+.moduleHeroProgressText{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  margin-bottom:10px;
+}
+
+.moduleHeroProgressText strong{
+  color:var(--sole-ink);
+  font-size:20px;
+  line-height:1;
+  font-weight:750;
+  font-variant-numeric:tabular-nums;
+}
+
+.moduleHeroProgressText span{
+  color:var(--sole-soft-ink);
+  font-size:13px;
+  line-height:1;
+}
+
+.moduleHeroProgressBar{
+  width:100%;
+  height:7px;
+  border-radius:999px;
+  background:rgba(25,24,23,.08);
+  overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.58);
+}
+
+.moduleHeroProgressBar i{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg, #ff725b, #ff957c);
+  box-shadow:0 0 12px rgba(255,114,91,.20);
+}
+
+/* Attraction uses the warmer gold identity from its progressStat */
+.moduleHeroMasthead[data-module-kind="attraction"] .moduleHeroEyebrow{
+  color:#d98d28;
+}
+
+.moduleHeroMasthead[data-module-kind="attraction"] .moduleHeroProgressBar i{
+  background:linear-gradient(90deg, #ffb347, #ffc66f);
+  box-shadow:0 0 12px rgba(255,179,71,.22);
+}
+
+@media (max-width:760px){
+  .moduleHeroMain{
+    grid-template-columns:1fr;
+    gap:16px;
+  }
+
+  .moduleHeroProgress{
+    max-width:230px;
+  }
+}
+
+
+
+
+.soleMatrixPanel.isUpdating .soleMatrixConfidence {
+  border-color: rgba(255,159,125,.36);
+  color: rgba(255,159,125,.98);
+  box-shadow: 0 0 18px rgba(255,159,125,.12);
+}
+
+
+.soleMatrixPanel.isUpdating .soleMatrixChartWrap {
+  filter: drop-shadow(0 0 14px rgba(255,159,125,.10));
+}
+
+
+.soleMatrixEyebrowRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+
+.soleMatrixTitleSwitcher {
+  position: relative;
+  display: inline-block;
+  z-index: 80;
+}
+
+
+.soleMatrixTitleSwitcher h3 {
+  margin: 0 0 6px;
+}
+
+
+
+
+
+.soleMatrixSwitcherOption {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: rgba(255,242,231,.62);
+  border-radius: 10px;
+  padding: 10px 11px;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+
+.soleMatrixSwitcherOption:hover,
+.soleMatrixSwitcherOption.isActive {
+  color: var(--text);
+  background: rgba(255,159,125,.10);
+}
+

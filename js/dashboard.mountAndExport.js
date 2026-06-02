@@ -63,6 +63,239 @@ async function mountWelcomeDashboard({
     );
   }
 }
+function getRankingListValues(listEl) {
+  return Array.from(listEl.querySelectorAll(".quizRankingItem"))
+    .map(item => item.dataset.rankingValue)
+    .filter(Boolean);
+}
+
+function updateRankingIndexes(listEl) {
+  const items = Array.from(listEl.querySelectorAll(".quizRankingItem"));
+
+  items.forEach((item, index) => {
+    const indexEl = item.querySelector(".quizRankingIndex");
+    if (indexEl) indexEl.textContent = String(index + 1);
+
+    const upBtn = item.querySelector('[data-ranking-move="up"]');
+    const downBtn = item.querySelector('[data-ranking-move="down"]');
+
+    if (upBtn) upBtn.disabled = index === 0;
+    if (downBtn) downBtn.disabled = index === items.length - 1;
+  });
+}
+
+function getRankingAnswer(question, orderedValues) {
+  const options = question.config?.options || [];
+
+  return {
+    orderedValues,
+    orderedLabels: orderedValues.map(value => {
+      const option = options.find(item => item.value === value);
+      return option?.label || value;
+    })
+  };
+}
+
+function getDragAfterElement(container, y) {
+  const draggedItem = container.querySelector(".quizRankingItem.isDragging");
+
+  if (!draggedItem) return null;
+
+  const draggedBox = draggedItem.getBoundingClientRect();
+  const draggingUp = y < draggedBox.top + draggedBox.height / 2;
+
+  const draggableElements = [
+    ...container.querySelectorAll(".quizRankingItem:not(.isDragging)")
+  ];
+
+  return draggableElements.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect();
+
+      const triggerPoint = draggingUp
+        ? box.top + box.height * 0.85
+        : box.top + box.height * 0.1;
+
+      const offset = y - triggerPoint;
+
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      }
+
+      return closest;
+    },
+    { offset: Number.NEGATIVE_INFINITY, element: null }
+  ).element;
+}
+
+function animateRankingReorder(listEl, reorderFn) {
+  const items = Array.from(listEl.querySelectorAll(".quizRankingItem"));
+  const firstRects = new Map(items.map(item => [item, item.getBoundingClientRect()]));
+
+  reorderFn();
+
+  items.forEach(item => {
+    const first = firstRects.get(item);
+    const last = item.getBoundingClientRect();
+    if (!first) return;
+
+    const dy = first.top - last.top;
+    if (!dy) return;
+
+    item.style.transform = `translateY(${dy}px)`;
+
+    requestAnimationFrame(() => {
+      item.style.transition = "transform 180ms ease";
+      item.style.transform = "";
+    });
+
+    item.addEventListener("transitionend", () => {
+      item.style.transition = "";
+      item.style.transform = "";
+    }, { once: true });
+  });
+}
+
+function bindRankingQuestion({ messagesEl, sb, me, assignment }) {
+  const cardEl = messagesEl.querySelector(
+    `[data-assignment-id="${CSS.escape(assignment.id)}"]`
+  );
+
+  if (!cardEl) return;
+
+  const currentStep = Number(cardEl.dataset.currentStep || 0);
+  const question = assignment.questions?.[currentStep];
+
+  if (!question || question.type !== "ranking") return;
+
+  const listEl = cardEl.querySelector(
+    `[data-ranking-list="${CSS.escape(question.id)}"]`
+  );
+
+  const submitBtn = cardEl.querySelector(
+    `[data-assignment-submit="${CSS.escape(assignment.id)}"]`
+  );
+
+  if (!listEl) return;
+
+  async function saveCurrentRankingOrder() {
+    const orderedValues = getRankingListValues(listEl);
+    const answer = getRankingAnswer(question, orderedValues);
+    const mergedAnswers = getMergedAssignmentAnswers(me, assignment);
+
+    await saveAssignmentProgress(sb, me, assignment, {
+      currentStep,
+      answers: {
+        ...mergedAnswers,
+        [question.id]: answer
+      }
+    });
+
+    if (submitBtn) {
+      submitBtn.disabled = !canAdvanceQuestion(question, answer);
+    }
+  }
+
+  const initialAnswer = getRankingAnswer(question, getRankingListValues(listEl));
+
+  if (submitBtn) {
+    submitBtn.disabled = !canAdvanceQuestion(question, initialAnswer);
+  }
+
+  let draggedItem = null;
+  let pointerId = null;
+
+  listEl.querySelectorAll(".quizRankingItem").forEach(item => {
+    item.removeAttribute("draggable");
+
+    item.addEventListener("pointerdown", event => {
+      if (event.button !== undefined && event.button !== 0) return;
+        if (event.target.closest(".quizRankingControls")) return;
+
+      draggedItem = item;
+      pointerId = event.pointerId;
+
+      item.setPointerCapture(pointerId);
+      item.classList.add("isDragging");
+      document.body.classList.add("isRankingDragging");
+
+      event.preventDefault();
+    });
+
+item.querySelectorAll(".quizRankingBtn").forEach(btn => {
+  btn.addEventListener("click", async event => {
+    event.stopPropagation();
+
+    const direction = btn.dataset.rankingMove;
+    const row = btn.closest(".quizRankingItem");
+    if (!row) return;
+
+    animateRankingReorder(listEl, () => {
+      if (direction === "up" && row.previousElementSibling) {
+        listEl.insertBefore(row, row.previousElementSibling);
+      }
+
+      if (direction === "down" && row.nextElementSibling) {
+        listEl.insertBefore(row.nextElementSibling, row);
+      }
+    });
+
+    updateRankingIndexes(listEl);
+    await saveCurrentRankingOrder();
+  });
+});
+
+item.addEventListener("pointermove", event => {
+  if (!draggedItem || event.pointerId !== pointerId) return;
+
+  const afterElement = getDragAfterElement(listEl, event.clientY);
+  const currentNext = draggedItem.nextElementSibling;
+
+  const shouldMoveToEnd = !afterElement && currentNext;
+  const shouldMoveBefore = afterElement && afterElement !== draggedItem && afterElement !== currentNext;
+
+  if (!shouldMoveToEnd && !shouldMoveBefore) return;
+
+  animateRankingReorder(listEl, () => {
+    if (!afterElement) {
+      listEl.appendChild(draggedItem);
+    } else {
+      listEl.insertBefore(draggedItem, afterElement);
+    }
+  });
+
+  updateRankingIndexes(listEl);
+});
+
+    item.addEventListener("pointerup", async event => {
+      if (!draggedItem || event.pointerId !== pointerId) return;
+
+      draggedItem.classList.remove("isDragging");
+      document.body.classList.remove("isRankingDragging");
+
+      try {
+        draggedItem.releasePointerCapture(pointerId);
+      } catch (error) {}
+
+      draggedItem = null;
+      pointerId = null;
+
+      updateRankingIndexes(listEl);
+      await saveCurrentRankingOrder();
+    });
+
+    item.addEventListener("pointercancel", () => {
+      if (draggedItem) draggedItem.classList.remove("isDragging");
+
+      document.body.classList.remove("isRankingDragging");
+      draggedItem = null;
+      pointerId = null;
+
+      updateRankingIndexes(listEl);
+    });
+  });
+}
+
 function moveArrayItem(arr, fromIndex, toIndex) {
   const copy = [...arr];
   const [item] = copy.splice(fromIndex, 1);
@@ -122,7 +355,8 @@ async function mountSidebarDashboardScreen({
   mainEl,
   sb,
   me,
-  escapeHtml
+  escapeHtml,
+  activeAssignmentId = null
 }) {
   if (!sidebarPaneEl) return;
 
@@ -135,7 +369,7 @@ chemistry: {
   intro: "Personality analysis and compatibility assessment.",
   category: "chemistry",
   progress: 40,
-  icon: "fa-solid fa-flask",
+  icon: "fa-solid fa-circle-nodes",
   filter: item => {
     const category = String(item.meta?.category || "").toLowerCase();
     if (!category) return true;
@@ -148,7 +382,7 @@ attraction: {
   intro: "Visual preference mapping and attraction reconstruction.",
   category: "attraction",
   progress: 12,
-  icon: "fa-regular fa-eye",
+  icon: "fa-solid fa-wand-magic-sparkles",
   filter: item => {
     const category = String(item.meta?.category || "").toLowerCase();
     if (!category) return true;
@@ -156,6 +390,45 @@ attraction: {
   }
 }
 };
+
+function getQuizHeroProgress(assignment, me){
+  const totalSteps = getAssignmentStepTotal(assignment);
+  const savedResponse = getAssignmentResponse(me, assignment.id);
+
+  if (savedResponse?.completed) {
+    return {
+      currentDisplayStep: totalSteps,
+      totalSteps,
+      progressPercent: 100
+    };
+  }
+
+  const mergedAnswers = getMergedAssignmentAnswers(me, assignment);
+  const savedProgress = getAssignmentProgress(me, assignment.id);
+
+  const currentStep = Math.min(
+    savedProgress?.currentStep || 0,
+    Math.max(assignment.questions.length - 1, 0)
+  );
+
+  const completedSteps = getCompletedStepCount(
+    assignment,
+    currentStep,
+    mergedAnswers
+  );
+
+  const currentDisplayStep = Math.min(completedSteps + 1, totalSteps);
+
+  const progressPercent = totalSteps
+    ? Math.round((completedSteps / totalSteps) * 100)
+    : 0;
+
+  return {
+    currentDisplayStep,
+    totalSteps,
+    progressPercent
+  };
+}
 
   const config = screenConfig[screen];
   if (!config) return;
@@ -206,6 +479,14 @@ function getModuleHeroMeta() {
   saveStoredDashboardProgress(me, responseState.progress);
 
   const filteredAssignments = runtimeAssignments.filter(config.filter);
+
+const activeQuizAssignment = activeAssignmentId
+  ? filteredAssignments.find(item => item.id === activeAssignmentId) || null
+  : null;
+
+const activeQuizProgress = activeQuizAssignment
+  ? getQuizHeroProgress(activeQuizAssignment, me)
+  : null;
 
 async function renderModuleProfilePanel(activeMatrixId = "") {
   const isConnectionModule = screen === "chemistry";
@@ -318,7 +599,7 @@ const renderCalibrationCard = (assignment, status = "available") => {
       <div class="moduleCalibrationTaskAction">
         ${
           isCompleted
-            ? `<span class="moduleCalibrationTaskTick">✓</span>`
+            ? `<span class="moduleCalibrationTaskTick"></span>`
             : `
               <button
                 type="button"
@@ -327,7 +608,6 @@ const renderCalibrationCard = (assignment, status = "available") => {
               >
                 ${escapeHtml(actionLabel)}
               </button>
-              <span class="moduleCalibrationTaskArrow">›</span>
             `
         }
       </div>
@@ -367,7 +647,14 @@ const renderCalibrationCard = (assignment, status = "available") => {
 let activeProfileMatrixId = "";
 let profileMarkup = await renderModuleProfilePanel(activeProfileMatrixId);
 
-function renderSubviewContent() {
+async function renderSubviewContent() {
+  if (activeQuizAssignment) {
+    return await renderAssignments(me, [activeQuizAssignment], escapeHtml, {
+      adminPreview: false,
+      sb
+    });
+  }
+
   if (activeSubview === "insights") {
     return `
       <div class="insightsPanel">
@@ -430,65 +717,116 @@ return renderModuleCalibrationList();
 
 const moduleProgress = getModuleProgressPercent();
 const moduleMeta = getModuleHeroMeta();
+const subviewHtml = await renderSubviewContent();
 
 sidebarPaneEl.innerHTML = `
-<div class="moduleHero moduleHeroMasthead" data-module-kind="${escapeAttr(getModuleProgressKey())}">
-  <div class="moduleHeroTop">
-    <button class="sidebarBackBtn" type="button" data-sidebar-back>
-      <i class="fa-solid fa-arrow-left"></i>
-    </button>
-
-    <button class="sidebarInfoBtn" type="button" data-sidebar-info title="About this module">
-      <i class="fa-solid fa-info"></i>
-    </button>
-  </div>
-
-  <div class="moduleHeroMain">
-    <div class="moduleHeroCopy">
-      <div class="moduleHeroEyebrow">${escapeHtml(moduleMeta.title)}</div>
-      <h2>${escapeHtml(moduleMeta.eyebrow)}</h2>
-      <p>${escapeHtml(moduleMeta.intro)}</p>
-    </div>
-
-    <div class="moduleHeroProgress" aria-label="${escapeAttr(moduleMeta.eyebrow)} calibration progress">
-      <div class="moduleHeroProgressText">
-        <strong>${moduleProgress}%</strong>
-        <span>calibrated</span>
-      </div>
-
-      <div class="moduleHeroProgressBar">
-        <i style="width:${moduleProgress}%"></i>
-      </div>
-    </div>
-  </div>
+<div class="moduleHero">
+<div class="moduleHeroTop">
+  <button class="sidebarBackBtn" type="button" data-sidebar-back>
+    <i class="fa-solid fa-arrow-left"></i>
+  </button>
 </div>
 
-<div class="moduleSubviewTabs">
-<button
-  class="moduleSubviewTab ${activeSubview === "calibration" ? "active" : ""}"
-  data-module-subview="calibration"
-  type="button"
->
-  Calibration
-</button>
+  <div class="moduleHeroMain">
+<div class="moduleHeroCopy">
+<div class="moduleHeroEyebrow">
+  ${escapeHtml(
+    activeQuizAssignment
+      ? (screen === "chemistry" ? "Connection" : "Attraction")
+      : moduleMeta.title
+  )}
+</div>
 
-<button
-  class="moduleSubviewTab ${activeSubview === "profile" ? "active" : ""}"
-  data-module-subview="profile"
-  type="button"
->
-  Profile
-</button>
+<h2>
+  ${escapeHtml(activeQuizAssignment ? activeQuizAssignment.title : moduleMeta.eyebrow)}
+</h2>
 
+<p>
+  ${escapeHtml(activeQuizAssignment ? (activeQuizAssignment.prompt || "") : moduleMeta.intro)}
+</p>
+
+${
+  activeQuizAssignment && activeQuizProgress
+    ? `
+<div class="moduleQuizProgress">
+  <div class="quizStepMeta">
+    <span>${activeQuizProgress.currentDisplayStep} of ${activeQuizProgress.totalSteps}</span>
+    <span>${activeQuizProgress.progressPercent}%</span>
+  </div>
+
+  <div class="quizInlineProgress">
+    <div
+      class="quizInlineProgressBar"
+      style="width:${activeQuizProgress.progressPercent}%"
+    ></div>
+  </div>
+</div>
+    `
+    : `
+      <div class="moduleSubviewTabs">
+        <button
+          class="moduleSubviewTab ${activeSubview === "calibration" ? "active" : ""}"
+          data-module-subview="calibration"
+          type="button"
+        >
+          Calibration
+        </button>
+
+        <button
+          class="moduleSubviewTab ${activeSubview === "profile" ? "active" : ""}"
+          data-module-subview="profile"
+          type="button"
+        >
+          Profile
+        </button>
+      </div>
+    `
+}
+</div>
+
+<div class="moduleHeroProgressCard" aria-label="${escapeAttr(moduleMeta.eyebrow)} progress">
+  <button class="sidebarInfoBtn moduleHeroInfoBtn" type="button" data-sidebar-info title="About this module">
+    <i class="fa-solid fa-info"></i>
+  </button>
+
+  <div class="moduleMiniRing" data-module-progress="${moduleProgress}">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="moduleRingTrack" cx="60" cy="60" r="46"></circle>
+      <circle class="moduleRingFill" cx="60" cy="60" r="46"></circle>
+    </svg>
+
+    <div class="moduleMiniRingInner">
+      <strong>${moduleProgress}%</strong>
+    </div>
+  </div>
+
+  <div class="moduleHeroProgressLabel">calibrated</div>
+</div>
+  </div>
 </div>
 
 <div class="moduleSubviewContent" id="moduleSubviewContent">
-  ${renderSubviewContent()}
+  ${subviewHtml}
 </div>
 
 `;
 
 const subviewContentEl = sidebarPaneEl.querySelector("#moduleSubviewContent");
+
+subviewContentEl?.addEventListener("click", async event => {
+  const continueBtn = event.target.closest("[data-completed-quiz-continue]");
+  if (!continueBtn) return;
+
+  await mountSidebarDashboardScreen({
+    screen,
+    sidebarPaneEl,
+    mainEl,
+    sb,
+    me,
+    escapeHtml,
+    activeAssignmentId: null
+  });
+});
 
 async function renderActiveModuleAssignment(assignment) {
   subviewContentEl.innerHTML = await renderAssignments(me, [assignment], escapeHtml, {
@@ -509,6 +847,13 @@ async function renderActiveModuleAssignment(assignment) {
     }
   });
 
+  bindRankingQuestion({
+  messagesEl: sidebarPaneEl,
+  sb,
+  me,
+  assignment
+});
+
   window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
   window.soleMatrixRendering?.animateMatrices?.(sidebarPaneEl);
 }
@@ -522,7 +867,19 @@ function bindCalibrationCards() {
       if (!assignment) return;
       if (getAssignmentResponse(me, assignment.id)?.completed) return;
 
-      await renderActiveModuleAssignment(assignment);
+activeAssignmentId = assignment.id;
+activeSubview = "calibration";
+
+await mountSidebarDashboardScreen({
+  screen,
+  sidebarPaneEl,
+  mainEl,
+  sb,
+  me,
+  escapeHtml,
+  activeAssignmentId: assignment.id
+});
+
     });
   });
 }
@@ -565,6 +922,15 @@ function bindMatrixSwitcher() {
   );
 }
 
+function getUserScoreAdjustments(me) {
+  return {
+    connectionDelta: Number(me?.score_connection_delta || 0),
+    attractionDelta: Number(me?.score_attraction_delta || 0),
+    confidenceDelta: Number(me?.score_confidence_delta || 0),
+    candidatePoolDelta: Number(me?.score_candidate_pool_delta || 0)
+  };
+}
+
 function bindInsightCards() {
   subviewContentEl.querySelectorAll("[data-insight-card]").forEach(card => {
     card.addEventListener("click", async () => {
@@ -585,91 +951,97 @@ bindCalibrationCards();
 bindMatrixSwitcher();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
 
-sidebarPaneEl.querySelectorAll("[data-module-subview]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    activeSubview = btn.dataset.moduleSubview;
 
-    sidebarPaneEl.querySelectorAll("[data-module-subview]").forEach(el => {
-      el.classList.toggle("active", el.dataset.moduleSubview === activeSubview);
-    });
-
-subviewContentEl.innerHTML = renderSubviewContent();
-
-bindInsightCards();
-bindCalibrationCards();
-bindMatrixSwitcher();
-window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
-
-    if (activeSubview === "calibration") {
-      filteredAssignments.forEach(assignment => {
-        initAssignmentInteractions({
-          assignment,
-          mainEl,
-          messagesEl: sidebarPaneEl,
-          sb,
-          me,
-          escapeHtml,
-          adminPreview: false,
-          onRefresh: () => mountSidebarDashboardScreen({
-            screen,
-            sidebarPaneEl,
-            mainEl,
-            sb,
-            me,
-            escapeHtml
-          })
-        });
-      });
-    }
-  });
-});
-
-// const moduleRing = sidebarPaneEl.querySelector(".moduleRingFill");
-// const moduleRingWrap = sidebarPaneEl.querySelector(".moduleMiniRing");
-
-// if (moduleRing && moduleRingWrap) {
-//   const radius = Number(moduleRing.getAttribute("r")) || 46;
-//   const circumference = 2 * Math.PI * radius;
-//   const progress = Number(moduleRingWrap.dataset.moduleProgress || 0);
-//   const clamped = Math.max(0, Math.min(100, progress));
-//   const filled = (clamped / 100) * circumference;
-
-//   moduleRing.style.strokeDasharray = `0 ${circumference}`;
-
-//   requestAnimationFrame(() => {
-//     requestAnimationFrame(() => {
-//       moduleRing.style.strokeDasharray = `${filled} ${circumference - filled}`;
-//     });
-//   });
-// }
-
-sidebarPaneEl.querySelector("[data-sidebar-info]")?.addEventListener("click", () => {
-  alert(`${config.title}\n\n${config.intro}`);
-});
-
-  sidebarPaneEl.querySelector("[data-sidebar-back]")?.addEventListener("click", () => {
-    window.sidebarDashboardUI?.renderMenu?.();
-  });
-
-filteredAssignments.forEach(assignment => {
+if (activeQuizAssignment) {
   initAssignmentInteractions({
-    assignment,
+    assignment: activeQuizAssignment,
     mainEl,
     messagesEl: sidebarPaneEl,
     sb,
     me,
     escapeHtml,
     adminPreview: false,
-    onRefresh: () => mountSidebarDashboardScreen({
+    onRefresh: async () => {
+      await mountSidebarDashboardScreen({
+        screen,
+        sidebarPaneEl,
+        mainEl,
+        sb,
+        me,
+        escapeHtml,
+        activeAssignmentId: activeQuizAssignment.id
+      });
+    }
+  });
+
+  bindRankingQuestion({
+    messagesEl: sidebarPaneEl,
+    sb,
+    me,
+    assignment: activeQuizAssignment
+  });
+}
+
+sidebarPaneEl.querySelectorAll("[data-module-subview]").forEach(btn => {
+btn.addEventListener("click", async () => {
+    activeSubview = btn.dataset.moduleSubview;
+
+    sidebarPaneEl.querySelectorAll("[data-module-subview]").forEach(el => {
+      el.classList.toggle("active", el.dataset.moduleSubview === activeSubview);
+    });
+
+subviewContentEl.innerHTML = await renderSubviewContent();
+
+bindInsightCards();
+bindCalibrationCards();
+bindMatrixSwitcher();
+window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+
+
+
+  });
+});
+
+const moduleRing = sidebarPaneEl.querySelector(".moduleMiniRing .moduleRingFill");
+const moduleRingWrap = sidebarPaneEl.querySelector(".moduleMiniRing");
+
+if (moduleRing && moduleRingWrap) {
+  const radius = Number(moduleRing.getAttribute("r")) || 46;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Number(moduleRingWrap.dataset.moduleProgress || 0);
+  const clamped = Math.max(0, Math.min(100, progress));
+  const filled = (clamped / 100) * circumference;
+
+  moduleRing.style.strokeDasharray = `0 ${circumference}`;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      moduleRing.style.strokeDasharray = `${filled} ${circumference - filled}`;
+    });
+  });
+}
+
+sidebarPaneEl.querySelector("[data-sidebar-info]")?.addEventListener("click", () => {
+  alert(`${config.title}\n\n${config.intro}`);
+});
+
+sidebarPaneEl.querySelector("[data-sidebar-back]")?.addEventListener("click", async () => {
+  if (activeQuizAssignment) {
+    await mountSidebarDashboardScreen({
       screen,
       sidebarPaneEl,
       mainEl,
       sb,
       me,
-      escapeHtml
-    })
-  });
+      escapeHtml,
+      activeAssignmentId: null
+    });
+    return;
+  }
+
+  window.sidebarDashboardUI?.renderMenu?.();
 });
+
 }
 
 async function mountAdminUserTasks({

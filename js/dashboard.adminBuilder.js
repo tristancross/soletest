@@ -309,7 +309,7 @@ const isFreeText = question.type === "freeText";
             <input
               type="number"
               min="1"
-              max="5000"
+              max="4000"
               value="${escapeAttr(question.freeTextMaxLength ?? 500)}"
               data-builder-field="freeTextMaxLength"
               data-builder-question-id="${escapeAttr(question.id)}"
@@ -1047,6 +1047,85 @@ const progressPercent = assignment.questions.length
 
 const isFinalStep = currentStep === assignment.questions.length - 1;
 
+function updateRankingAnswerFromDom(questionId) {
+  const list = messagesEl.querySelector(`[data-ranking-list="${questionId}"]`);
+  if (!list) return;
+
+  const orderedValues = [...list.querySelectorAll("[data-ranking-value]")]
+    .map(row => row.dataset.rankingValue)
+    .filter(Boolean);
+
+  answers[questionId] = { orderedValues };
+
+  list.querySelectorAll(".quizRankingItem").forEach((row, index) => {
+    const indexEl = row.querySelector(".quizRankingIndex");
+    if (indexEl) indexEl.textContent = String(index + 1);
+
+    const upBtn = row.querySelector('[data-ranking-move="up"]');
+    const downBtn = row.querySelector('[data-ranking-move="down"]');
+
+    if (upBtn) upBtn.disabled = index === 0;
+    if (downBtn) downBtn.disabled = index === list.children.length - 1;
+  });
+
+  updateSubmitState();
+}
+
+messagesEl.querySelectorAll(".quizRankingList").forEach(list => {
+  let draggedRow = null;
+
+  list.querySelectorAll(".quizRankingItem").forEach(row => {
+    row.addEventListener("dragstart", event => {
+      draggedRow = row;
+      row.classList.add("isDragging");
+
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", row.dataset.rankingValue || "");
+    });
+
+    row.addEventListener("dragend", () => {
+      row.classList.remove("isDragging");
+      list.querySelectorAll(".quizRankingItem").forEach(item => {
+        item.classList.remove("isDropTarget");
+      });
+
+      draggedRow = null;
+      updateRankingAnswerFromDom(list.dataset.rankingList);
+    });
+
+    row.addEventListener("dragover", event => {
+      event.preventDefault();
+
+      if (!draggedRow || draggedRow === row) return;
+
+      row.classList.add("isDropTarget");
+
+      const rect = row.getBoundingClientRect();
+      const isAfter = event.clientY > rect.top + rect.height / 2;
+
+      if (isAfter) {
+        row.after(draggedRow);
+      } else {
+        row.before(draggedRow);
+      }
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("isDropTarget");
+    });
+
+    row.addEventListener("drop", event => {
+      event.preventDefault();
+
+      list.querySelectorAll(".quizRankingItem").forEach(item => {
+        item.classList.remove("isDropTarget");
+      });
+
+      updateRankingAnswerFromDom(list.dataset.rankingList);
+    });
+  });
+});
+
   function syncSubmitState() {
    submitBtn.disabled = !canAdvanceQuestion(currentQuestion, answers[currentQuestion.id]);
   }
@@ -1217,10 +1296,11 @@ const isFinalStep = currentStep === assignment.questions.length - 1;
           .filter(Boolean);
 
         listEl.innerHTML = orderedOptions.map((option, index) => `
-          <div class="quizRankingItem" data-ranking-value="${escapeAttr(option.value)}">
-            <div class="quizRankingIndex">${index + 1}</div>
-            <div class="quizRankingText">${escapeHtml(option.label)}</div>
-            <div class="quizRankingControls">
+<div class="quizRankingItem" data-ranking-value="${escapeAttr(option.value)}">
+  <div class="quizRankingHandle" aria-hidden="true"></div>
+  <div class="quizRankingIndex">${index + 1}</div>
+  <div class="quizRankingText">${escapeHtml(option.label)}</div>
+  <div class="quizRankingControls">
               <button
                 type="button"
                 class="quizRankingBtn"
@@ -1276,7 +1356,7 @@ const isFinalStep = currentStep === assignment.questions.length - 1;
                 orderedLabels
               };
 
-              rerenderRanking();
+              // rerenderRanking();
               syncSubmitState();
             });
           });
@@ -1762,21 +1842,40 @@ await clearAssignmentProgress(sb, me, assignment.id);
 const sectionEl = cardEl.closest(".quizPanel");
 
 if (sectionEl) {
-sectionEl.outerHTML = renderCompletedSummary(
-  assignment,
-  savedResponsePayload,
-  escapeHtml,
-{
-  adminPreview: false,
-  isPartial: false,
-  matrixScores: afterMatrixState?.scores || null,
-  matrixConfidence: afterMatrixState?.confidence ?? null,
-  matrixStartScores: beforeMatrixState?.scores || null,
-  matrixSiblingStates
-}
-);
+  sectionEl.outerHTML = renderCompletedSummary(
+    assignment,
+    savedResponsePayload,
+    escapeHtml,
+    {
+      adminPreview: false,
+      isPartial: false,
+      matrixScores: afterMatrixState?.scores || null,
+      matrixConfidence: afterMatrixState?.confidence ?? null,
+      matrixStartScores: beforeMatrixState?.scores || null,
+      matrixSiblingStates
+    }
+  );
 
-window.soleMatrixRendering?.bindTooltips?.(messagesEl);
+  const finalTotalSteps = getAssignmentStepTotal(assignment);
+  const heroProgressEl = messagesEl.querySelector(".moduleQuizProgress");
+
+  if (heroProgressEl) {
+    const heroMetaEl = heroProgressEl.querySelector(".quizStepMeta");
+    const heroProgressBarEl = heroProgressEl.querySelector(".quizInlineProgressBar");
+
+    if (heroMetaEl) {
+      heroMetaEl.innerHTML = `
+        <span>${finalTotalSteps} of ${finalTotalSteps}</span>
+        <span>100%</span>
+      `;
+    }
+
+    if (heroProgressBarEl) {
+      heroProgressBarEl.style.width = "100%";
+    }
+  }
+
+  window.soleMatrixRendering?.bindTooltips?.(messagesEl);
 
 window.soleMatrixRendering?.bindSwitchers?.({
   rootEl: messagesEl,
@@ -1796,6 +1895,33 @@ setTimeout(() => {
 await updateSidebarDailyTasks?.();
 await updateInsightNotificationDots?.();
   });
+
+  const backBtn = cardEl.querySelector(`[data-assignment-back="${assignment.id}"]`);
+
+backBtn?.addEventListener("click", async () => {
+  if (currentStep <= 0) return;
+
+  await saveAssignmentProgress(sb, me, assignment, {
+    answers,
+    currentStep: currentStep - 1
+  });
+
+  if (onRefresh) {
+    await onRefresh();
+    return;
+  }
+
+  await refreshWelcomeDashboard({
+    mainEl,
+    messagesEl,
+    sb,
+    me,
+    escapeHtml,
+    animateMetrics: false,
+    adminPreview: false,
+    adminHome: false
+  });
+});
 }
 
 function getQuestionStepCount(question) {

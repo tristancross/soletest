@@ -1,5 +1,5 @@
 let lastRenderedMetricSnapshot = null;
-const DEFAULT_CANDIDATE_POOL = 20341;
+const DEFAULT_CANDIDATE_POOL = 102437
 
 const ADMIN_BUILDER_MAX_OPTIONS = 10;
 const ADMIN_BUILDER_MIN_OPTIONS = 2;

@@ -32,12 +32,10 @@ if (window.visualViewport) {
 
   me = profile;
   applyMe();
-  setupSidebarDashboardScreens();
-  initAccountTray();
-updateSidebarProgress({
-  chemistry: 40,
-  attraction: 12,
-  candidates: 98341,
+setupSidebarDashboardScreens();
+initAccountTray();
+
+await refreshSidebarProgressFromScoring({
   animateFromZero: true
 });
 

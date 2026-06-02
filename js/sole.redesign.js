@@ -143,7 +143,8 @@ tiles.innerHTML = `
     <article class="soleModuleTile connectionCard" data-kind="connection">
     <div class="soleModuleTileHeader">
       <h4>
-        <i class="fa-regular fa-heart"></i>
+
+         <i class="fa-solid fa-circle-nodes"></i>
         <span>Connection</span>
       </h4>
     </div>
@@ -183,17 +184,32 @@ function enhanceDashboard(){
     sidebarPane.querySelector(".soleDailyHero")?.remove();
     sidebarPane.querySelector(".soleModuleTiles")?.remove();
     sidebarPane.querySelector(".soleDashboardGreeting")?.remove();
-    settleProgressPanel();
     return;
   }
 
   enhanceGreeting(sidebarPane);
   insertDailyHero(sidebarPane);
   insertModuleTiles(sidebarPane);
-  settleProgressPanel();
+}
+
+function getRailActionForModuleScreen(screen){
+  if (screen === "chemistry") return "connection";
+  if (screen === "connection") return "connection";
+  if (screen === "attraction") return "attraction";
+  return null;
+}
+
+function setActiveRailItem(action){
+  if (!action) return;
+
+  qsa(".soleRailItem").forEach(btn => {
+    btn.classList.toggle("isActive", btn.dataset.soleRail === action);
+  });
 }
 
 async function openModule(screen){
+setActiveRailItem(getRailActionForModuleScreen(screen));
+
   const sidebarPaneEl = qs(".sidebarNavPane");
   if (!sidebarPaneEl || !window.dashboardUI?.mountSidebarDashboardScreen) return;
 
@@ -210,8 +226,6 @@ async function openModule(screen){
     escapeHtml
   });
 
-  settleProgressPanel();
-
   await window.updateInsightNotificationDots?.();
 }
 
@@ -219,7 +233,7 @@ async function openModule(screen){
     const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
     if (!action) return;
 
-    qsa(".soleRailItem").forEach(btn => btn.classList.toggle("isActive", btn.dataset.soleRail === action));
+   setActiveRailItem(action);
 
     if (action === "home") {
       window.sidebarDashboardUI?.renderMenu?.();

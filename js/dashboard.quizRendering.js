@@ -74,11 +74,11 @@ if (question.type === "scale7") {
       <div class="quizLabel">${escapeHtml(question.prompt)}</div>
 
       <div class="quizScaleShell">
-        <div class="quizScaleLabels quizScaleLabels7">
-          <span>${escapeHtml(minLabel)}</span>
-          <span>${escapeHtml(midLabel)}</span>
-          <span>${escapeHtml(maxLabel)}</span>
-        </div>
+<div class="quizScaleRow">
+
+  <div class="quizScaleEdgeLabel">
+    ${escapeHtml(minLabel)}
+  </div>
 
         <div class="quizScale7" role="radiogroup" aria-label="${escapeAttr(question.prompt || "Scale question")}">
           ${Array.from({ length: 7 }, (_, i) => {
@@ -98,6 +98,11 @@ if (question.type === "scale7") {
           }).join("")}
         </div>
 
+          <div class="quizScaleEdgeLabel">
+    ${escapeHtml(maxLabel)}
+  </div>
+
+</div>
 
       </div>
     </div>
@@ -144,53 +149,52 @@ if (question.type === "scale7") {
     `;
   }
 
-  if (question.type === "ranking") {
-    const options = question.config.options || [];
-    const savedOrder = Array.isArray(savedValue?.orderedValues)
-      ? savedValue.orderedValues
-      : options.map(option => option.value);
+if (question.type === "ranking") {
+  const options = question.config.options || [];
 
-    const orderedOptions = savedOrder
-      .map(value => options.find(option => option.value === value))
-      .filter(Boolean);
+  const savedOrder = Array.isArray(savedValue?.orderedValues)
+    ? savedValue.orderedValues
+    : options.map(option => option.value);
 
-    return `
-      <div class="quizBlock" data-question-id="${escapeAttr(question.id)}" data-question-type="ranking">
-        <div class="quizLabel">${escapeHtml(question.prompt)}</div>
+  const savedSet = new Set(savedOrder);
 
-        <div class="quizRankingList" data-ranking-list="${escapeAttr(question.id)}">
-          ${orderedOptions.map((option, index) => `
-            <div class="quizRankingItem" data-ranking-value="${escapeAttr(option.value)}">
-              <div class="quizRankingIndex">${index + 1}</div>
-              <div class="quizRankingText">${escapeHtml(option.label)}</div>
-              <div class="quizRankingControls">
-                <button
-                  type="button"
-                  class="quizRankingBtn"
-                  data-ranking-move="up"
-                  data-question-id="${escapeAttr(question.id)}"
-                  data-value="${escapeAttr(option.value)}"
-                  ${index === 0 ? "disabled" : ""}
-                >
-                   ↑
-                </button>
-                <button
-                  type="button"
-                  class="quizRankingBtn"
-                  data-ranking-move="down"
-                  data-question-id="${escapeAttr(question.id)}"
-                  data-value="${escapeAttr(option.value)}"
-                  ${index === orderedOptions.length - 1 ? "disabled" : ""}
-                >
-                  ↓
-                </button>
-              </div>
-            </div>
-          `).join("")}
-        </div>
+  const fullOrder = [
+    ...savedOrder.filter(value =>
+      options.some(option => option.value === value)
+    ),
+    ...options
+      .map(option => option.value)
+      .filter(value => !savedSet.has(value))
+  ];
+
+  const orderedOptions = fullOrder
+    .map(value => options.find(option => option.value === value))
+    .filter(Boolean);
+
+  return `
+    <div class="quizBlock" data-question-id="${escapeAttr(question.id)}" data-question-type="ranking">
+      <div class="quizLabel">${escapeHtml(question.prompt)}</div>
+
+      <div class="quizRankingList" data-ranking-list="${escapeAttr(question.id)}">
+        ${orderedOptions.map((option, index) => `
+          <div
+            class="quizRankingItem"
+            data-ranking-value="${escapeAttr(option.value)}"
+            draggable="true"
+          >
+<div class="quizRankingHandle" aria-hidden="true"></div>
+
+<div class="quizRankingIndex">${index + 1}</div>
+
+<div class="quizRankingText">
+  ${escapeHtml(option.label)}
+</div>
+          </div>
+        `).join("")}
       </div>
-    `;
-  }
+    </div>
+  `;
+}
 
   if (question.type === "imageChoice") {
     const selectedValue = savedValue?.value || "";
@@ -563,25 +567,30 @@ const matrixMarkup = window.soleMatrixRendering
   : "";
 
 return `
-  <section class="quizPanel" aria-label="${escapeAttr(assignment.title)}">
-    <div class="quizPanelHeader">
-      <div class="dashboardEyebrow">${escapeHtml(eyebrow)}</div>
-      <h3>${escapeHtml(assignment.title)}</h3>
-      <p class="quizIntro">${escapeHtml(assignment.description || assignment.prompt || "")}</p>
-    </div>
+<section class="quizPanel quizPanelComplete" aria-label="${escapeAttr(assignment.title)}">
 
     <div class="quizCompleteCard">
       ${adminPreview ? lines.join("") : ""}
 
       ${!adminPreview ? `
         <div class="quizCompleteLine">
-          Signal calibration complete.
+          Calibration complete.
         </div>
       ` : ""}
 
-      <div class="quizCompleteHint">
-        ${escapeHtml(hint)}
-      </div>
+<div class="quizCompleteHint">
+  ${escapeHtml(hint)}
+</div>
+
+<div class="quizActions quizCompleteActions">
+  <button
+    type="button"
+    class="quizSubmitBtn"
+    data-completed-quiz-continue
+  >
+    Continue
+  </button>
+</div>
     </div>
 
     ${matrixMarkup}
@@ -673,23 +682,6 @@ const isFinalStep = currentStep === assignment.questions.length - 1;
 
   return `
     <section class="quizPanel" aria-label="${escapeAttr(assignment.title)}">
-      <div class="quizPanelHeader">
-        <h3>${escapeHtml(assignment.title)}</h3>
-        <p class="quizIntro">${escapeHtml(assignment.prompt || "")}</p>
-      </div>
-
-<div class="quizStepMeta">
-  <span>${currentDisplayStep} of ${totalSteps}</span>
-  <span>${progressPercent}%</span>
-</div>
-
-      <div class="quizInlineProgress">
-        <div
-          class="quizInlineProgressBar"
-          style="width:${progressPercent}%"
-        ></div>
-      </div>
-
 
       <div
         class="quizCard quizCardStage"
@@ -700,16 +692,25 @@ const isFinalStep = currentStep === assignment.questions.length - 1;
 
         ${renderQuestionInput(currentQuestion, mergedAnswers, escapeHtml)}
 
-       <div class="quizActions${currentQuestion?.type === "swipeDeck" ? " isHidden" : ""}">
-          <button
-            type="button"
-            class="quizSubmitBtn"
-            data-assignment-submit="${escapeAttr(assignment.id)}"
-            disabled
-          >
-            ${escapeHtml(buttonLabel)}
-          </button>
-        </div>
+<div class="quizActions${currentQuestion?.type === "swipeDeck" ? " isHidden" : ""}">
+  <button
+    type="button"
+    class="quizBackBtn"
+    data-assignment-back="${escapeAttr(assignment.id)}"
+    ${currentStep === 0 ? "disabled" : ""}
+  >
+    Back
+  </button>
+
+  <button
+    type="button"
+    class="quizSubmitBtn"
+    data-assignment-submit="${escapeAttr(assignment.id)}"
+    disabled
+  >
+    ${escapeHtml(buttonLabel)}
+  </button>
+</div>
       </div>
     </section>
   `;

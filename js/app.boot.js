@@ -36,6 +36,95 @@ function applyMe(){
   adminControls.hidden = true;
 }
 
+async function refreshSidebarProgressFromScoring({
+  animateFromZero = false
+} = {}) {
+  const startingCandidates =
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+
+    
+
+    try {
+  if (me?.id) {
+    const { data: freshProfile, error: freshProfileError } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", me.id)
+      .maybeSingle();
+
+    if (freshProfileError) {
+      console.warn("Could not refresh profile for scoring", freshProfileError);
+    } else if (freshProfile) {
+      me = freshProfile;
+      applyMe();
+    }
+  }
+} catch (error) {
+  console.warn("Profile refresh failed during sidebar scoring", error);
+}
+
+  if (!me || !sb || !window.soleExperimentScoring) {
+    updateSidebarProgress({
+      connection: 0,
+      attraction: 0,
+      confidence: 0,
+      candidates: startingCandidates,
+      totalCandidates: startingCandidates,
+      animateFromZero
+    });
+    return;
+  }
+
+let messageCount = 0;
+let messageStats = {
+  count: 0,
+  totalChars: 0,
+  averageChars: 0
+};
+let runtimeAssignments = [];
+
+
+try {
+  messageStats = await window.getDailyMessageStats(
+    sb,
+    me,
+    me?.score_baseline_set_at || null
+  );
+
+  messageCount = messageStats.count;
+} catch (error) {
+  console.warn("Could not load daily message stats for sidebar scoring", error);
+}
+
+try {
+  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me);
+} catch (error) {
+  console.warn("Could not load assignments for sidebar scoring", error);
+}
+
+try {
+  const responseState = await loadQuizResponsesFromSupabase(sb, me);
+
+  saveStoredDashboardResponses(me, responseState.responses);
+  saveStoredDashboardProgress(me, responseState.progress);
+} catch (error) {
+  console.warn("Could not load quiz responses for sidebar scoring", error);
+}
+
+const dash = getDashboardState(me, messageCount, runtimeAssignments, messageStats);
+
+  updateSidebarProgress({
+    connection: dash.connection,
+    attraction: dash.attraction,
+    confidence: dash.confidence,
+    candidates: dash.remainingCandidates,
+    totalCandidates: startingCandidates,
+    startingCandidates,
+    animateFromZero
+  });
+}
+
 function setupSidebarDashboardScreens() {
   const sidebarPaneEl = document.querySelector(".sidebarNavPane");
   if (!sidebarPaneEl) return;
@@ -48,18 +137,12 @@ window.sidebarDashboardUI = {
     bindSidebarModuleButtons();
 bindProgressHoverLinks();
 
-    requestAnimationFrame(() => {
-updateSidebarProgress({
-  connection: 78,
-  attraction: 65,
-  confidence: 82,
-  candidates: 98341,
-  totalCandidates: 102341
-});
+requestAnimationFrame(async () => {
+  await refreshSidebarProgressFromScoring();
 
-updateSidebarDailyTasks();
-updateInsightNotificationDots();
-    });
+  updateSidebarDailyTasks();
+  updateInsightNotificationDots();
+});
   }
 };
 
@@ -71,6 +154,12 @@ updateInsightNotificationDots();
           const screen = btn.dataset.dashboardScreen;
 
 if (screen === "chemistry" || screen === "attraction") {
+  const railAction = screen === "chemistry" ? "connection" : "attraction";
+
+  document.querySelectorAll(".soleRailItem").forEach(btn => {
+    btn.classList.toggle("isActive", btn.dataset.soleRail === railAction);
+  });
+
   await window.dashboardUI.mountSidebarDashboardScreen({
     screen,
     sidebarPaneEl,

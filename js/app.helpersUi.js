@@ -75,6 +75,72 @@ function threadFilter(aId, bId){
   return `and(or(and(sender_id.eq.${aId},recipient_id.eq.${bId}),and(sender_id.eq.${bId},recipient_id.eq.${aId})))`;
 }
 
+function containsBlockedLink(text = "") {
+  const value = String(text).trim();
+
+  // Catches:
+  // https://example.com
+  // http://example.com
+  // www.example.com
+  // example.com
+  // sub.example.co.uk/path
+  // example dot com
+  const linkPattern =
+    /(?:https?:\/\/|www\.|[a-z0-9-]+\s*(?:\.|\s+dot\s+)\s*(?:com|co|uk|net|org|io|ai|app|dev|gg|me|info|biz|xyz|site|online|shop|store|tv|ly|link|co\.uk)\b)/i;
+
+  return linkPattern.test(value);
+}
+
+function showSoleNotice(message, {
+  title = "Signal protected",
+  type = "warning",
+  duration = 4200
+} = {}) {
+  const existing = document.querySelector(".soleNoticeToast");
+  existing?.remove();
+
+  const notice = document.createElement("div");
+  notice.className = `soleNoticeToast soleNoticeToast-${type}`;
+  notice.setAttribute("role", "status");
+  notice.setAttribute("aria-live", "polite");
+
+  notice.innerHTML = `
+    <div class="soleNoticeIcon" aria-hidden="true">
+      <span></span>
+    </div>
+
+    <div class="soleNoticeText">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(message)}</p>
+    </div>
+
+    <button type="button" class="soleNoticeClose" aria-label="Dismiss notice">
+      ×
+    </button>
+  `;
+
+  document.body.appendChild(notice);
+
+  requestAnimationFrame(() => {
+    notice.classList.add("isVisible");
+  });
+
+  const closeNotice = () => {
+    notice.classList.remove("isVisible");
+    notice.classList.add("isLeaving");
+
+    window.setTimeout(() => {
+      notice.remove();
+    }, 220);
+  };
+
+  notice.querySelector(".soleNoticeClose")?.addEventListener("click", closeNotice);
+
+  if (duration) {
+    window.setTimeout(closeNotice, duration);
+  }
+}
+
 function setProgressRing(circleEl, percent, animateFromZero = false) {
   if (!circleEl) return;
 
@@ -223,13 +289,17 @@ function fitAllProgressDialValues() {
     .forEach(fitProgressDialValue);
 }
 
+function formatHudPercent(value) {
+  return `${Math.max(0, Math.min(100, Number(value) || 0)).toFixed(1)}%`;
+}
+
 function updateSidebarProgress({
-  connection = 78,
+  connection = 0,
   chemistry,
-  attraction = 65,
-  confidence = 82,
-  candidates = 98341,
-  startingCandidates = 102341,
+  attraction = 0,
+  confidence = 0,
+  candidates = 102437,
+  startingCandidates = 102437,
   totalCandidates,
   animateFromZero = false
 } = {}) {
@@ -289,10 +359,10 @@ setHudDial(
   const candidateEl = document.getElementById("candidatePoolValue");
   const candidateCountEl = document.getElementById("candidatePoolCount");
 
-  if (connectionEl) connectionEl.textContent = `${Math.round(connectionValue)}%`;
-  if (chemistryFallbackEl) chemistryFallbackEl.textContent = `${Math.round(connectionValue)}%`;
-  if (attractionEl) attractionEl.textContent = `${Math.round(attractionValue)}%`;
-  if (confidenceEl) confidenceEl.textContent = `${Math.round(confidenceValue)}%`;
+if (connectionEl) connectionEl.textContent = formatHudPercent(connectionValue);
+if (chemistryFallbackEl) chemistryFallbackEl.textContent = formatHudPercent(connectionValue);
+if (attractionEl) attractionEl.textContent = formatHudPercent(attractionValue);
+if (confidenceEl) confidenceEl.textContent = formatHudPercent(confidenceValue);
 
   const formattedCandidates = candidateValue.toLocaleString();
 

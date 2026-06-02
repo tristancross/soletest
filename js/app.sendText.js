@@ -41,12 +41,24 @@ async function sendText() {
   }
 
   const text = textInput.value.trim();
-  if (!text) return;
+if (!text) return;
 
-  if (text.length > 5000){
-    alert("Messages must be under 5,000 characters.");
-    return;
-  }
+if (containsBlockedLink(text)) {
+  showSoleNotice(
+   "For privacy and safety, links can’t be sent in chat. External links can distort Sole’s compatibility analysis.",
+    {
+      title: "Link removed from signal",
+      type: "warning"
+    }
+  );
+
+  return;
+}
+
+if (text.length > 4000){
+  alert("Messages must be under 4,000 characters.");
+  return;
+}
 
   textInput.value = "";
   textInput.style.height = "auto";
@@ -98,11 +110,15 @@ lastDraftSentAt = 0;
     text
   });
 
-  if (error) {
-    alert(error.message);
-  } else {
-    await updateConversationStatus();
+if (error) {
+  alert(error.message);
+} else {
+  await updateConversationStatus();
+
+  if (typeof refreshSidebarProgressFromScoring === "function") {
+    await refreshSidebarProgressFromScoring();
   }
+}
 }
 
 

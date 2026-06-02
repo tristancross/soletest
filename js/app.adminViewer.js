@@ -21,6 +21,722 @@ await loadAdminProfiles();
   renderAdminWorkspace(screen);
 }
 
+async function updateAdminUserScoring(userId, patch = {}) {
+  if (!adminMode || !userId) return null;
+
+  const existingProfile =
+    adminProfiles.find(profile => profile?.id === userId) ||
+    (me?.id === userId ? me : null) ||
+    (adminDashboardProfile?.id === userId ? adminDashboardProfile : null);
+
+  if (!existingProfile) {
+    alert("Could not find this user locally. Refresh and try again.");
+    return null;
+  }
+
+  const nextProfile = {
+    ...existingProfile,
+    ...patch
+  };
+
+  const nullableNumber = value => {
+    if (value === "" || value === null || value === undefined) return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const nullableInt = value => {
+    if (value === "" || value === null || value === undefined) return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? Math.round(num) : null;
+  };
+
+  const numberOrZero = value => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const intOrZero = value => {
+    const num = Number(value);
+    return Number.isFinite(num) ? Math.round(num) : 0;
+  };
+
+  const rpcPayload = {
+    p_user_id: userId,
+
+    p_experiment_day_override: nullableInt(nextProfile.experiment_day_override),
+
+    p_score_connection_delta: numberOrZero(nextProfile.score_connection_delta),
+    p_score_attraction_delta: numberOrZero(nextProfile.score_attraction_delta),
+    p_score_confidence_delta: numberOrZero(nextProfile.score_confidence_delta),
+    p_score_candidate_pool_delta: intOrZero(nextProfile.score_candidate_pool_delta),
+
+    p_score_connection_override: nullableNumber(nextProfile.score_connection_override),
+    p_score_attraction_override: nullableNumber(nextProfile.score_attraction_override),
+    p_score_confidence_override: nullableNumber(nextProfile.score_confidence_override),
+    p_score_candidate_pool_override: nullableInt(nextProfile.score_candidate_pool_override),
+
+    p_score_connection_baseline: numberOrZero(nextProfile.score_connection_baseline),
+    p_score_attraction_baseline: numberOrZero(nextProfile.score_attraction_baseline),
+    p_score_confidence_baseline: numberOrZero(nextProfile.score_confidence_baseline),
+    p_score_candidate_pool_baseline: nullableInt(nextProfile.score_candidate_pool_baseline)
+  };
+
+  const { data, error } = await sb.rpc("admin_update_user_scoring", rpcPayload);
+
+  if (error) {
+    console.error("admin_update_user_scoring failed", error);
+    alert(error.message);
+    return null;
+  }
+
+  const updatedProfile =
+    (Array.isArray(data) ? data[0] : data) ||
+    nextProfile;
+
+  adminProfiles = adminProfiles
+    .filter(Boolean)
+    .map(profile => profile.id === userId ? updatedProfile : profile);
+
+  if (adminDashboardProfile?.id === userId) {
+    adminDashboardProfile = updatedProfile;
+  }
+
+  if (me?.id === userId) {
+    me = updatedProfile;
+    applyMe();
+  }
+
+  return updatedProfile;
+}
+
+async function resetAdminUserScoring(userId) {
+  const confirmed = window.confirm(
+    "Force this user's visible scores back to the minimum test values?"
+  );
+
+  if (!confirmed) return null;
+
+  const startingCandidates =
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  return updateAdminUserScoring(userId, {
+    experiment_day_override: 1,
+
+    score_connection_delta: 0,
+    score_attraction_delta: 0,
+    score_confidence_delta: 0,
+    score_candidate_pool_delta: 0,
+
+    score_connection_baseline: 0,
+    score_attraction_baseline: 0,
+    score_confidence_baseline: 0,
+    score_candidate_pool_baseline: startingCandidates,
+
+    score_connection_override: 0,
+    score_attraction_override: 0,
+    score_confidence_override: 0,
+    score_candidate_pool_override: startingCandidates
+  });
+}
+
+async function clearAdminUserScoreOverrides(userId) {
+  const confirmed = window.confirm(
+    "Clear hard overrides and let this user continue from their baseline/calculated score?"
+  );
+
+  if (!confirmed) return null;
+
+  return updateAdminUserScoring(userId, {
+    score_connection_override: null,
+    score_attraction_override: null,
+    score_confidence_override: null,
+    score_candidate_pool_override: null
+  });
+}
+
+async function setAdminUserBaselineFromCurrent(userId) {
+  let profile = adminProfiles.find(item => item?.id === userId);
+  if (!profile) return null;
+
+  try {
+    const { data: freshProfile, error } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Could not refresh profile before setting baseline", error);
+    } else if (freshProfile) {
+      profile = freshProfile;
+    }
+  } catch (error) {
+    console.warn("Profile refresh failed before setting baseline", error);
+  }
+
+let messageCount = 0;
+let messageStats = {
+  count: 0,
+  totalChars: 0,
+  averageChars: 0
+};
+let runtimeAssignments = [];
+
+try {
+  messageStats = await window.getDailyMessageStats(
+    sb,
+    profile,
+    profile?.score_baseline_set_at || null
+  );
+
+  messageCount = messageStats.count;
+} catch (error) {
+  console.warn("Could not load admin score message stats", error);
+}
+
+  try {
+    runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, profile, {
+      includeLocked: true
+    });
+  } catch (error) {
+    console.warn("Could not load assignments for baseline", error);
+  }
+
+  try {
+    const responseState = await loadQuizResponsesFromSupabase(sb, profile, {
+      userId: profile.id
+    });
+
+    saveStoredDashboardResponses(profile, responseState.responses);
+    saveStoredDashboardProgress(profile, responseState.progress);
+  } catch (error) {
+    console.warn("Could not load quiz responses for baseline", error);
+  }
+
+const dash = getDashboardState(
+  profile,
+  messageCount,
+  runtimeAssignments,
+  messageStats
+);
+
+  const confirmed = window.confirm(
+    `Set this user's baseline to their current visible scores?\n\nConnection: ${Number(dash.connection || 0).toFixed(1)}%\nAttraction: ${Number(dash.attraction || 0).toFixed(1)}%\nConfidence: ${Number(dash.confidence || 0).toFixed(1)}%\nCandidates: ${Number(dash.remainingCandidates || 0).toLocaleString()}`
+  );
+
+  if (!confirmed) return null;
+
+  return updateAdminUserScoring(userId, {
+    score_connection_baseline: Number(dash.connection || 0),
+    score_attraction_baseline: Number(dash.attraction || 0),
+    score_confidence_baseline: Number(dash.confidence || 0),
+    score_candidate_pool_baseline: Math.round(Number(dash.remainingCandidates || 0)),
+
+    score_connection_override: null,
+    score_attraction_override: null,
+    score_confidence_override: null,
+    score_candidate_pool_override: null,
+
+    score_connection_delta: 0,
+    score_attraction_delta: 0,
+    score_confidence_delta: 0,
+    score_candidate_pool_delta: 0
+  });
+}
+
+async function clearAdminUserBaseline(userId) {
+  const confirmed = window.confirm(
+    "Clear this user's baseline and return them to normal calculated scoring?"
+  );
+
+  if (!confirmed) return null;
+
+  return updateAdminUserScoring(userId, {
+    score_connection_baseline: 0,
+    score_attraction_baseline: 0,
+    score_confidence_baseline: 0,
+    score_candidate_pool_baseline: null
+  });
+}
+
+function renderAdminScoringControls(profile) {
+  const automaticDay = window.soleExperimentScoring?.getExperimentDayIndex
+    ? window.soleExperimentScoring.getExperimentDayIndex({
+        ...profile,
+        experiment_day_override: null
+      })
+    : 1;
+
+  const dayOverride = profile.experiment_day_override ?? "";
+
+return `
+  <div class="adminScoreControls" data-admin-score-user="${escapeAttr(profile.id)}">
+    <div class="adminScoreControlsTitle">Scoring controls</div>
+
+    <div class="adminScoreSummary" data-admin-score-summary="${escapeAttr(profile.id)}">
+      <div>
+        <span>Connection</span>
+        <strong data-admin-score-value="connection">Loading</strong>
+      </div>
+      <div>
+        <span>Attraction</span>
+        <strong data-admin-score-value="attraction">Loading</strong>
+      </div>
+      <div>
+        <span>Confidence</span>
+        <strong data-admin-score-value="confidence">Loading</strong>
+      </div>
+      <div>
+        <span>Candidates</span>
+        <strong data-admin-score-value="candidates">Loading</strong>
+      </div>
+    </div>
+
+      <label class="adminScoreField">
+        <span>Experiment day</span>
+        <select data-score-field="experiment_day_override">
+          <option value="" ${dayOverride === "" ? "selected" : ""}>
+            Auto — Day ${automaticDay}
+          </option>
+          ${[1, 2, 3, 4, 5].map(day => `
+            <option value="${day}" ${Number(dayOverride) === day ? "selected" : ""}>
+              Day ${day}
+            </option>
+          `).join("")}
+        </select>
+      </label>
+
+            <div class="adminScoreControlsTitle">Starting point</div>
+
+      <div class="adminScoreGrid">
+        <label class="adminScoreField">
+          <span>Connection start</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_connection_baseline"
+            value="${escapeAttr(profile.score_connection_baseline ?? 0)}"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Attraction start</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_attraction_baseline"
+            value="${escapeAttr(profile.score_attraction_baseline ?? 0)}"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Confidence start</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_confidence_baseline"
+            value="${escapeAttr(profile.score_confidence_baseline ?? 0)}"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Candidates start</span>
+          <input
+            type="number"
+            step="1"
+            data-score-field="score_candidate_pool_baseline"
+            value="${escapeAttr(profile.score_candidate_pool_baseline ?? "")}"
+            placeholder="Default"
+          />
+        </label>
+      </div>
+
+      <div class="adminScoreControlsTitle">Fine tune</div>
+
+      <div class="adminScoreGrid">
+        <label class="adminScoreField">
+          <span>Connection +/-</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_connection_delta"
+            value="${escapeAttr(profile.score_connection_delta ?? 0)}"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Attraction +/-</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_attraction_delta"
+            value="${escapeAttr(profile.score_attraction_delta ?? 0)}"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Confidence +/-</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_confidence_delta"
+            value="${escapeAttr(profile.score_confidence_delta ?? 0)}"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Candidates +/-</span>
+          <input
+            type="number"
+            step="1"
+            data-score-field="score_candidate_pool_delta"
+            value="${escapeAttr(profile.score_candidate_pool_delta ?? 0)}"
+          />
+        </label>
+      </div>
+
+            <div class="adminScoreControlsTitle">Hard override</div>
+
+      <div class="adminScoreGrid">
+        <label class="adminScoreField">
+          <span>Force Connection</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_connection_override"
+            value="${escapeAttr(profile.score_connection_override ?? "")}"
+            placeholder="Calculated"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Force Attraction</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_attraction_override"
+            value="${escapeAttr(profile.score_attraction_override ?? "")}"
+            placeholder="Calculated"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Force Confidence</span>
+          <input
+            type="number"
+            step="0.1"
+            data-score-field="score_confidence_override"
+            value="${escapeAttr(profile.score_confidence_override ?? "")}"
+            placeholder="Calculated"
+          />
+        </label>
+
+        <label class="adminScoreField">
+          <span>Force Candidates</span>
+          <input
+            type="number"
+            step="1"
+            data-score-field="score_candidate_pool_override"
+            value="${escapeAttr(profile.score_candidate_pool_override ?? "")}"
+            placeholder="Calculated"
+          />
+        </label>
+      </div>
+
+      <div class="adminScoreHint">
+        Use negative candidate values to narrow the pool faster, e.g. -5000.
+      </div>
+
+      <div class="adminScoreActions">
+        <button
+          type="button"
+          class="btn btnGhost"
+      data-admin-save-fine-tune="${escapeAttr(profile.id)}"
+        >
+         Save fine tune
+        </button>
+
+        <button
+  type="button"
+  class="btn btnGhost"
+  data-admin-save-baseline="${escapeAttr(profile.id)}"
+>
+  Save baseline
+</button>
+
+<button
+  type="button"
+  class="btn btnGhost"
+  data-admin-apply-hard-override="${escapeAttr(profile.id)}"
+>
+  Apply hard override
+</button>
+
+        <button
+          type="button"
+          class="btn btnGhost"
+          data-admin-reset-score="${escapeAttr(profile.id)}"
+        >
+          Reset scoring
+        </button>
+
+                <button
+          type="button"
+          class="btn btnGhost"
+          data-admin-clear-score-overrides="${escapeAttr(profile.id)}"
+        >
+          Clear overrides
+        </button>
+
+        <button
+          type="button"
+          class="btn btnGhost"
+          data-admin-set-baseline-current="${escapeAttr(profile.id)}"
+        >
+          Set baseline from current
+        </button>
+
+        <button
+          type="button"
+          class="btn btnGhost"
+          data-admin-clear-baseline="${escapeAttr(profile.id)}"
+        >
+          Clear baseline
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function readAdminScoreFields(wrap, allowedFields) {
+  const patch = {};
+
+  const nullableFields = new Set([
+    "experiment_day_override",
+    "score_connection_override",
+    "score_attraction_override",
+    "score_confidence_override",
+    "score_candidate_pool_override",
+    "score_candidate_pool_baseline"
+  ]);
+
+  const integerFields = new Set([
+    "experiment_day_override",
+    "score_candidate_pool_delta",
+    "score_candidate_pool_override",
+    "score_candidate_pool_baseline"
+  ]);
+
+  wrap.querySelectorAll("[data-score-field]").forEach(input => {
+    const field = input.dataset.scoreField;
+
+    if (!allowedFields.includes(field)) return;
+
+    const rawValue = input.value;
+
+    if (nullableFields.has(field) && rawValue === "") {
+      patch[field] = null;
+      return;
+    }
+
+    if (integerFields.has(field)) {
+      patch[field] = rawValue === "" ? null : Math.round(Number(rawValue) || 0);
+      return;
+    }
+
+    patch[field] = Number(rawValue) || 0;
+  });
+
+  return patch;
+}
+
+function getAdminScoreWrap(root, userId) {
+  return root.querySelector(`[data-admin-score-user="${CSS.escape(userId)}"]`);
+}
+
+function bindAdminScoringControls(root = document) {
+  root.querySelectorAll("[data-admin-save-fine-tune]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminSaveFineTune;
+      const wrap = getAdminScoreWrap(root, userId);
+      if (!wrap) return;
+
+      const patch = readAdminScoreFields(wrap, [
+        "experiment_day_override",
+        "score_connection_delta",
+        "score_attraction_delta",
+        "score_confidence_delta",
+        "score_candidate_pool_delta"
+      ]);
+
+      const updated = await updateAdminUserScoring(userId, patch);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Fine tune saved.");
+    });
+  });
+
+  root.querySelectorAll("[data-admin-save-baseline]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminSaveBaseline;
+      const wrap = getAdminScoreWrap(root, userId);
+      if (!wrap) return;
+
+      const patch = readAdminScoreFields(wrap, [
+        "experiment_day_override",
+        "score_connection_baseline",
+        "score_attraction_baseline",
+        "score_confidence_baseline",
+        "score_candidate_pool_baseline"
+      ]);
+
+      const updated = await updateAdminUserScoring(userId, patch);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Baseline saved.");
+    });
+  });
+
+  root.querySelectorAll("[data-admin-apply-hard-override]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminApplyHardOverride;
+      const wrap = getAdminScoreWrap(root, userId);
+      if (!wrap) return;
+
+      const patch = readAdminScoreFields(wrap, [
+        "experiment_day_override",
+        "score_connection_override",
+        "score_attraction_override",
+        "score_confidence_override",
+        "score_candidate_pool_override"
+      ]);
+
+      const updated = await updateAdminUserScoring(userId, patch);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Hard override applied.");
+    });
+  });
+
+  root.querySelectorAll("[data-admin-reset-score]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminResetScore;
+
+      const updated = await resetAdminUserScoring(userId);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Scoring reset.");
+    });
+  });
+
+  root.querySelectorAll("[data-admin-clear-score-overrides]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminClearScoreOverrides;
+
+      const updated = await clearAdminUserScoreOverrides(userId);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Score overrides cleared.");
+    });
+  });
+
+  root.querySelectorAll("[data-admin-set-baseline-current]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminSetBaselineCurrent;
+
+      const updated = await setAdminUserBaselineFromCurrent(userId);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Baseline set.");
+    });
+  });
+
+  root.querySelectorAll("[data-admin-clear-baseline]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.adminClearBaseline;
+
+      const updated = await clearAdminUserBaseline(userId);
+      if (!updated) return;
+
+      renderAdminWorkspaceContent("users");
+      alert("Baseline cleared.");
+    });
+  });
+}
+
+async function hydrateAdminScoreSummaries(root = document) {
+  const summaries = Array.from(root.querySelectorAll("[data-admin-score-summary]"));
+
+  
+
+  await Promise.all(
+    summaries.map(async summary => {
+      const userId = summary.dataset.adminScoreSummary;
+      const profile = adminProfiles.find(item => item?.id === userId);
+
+      if (!profile) return;
+
+    let messageCount = 0;
+let messageStats = {
+  count: 0,
+  totalChars: 0,
+  averageChars: 0
+};
+let runtimeAssignments = [];
+
+try {
+  messageStats = await window.getDailyMessageStats(
+    sb,
+    profile,
+    profile?.score_baseline_set_at || null
+  );
+
+  messageCount = messageStats.count;
+} catch (error) {
+  console.warn("Could not load admin score message stats", error);
+}
+
+try {
+  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, profile, {
+    includeLocked: true
+  });
+} catch (error) {
+  console.warn("Could not load admin score assignments", error);
+}
+
+try {
+  const responseState = await loadQuizResponsesFromSupabase(sb, profile, {
+    userId: profile.id
+  });
+
+  saveStoredDashboardResponses(profile, responseState.responses);
+  saveStoredDashboardProgress(profile, responseState.progress);
+} catch (error) {
+  console.warn("Could not load admin score quiz responses", error);
+}
+
+const dash = getDashboardState(profile, messageCount, runtimeAssignments, messageStats);
+
+      const connectionEl = summary.querySelector('[data-admin-score-value="connection"]');
+      const attractionEl = summary.querySelector('[data-admin-score-value="attraction"]');
+      const confidenceEl = summary.querySelector('[data-admin-score-value="confidence"]');
+      const candidatesEl = summary.querySelector('[data-admin-score-value="candidates"]');
+
+      if (connectionEl) connectionEl.textContent = `${Number(dash.connection || 0).toFixed(1)}%`;
+      if (attractionEl) attractionEl.textContent = `${Number(dash.attraction || 0).toFixed(1)}%`;
+      if (confidenceEl) confidenceEl.textContent = `${Number(dash.confidence || 0).toFixed(1)}%`;
+      if (candidatesEl) candidatesEl.textContent = Number(dash.remainingCandidates || 0).toLocaleString();
+    })
+  );
+}
+
 async function exitAdminMode() {
   if (adminActualProfile) {
     me = adminActualProfile;
@@ -180,6 +896,9 @@ function renderAdminUsersWorkspace(content) {
     <strong>Available</strong>
   </div>
 </div>
+
+${renderAdminScoringControls(profile)}
+
                 <div class="adminUserActions">
                   <button class="btn btnGhost" data-view-as-user="${profile.id}">
                     View as ${escapeHtml(profile.display_name)}
@@ -294,6 +1013,9 @@ content.querySelectorAll("[data-admin-user-insights]").forEach(btn => {
     renderAdminInsightsWorkspace(content, btn.dataset.adminUserInsights);
   });
 });
+
+bindAdminScoringControls(content);
+hydrateAdminScoreSummaries(content);
 }
 
 function renderAdminTasksWorkspace(content, selectedUserId = "") {
@@ -310,7 +1032,7 @@ function renderAdminTasksWorkspace(content, selectedUserId = "") {
 
       <div class="adminFormRow">
         <select id="adminTaskUserSelect">
-          ${adminProfiles.map(profile => `
+         ${adminProfiles.filter(Boolean).map(profile => `
             <option value="${escapeAttr(profile.id)}" ${selectedUser?.id === profile.id ? "selected" : ""}>
               ${escapeHtml(profile.display_name)}
             </option>
@@ -522,7 +1244,7 @@ function renderAdminInsightsWorkspace(content, selectedUserId = "") {
 
       <div class="adminFormRow">
         <select id="adminInsightUserSelect">
-          ${adminProfiles.map(profile => `
+          ${adminProfiles.filter(Boolean).map(profile => `
             <option value="${escapeAttr(profile.id)}" ${selectedUser?.id === profile.id ? "selected" : ""}>
               ${escapeHtml(profile.display_name)}
             </option>
@@ -896,7 +1618,7 @@ function renderAdminUsersPage() {
         <h3>Users</h3>
 
         <div class="adminUserList">
-          ${adminProfiles.map(profile => `
+         ${adminProfiles.filter(Boolean).map(profile => `
             <article class="adminUserRow">
               <div>
                 <strong>${escapeHtml(profile.display_name)}</strong>
@@ -953,7 +1675,7 @@ function renderAdminUsersScreen(){
       <h3>Users</h3>
 
       <div class="adminUserList">
-        ${adminProfiles.map(profile => `
+       ${adminProfiles.filter(Boolean).map(profile => `
           <article class="adminUserRow">
             <div>
               <strong>${escapeHtml(profile.display_name)}</strong>

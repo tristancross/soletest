@@ -363,32 +363,33 @@ async function mountSidebarDashboardScreen({
   let activeSubview = "calibration";
 
 const screenConfig = {
-chemistry: {
-  title: "Connection Calibration",
-  eyebrow: "Calibration",
-  intro: "Personality analysis and compatibility assessment.",
-  category: "chemistry",
-  progress: 40,
-  icon: "fa-solid fa-circle-nodes",
-  filter: item => {
-    const category = String(item.meta?.category || "").toLowerCase();
-    if (!category) return true;
-    return category === "chemistry";
+  chemistry: {
+    title: "Connection Calibration",
+    eyebrow: "Calibration",
+    intro: "Personality analysis and compatibility assessment.",
+    category: "chemistry",
+    progressKey: "connection",
+    icon: "fa-solid fa-circle-nodes",
+    filter: item => {
+      const category = String(item.meta?.category || "").toLowerCase();
+      if (!category) return true;
+      return category === "chemistry";
+    }
+  },
+
+  attraction: {
+    title: "Attraction Mapping",
+    eyebrow: "Mapping",
+    intro: "Visual preference mapping and attraction reconstruction.",
+    category: "attraction",
+    progressKey: "attraction",
+    icon: "fa-solid fa-wand-magic-sparkles",
+    filter: item => {
+      const category = String(item.meta?.category || "").toLowerCase();
+      if (!category) return true;
+      return category === "attraction";
+    }
   }
-},
-attraction: {
-  title: "Attraction Mapping",
-  eyebrow: "Mapping",
-  intro: "Visual preference mapping and attraction reconstruction.",
-  category: "attraction",
-  progress: 12,
-  icon: "fa-solid fa-wand-magic-sparkles",
-  filter: item => {
-    const category = String(item.meta?.category || "").toLowerCase();
-    if (!category) return true;
-    return category === "attraction";
-  }
-}
 };
 
 function getQuizHeroProgress(assignment, me){
@@ -430,24 +431,57 @@ function getQuizHeroProgress(assignment, me){
   };
 }
 
-  const config = screenConfig[screen];
-  if (!config) return;
+const config = screenConfig[screen];
+if (!config) return;
+
+let liveProgress = 0;
+let liveMessageStats = {
+  count: 0,
+  totalChars: 0,
+  averageChars: 0
+};
+let runtimeAssignments = [];
+
+try {
+  liveMessageStats = window.getDailyMessageStats
+    ? await window.getDailyMessageStats(
+        sb,
+        me,
+        me?.score_baseline_set_at || null
+      )
+    : { count: 0, totalChars: 0, averageChars: 0 };
+
+  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me);
+
+  const responseState = await loadQuizResponsesFromSupabase(sb, me);
+
+  saveStoredDashboardResponses(me, responseState.responses);
+  saveStoredDashboardProgress(me, responseState.progress);
+
+  const dash = getDashboardState(
+    me,
+    liveMessageStats.count || 0,
+    runtimeAssignments,
+    liveMessageStats
+  );
+
+  liveProgress = Math.max(
+    0,
+    Math.min(100, Number(dash?.[config.progressKey] || 0))
+  );
+} catch (error) {
+  console.warn("Could not calculate live module progress", error);
+}
 
   function getModuleProgressKey() {
   return screen === "chemistry" ? "connection" : "attraction";
 }
 
 function getModuleProgressPercent() {
-  const progressKey = getModuleProgressKey();
-
-  const valueEl = document.getElementById(`${progressKey}ProgressValue`);
-  const fromDom = valueEl?.textContent?.match(/(\d+(?:\.\d+)?)/)?.[1];
-
-  if (fromDom != null) {
-    return Math.max(0, Math.min(100, Math.round(Number(fromDom) || 0)));
-  }
-
-  return Math.max(0, Math.min(100, Math.round(Number(config.progress || 0))));
+  return Math.max(
+    0,
+    Math.min(100, Number(liveProgress || 0))
+  );
 }
 
 function getModuleHeroMeta() {
@@ -466,19 +500,28 @@ function getModuleHeroMeta() {
   };
 }
 
-  let runtimeAssignments = [];
-
+if (!runtimeAssignments.length) {
   try {
     runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me);
   } catch (error) {
     console.warn("Sidebar screen assignments failed", error);
   }
+}
 
-  const responseState = await loadQuizResponsesFromSupabase(sb, me);
+let responseState = {
+  responses: {},
+  progress: {}
+};
+
+try {
+  responseState = await loadQuizResponsesFromSupabase(sb, me);
   saveStoredDashboardResponses(me, responseState.responses);
   saveStoredDashboardProgress(me, responseState.progress);
+} catch (error) {
+  console.warn("Sidebar screen quiz responses failed", error);
+}
 
-  const filteredAssignments = runtimeAssignments.filter(config.filter);
+const filteredAssignments = runtimeAssignments.filter(config.filter);
 
 const activeQuizAssignment = activeAssignmentId
   ? filteredAssignments.find(item => item.id === activeAssignmentId) || null

@@ -155,7 +155,14 @@
 
 .row.me{justify-content:flex-end}
 
-.row.them{justify-content:flex-start}
+.row.them{
+justify-content: flex-start;
+    margin: 0.25em 0;
+}
+
+.row.them .meta{
+  margin-top:-3px;
+}
 
 
 .msgWrap{

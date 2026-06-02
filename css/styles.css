@@ -306,6 +306,7 @@ input,
 textarea,
 select{
   font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* font-family: "Inter", serif; */
 }
 
 h1,h2,h3,.chatTitle,.brand{

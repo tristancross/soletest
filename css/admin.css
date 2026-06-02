@@ -392,6 +392,7 @@
   grid-template-columns: 260px 1fr;
   min-height: 100%;
   width: 100%;
+  color: var(--sole-ink);
 }
 
 
@@ -597,4 +598,91 @@
   grid-column:1/-1;
   margin:0;
   border-radius:0;
+}
+
+.adminScoreControls{
+  margin-top:14px;
+  padding:14px;
+  border:1px solid var(--sole-line);
+  border-radius:16px;
+  background:rgba(255,255,255,.34);
+  display:grid;
+  gap:10px;
+}
+
+.adminScoreControlsTitle{
+  font-size:12px;
+  font-weight:700;
+  color:var(--sole-ink);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.adminScoreGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px;
+}
+
+.adminScoreField{
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+
+.adminScoreField span{
+  font-size:11px;
+  color:var(--sole-soft-ink);
+}
+
+.adminScoreField input,
+.adminScoreField select{
+  width:100%;
+  border:1px solid var(--sole-line);
+  border-radius:10px;
+  padding:8px 9px;
+  background:rgba(255,255,255,.62);
+  color:var(--sole-ink);
+  font:inherit;
+  font-size:13px;
+}
+
+.adminScoreHint{
+  font-size:11px;
+  line-height:1.35;
+  color:var(--sole-soft-ink);
+}
+
+.adminScoreActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.adminScoreSummary{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:8px;
+}
+
+.adminScoreSummary > div{
+  padding:10px;
+  border:1px solid var(--sole-line);
+  border-radius:14px;
+  background:rgba(255,255,255,.42);
+  display:grid;
+  gap:4px;
+}
+
+.adminScoreSummary span{
+  color:var(--sole-soft-ink);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.adminScoreSummary strong{
+  color:var(--sole-ink);
+  font-size:14px;
+  font-variant-numeric:tabular-nums;
 }

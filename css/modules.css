@@ -180,9 +180,6 @@
 
 /* MATRIX */
 
-.moduleProfileMatrixList{
-  margin-top: 8px;
-}
 
 
 .soleMatrixPanel{
@@ -202,6 +199,8 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
     0 28px 80px rgba(76,49,31,.10),
     inset 0 1px 0 rgba(255,255,255,.82),
     inset 0 -1px 0 rgba(255,118,95,.06);
+
+    
 }
 
 
@@ -397,15 +396,13 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 .soleMatrixTitleSwitcherBtn{
   appearance:none;
   border:1px solid rgba(255,118,95,.18);
-  background:
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,.9), transparent 34%),
-    linear-gradient(135deg, rgba(255,255,255,.66), rgba(255,226,217,.42));
+  background: var(--hover);
 
   color:var(--sole-ink);
   display:inline-flex;
   align-items:center;
   gap:10px;
-  padding:7px 12px 8px;
+  padding:7px 18px;
   border-radius:999px;
   font:inherit;
   font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
@@ -449,45 +446,85 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   box-shadow:0 0 10px rgba(255,118,95,.35);
 }
 
-.soleMatrixSwitcherMenu {
-  position: absolute;
-  top: calc(100% + 0px);
-  left: 0;
-  z-index: 9999;
+.soleMatrixSwitcherMenu{
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  z-index:9999;
 
-  min-width: 220px;
-  padding: 7px;
+  min-width:220px;
+  padding:6px;
 
-  border-radius: 14px;
-  border: 1px solid rgba(255,242,231,.13);
-  background: rgba(18,7,5,.98);
-  box-shadow: 0 18px 44px rgba(0,0,0,.36);
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.62);
 
-  pointer-events: auto;
+  background:
+    radial-gradient(circle at 20% 12%, rgba(255,255,255,.86), transparent 34%),
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.78),
+      rgba(255,244,238,.66)
+    );
+
+  box-shadow:
+    0 22px 54px rgba(76,49,31,.14),
+    inset 0 1px 0 rgba(255,255,255,.86),
+    inset 0 -1px 0 rgba(255,118,95,.05);
+
+  backdrop-filter:blur(22px) saturate(1.18);
+  -webkit-backdrop-filter:blur(22px) saturate(1.18);
+
+  overflow:hidden;
 }
 
 
-.soleMatrixSwitcherOption {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: rgba(255,242,231,.62);
-  border-radius: 10px;
-  padding: 10px 11px;
-  font: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-  pointer-events: auto;
+.soleMatrixSwitcherOption{
+  width:100%;
+  height:40px;
+
+  border:0;
+  border-radius:13px;
+  background:transparent;
+
+  color:rgba(25,24,23,.56);
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+
+  padding:0 12px;
+
+  font:inherit;
+  font-size:13px;
+  font-weight:600;
+  text-align:left;
+
+  cursor:pointer;
+  pointer-events:auto;
+
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
 }
 
-
-.soleMatrixSwitcherOption:hover,
-.soleMatrixSwitcherOption.isActive {
-  color: var(--text);
-  background: rgba(255,159,125,.10);
+.soleMatrixSwitcherOption:hover{
+  color:var(--sole-ink);
+  background:rgba(255,118,95,.08);
 }
 
+.soleMatrixSwitcherOption.isActive{
+  color:var(--sole-ink);
+
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,.82), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.66), rgba(255,226,217,.52));
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    inset 0 0 0 1px rgba(255,118,95,.10);
+}
 
 
 /* SIDEBAR TASKS */
@@ -511,16 +548,6 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   /* margin-bottom:24px; */
 }
 
-
-.moduleHeroTop{
-  position:sticky;
-  top:18px;
-  left:0;
-  right:0;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
 
 
 .moduleHeroRingWrap{
@@ -618,39 +645,76 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 
 
 .moduleSubviewTabs{
-   width:max-content;
-  margin:0 auto 22px;
+  width:260px;
+  margin:28px 0 0;
+   margin:auto 0 0;
   padding:4px;
-  border:1px solid var(--border);
-  border-radius:999px;
-  background:rgba(255,242,231,.03);
-  display:flex;
-  gap:4px;
-}
 
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.58);
+
+  background:
+    radial-gradient(circle at 22% 18%, rgba(255,255,255,.82), transparent 34%),
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.58),
+      rgba(255,245,240,.34)
+    );
+
+  box-shadow:
+    0 14px 36px rgba(76,49,31,.045),
+    inset 0 1px 0 rgba(255,255,255,.82),
+    inset 0 -1px 0 rgba(255,118,95,.04);
+
+  backdrop-filter:blur(16px) saturate(1.14);
+  -webkit-backdrop-filter:blur(16px) saturate(1.14);
+}
 
 .moduleSubviewTab{
-  /* border:1px solid var(--border);
-  background:rgba(255,242,231,.03); */
-  color:var(--muted);
+  min-width:0;
+  height:38px;
+  padding:0 14px;
+
+  border:0;
   border-radius:999px;
-  letter-spacing:.04em;
-  cursor:pointer;
-   min-width:108px;
-  border:none;
   background:transparent;
-  padding:10px 18px;
+
+  color:rgba(25,24,23,.48);
+  font:inherit;
   font-size:12px;
-  transition:all .25s ease;
+  font-weight:600;
+  letter-spacing:.01em;
+
+  cursor:pointer;
+
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
+.moduleSubviewTab:hover{
+  color:rgba(25,24,23,.72);
+  background:rgba(255,255,255,.32);
+}
 
 .moduleSubviewTab.active{
-  background:rgba(255,137,104,.12);
-  color:var(--text);
-  box-shadow:0 0 0 1px rgba(255,137,104,.18) inset;
-}
+  color:var(--sole-ink);
 
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255,255,255,.88), transparent 36%),
+    linear-gradient(135deg, rgba(255,255,255,.70), rgba(255,226,217,.62));
+
+  box-shadow:
+    0 8px 20px rgba(76,49,31,.055),
+    inset 0 1px 0 rgba(255,255,255,.88),
+    inset 0 0 0 1px rgba(255,118,95,.11);
+}
 
 [data-progress-card],
 .moduleSubviewTab{
@@ -662,12 +726,14 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 18px;
 }
 
 
 .moduleCalibrationSectionEyebrow {
   margin: 18px 0 4px;
+}
+.moduleCalibrationSectionEyebrow:first-child {
+  margin-top: 0;
 }
 
 
@@ -693,6 +759,8 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.025),
     0 10px 34px rgba(0,0,0,.12);
+
+        background: radial-gradient(circle at 14% 18%, rgba(255, 255, 255, .78), transparent 34%), linear-gradient(135deg, rgba(255, 255, 255, .62), rgba(255, 247, 241, .36));
 
   transition:
     transform 160ms ease,
@@ -767,8 +835,8 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 .moduleCalibrationTaskStart {
   border: 1px solid rgba(255,159,125,.45);
   color: rgba(255,159,125,.98);
-  background: rgba(255,159,125,.07);
-
+ 
+    background: rgba(255, 255, 255, .48);
   border-radius: 999px;
   padding: 6px 14px;
 
@@ -805,32 +873,71 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 }
 
 
-.moduleCalibrationTaskCard.isCompleted {
-  opacity: .68;
+.moduleCalibrationTaskCard.isCompleted{
+  filter:saturate(.35);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255,255,255,.58), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.44), rgba(245,242,238,.28));
+  border-color:rgba(50,36,28,.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    0 8px 24px rgba(76,49,31,.035);
 }
 
-
-.moduleCalibrationTaskCard.isCompleted h4 {
-  text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
-  text-decoration-color: rgba(255,242,231,.55);
+.moduleCalibrationTaskCard.isCompleted h4{
+  text-decoration:none;
+  opacity:1;
+  color:rgba(25,24,23,.55);
 }
 
-
-.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskIcon {
-  color: rgba(123,229,205,.95);
-  background: rgba(123,229,205,.08);
+.moduleCalibrationTaskCard.isCompleted p{
+  opacity:.62;
 }
 
+.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskIcon{
+  color:rgba(25,24,23,.24);
+  background:rgba(25,24,23,.035);
+}
 
 .moduleCalibrationTaskCard {
   cursor: pointer;
 }
 
+.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskTick{
+  width:auto;
+  height:auto;
+  border-radius:999px;
+  padding:8px 14px;
 
-.moduleCalibrationTaskCard.isCompleted {
-  cursor: default;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+
+  border:1px solid rgba(255,118,95,.18);
+ background: rgba(255,159,125,.07);
+  color:rgba(255,118,95,.76);
+
+  font-size:12px;
+  font-weight:700;
+    border-color:rgba(25,24,23,.10);
+  background:rgba(255,255,255,.34);
+  color:rgba(25,24,23,.44);
 }
+
+.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskTick::before{
+  content:"Completed";
+}
+
+.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskTick{
+  font-size:0;
+}
+
+.moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskTick::before{
+  font-size:12px;
+}
+
+
+
 
 /* PREMIUM MODULE MASTHEAD ------------------------------------------------ */
 
@@ -872,7 +979,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 }
 
 .moduleHeroCopy h2{
-  margin:0 0 9px;
+  margin:0;
   font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
   font-size:34px;
   line-height:1;
@@ -953,7 +1060,225 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 }
 
 
+.moduleHero{
+  position:relative;
+  margin:0 0 18px;
+  padding:0;
+}
 
+.moduleHeroTop{
+  position:absolute;
+  top:0;
+  left:-30px;
+  z-index:80;
+  width:auto;
+  height:auto;
+  margin:0;
+}
+
+
+.sidebarBackBtn {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(50, 36, 28, .08);
+    background: rgba(255, 255, 255, .38);
+    color: rgba(25, 24, 23, .58);
+    display: grid;
+    justify-content: center;
+    place-items: center;
+    align-items: center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 6px 14px rgba(76, 49, 31, .035);
+}
+
+
+.sidebarBackBtn:hover{
+  color:var(--sole-ink);
+  background:rgba(255,255,255,.62);
+  border-color:rgba(255,118,95,.14);
+}
+.moduleHeroMain{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) 124px;
+  gap:32px;
+  align-items:stretch;
+  padding-top:0;
+}
+
+.moduleHeroCopy{
+  min-width:0;
+  max-width:470px;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+
+  min-height:138px;
+}
+
+.moduleHeroCopy > .moduleHeroEyebrow,
+.moduleHeroCopy > h2,
+.moduleHeroCopy > p{
+  flex:0 0 auto;
+}
+
+.moduleHeroEyebrow{
+  margin:0 0 5px;
+  font-size:10px;
+  line-height:1;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  font-weight:750;
+  color:var(--sole-coral);
+}
+
+.moduleHeroCopy h2{
+  margin:0;
+  font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
+  font-size:32px;
+  font-weight:400;
+  color:var(--sole-ink);
+}
+
+.moduleHeroCopy p{
+  margin:0;
+  max-width:430px;
+  color:var(--sole-soft-ink);
+  font-size:13px;
+  line-height:1.48;
+}
+
+.moduleHeroProgressCard{
+  position:relative;
+  align-self:stretch;
+  justify-self:end;
+
+  width:124px;
+  min-height:138px;
+  height:100%;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+
+  padding:18px 14px 14px;
+  border-radius:24px;
+  border:1px solid rgba(60,40,28,.08);
+
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255,255,255,.82), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,247,241,.46));
+
+  box-shadow:
+    0 14px 40px rgba(76,49,31,.05),
+    inset 0 1px 0 rgba(255,255,255,.8);
+
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+.moduleHeroInfoBtn{
+  position:absolute;
+  top:8px;
+  right:8px;
+
+  width:24px;
+  height:24px;
+  border-radius:999px;
+
+  border:1px solid rgba(50,36,28,.10);
+  background:rgba(255,255,255,.48);
+  color:rgba(25,24,23,.42);
+
+  display:grid;
+  place-items:center;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.76),
+    0 6px 14px rgba(76,49,31,.04);
+}
+
+.moduleHeroInfoBtn i{
+  font-size:11px;
+}
+
+.moduleHeroInfoBtn:hover{
+  color:var(--sole-ink);
+  background:rgba(255,255,255,.68);
+  border-color:rgba(255,118,95,.18);
+}
+
+.moduleMiniRing{
+  position:relative;
+  width:92px;
+  height:92px;
+  display:grid;
+  place-items:center;
+}
+
+.moduleMiniRing svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+}
+
+.moduleRingTrack,
+.moduleRingFill{
+  fill:none;
+  stroke-width:9;
+  stroke-linecap:round;
+  transform-origin:60px 60px;
+}
+
+.moduleRingTrack{
+  stroke:rgba(58,43,33,.09);
+}
+
+.moduleRingFill{
+  stroke:var(--accent);
+  transform:rotate(-90deg);
+  stroke-dasharray:0 999;
+  transition:stroke-dasharray 1400ms cubic-bezier(.16, 1, .3, 1);
+  filter:drop-shadow(0 6px 12px rgba(255,137,104,.16));
+}
+
+.moduleMiniRingInner{
+  position:relative;
+  width:64px;
+  height:64px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255,255,255,.95), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,248,243,.7));
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    0 10px 24px rgba(76,49,31,.05);
+  backdrop-filter:blur(12px);
+}
+
+.moduleMiniRingInner strong{
+  font-size:18px;
+  line-height:1;
+  font-weight:750;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+}
+
+.moduleHeroProgressLabel{
+  font-size:11px;
+  line-height:1;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
 
 .soleMatrixPanel.isUpdating .soleMatrixConfidence {
   border-color: rgba(255,159,125,.36);
@@ -988,26 +1313,9 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 }
 
 
-
-
-
-.soleMatrixSwitcherOption {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: rgba(255,242,231,.62);
-  border-radius: 10px;
-  padding: 10px 11px;
-  font: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
+.moduleCalibrationTaskStart, .moduleCalibrationTaskAction, .moduleCalibrationTaskCard.isCompleted .moduleCalibrationTaskTick {
+  width: 100px;
+  justify-content: center;
 }
 
-
-.soleMatrixSwitcherOption:hover,
-.soleMatrixSwitcherOption.isActive {
-  color: var(--text);
-  background: rgba(255,159,125,.10);
-}
 

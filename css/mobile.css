@@ -136,7 +136,13 @@
 
 
 
-
+@media (max-width:768px){
+  .soleNoticeToast{
+    bottom:88px;
+    width:calc(100vw - 24px);
+    border-radius:20px;
+  }
+}
 
 
 @media (max-width: 720px) {

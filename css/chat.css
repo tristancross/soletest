@@ -1,4 +1,4 @@
-/* chat.css — chat header, messages, bubbles, composer, voice, typing/thinking states */
+/* chat.css â€” chat header, messages, bubbles, composer, voice, typing/thinking states */
 .chatTitle{font-weight:700; font-size: 1.5rem;}
 
 .chatSubtitle{
@@ -126,7 +126,7 @@
 
 
 .messages.threadLoading::before{
- content:"Loading conversation…";
+ content:"Loading conversationâ€¦";
   position:absolute;
   top:18px;
   left:50%;
@@ -440,7 +440,7 @@ padding-bottom: 25px;
 
 
 .bubble.typewriter::after{
-  content: "▋";
+  content: "â–‹";
   margin-left: 2px;
   opacity: 0.8;
   animation: blink 0.8s steps(1) infinite;
@@ -1312,3 +1312,4 @@ padding-bottom: 25px;
   background:rgba(255,255,255,.68);
   color:var(--sole-ink);
 }
+

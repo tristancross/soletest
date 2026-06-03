@@ -1,4 +1,4 @@
-/* admin.css — admin workspace, users, pairings, templates, overlays */
+/* admin.css â€” admin workspace, users, pairings, templates, overlays */
 .adminRow{
   display:flex;
   gap:8px;
@@ -685,4 +685,183 @@
   color:var(--sole-ink);
   font-size:14px;
   font-variant-numeric:tabular-nums;
+}
+
+.adminDaysList{
+  display:grid;
+  gap:14px;
+  margin-top:16px;
+}
+
+.adminDayCard{
+  border:1px solid var(--sole-line);
+  border-radius:18px;
+  padding:16px;
+  background:rgba(255,255,255,.36);
+  display:grid;
+  gap:14px;
+}
+
+.adminDayCardHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+}
+
+.adminDayTitleInput{
+  width:100%;
+  max-width:420px;
+  border:1px solid var(--sole-line);
+  border-radius:12px;
+  padding:9px 11px;
+  background:rgba(255,255,255,.62);
+  color:var(--sole-ink);
+  font:inherit;
+  font-size:15px;
+  font-weight:650;
+}
+
+.adminDayGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px;
+}
+
+.adminDayUserControl{
+  margin:16px 0 18px;
+  padding:16px;
+  border:1px solid var(--sole-line);
+  border-radius:18px;
+  background:rgba(255,255,255,.36);
+
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) minmax(360px, .9fr);
+  gap:18px;
+  align-items:end;
+}
+
+.adminDayUserControlCopy h4{
+  margin:0 0 6px;
+  color:var(--sole-ink);
+  font-size:16px;
+}
+
+.adminDayUserControlCopy p{
+  margin:0;
+  color:var(--sole-soft-ink);
+  font-size:13px;
+  line-height:1.4;
+}
+
+.adminDayUserControlFields{
+  display:grid;
+  grid-template-columns:1fr 120px auto;
+  gap:10px;
+  align-items:end;
+}
+
+.adminDayCurriculum{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:12px;
+  margin-top:2px;
+}
+
+.adminDayCurriculumColumn{
+  border:1px solid var(--sole-line);
+  border-radius:16px;
+  padding:12px;
+  background:rgba(255,255,255,.32);
+  min-width:0;
+}
+
+.adminDayCurriculumTitle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+
+  color:var(--sole-ink);
+  font-size:12px;
+  font-weight:750;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+.adminDayCurriculumTitle span{
+  display:inline-grid;
+  place-items:center;
+  min-width:22px;
+  height:22px;
+  padding:0 7px;
+  border-radius:999px;
+  background:rgba(255,118,95,.10);
+  color:var(--sole-coral);
+  font-size:11px;
+  letter-spacing:0;
+}
+
+.adminDayTemplateList{
+  display:grid;
+  gap:8px;
+}
+
+.adminDayTemplateRow,
+.adminDayTemplateEmpty{
+  border:1px solid rgba(50,36,28,.08);
+  border-radius:12px;
+  padding:9px 10px;
+  background:rgba(255,255,255,.42);
+}
+
+.adminDayTemplateRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.adminDayTemplateRow strong{
+  min-width:0;
+  color:var(--sole-ink);
+  font-size:13px;
+  font-weight:650;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.adminDayTemplateRow span,
+.adminDayTemplateEmpty{
+  color:var(--sole-soft-ink);
+  font-size:12px;
+}
+
+.adminDayGlobalControl{
+  margin:16px 0 18px;
+  padding:16px;
+  border:1px solid var(--sole-line);
+  border-radius:18px;
+  background:rgba(255,255,255,.36);
+
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) minmax(260px, .55fr);
+  gap:18px;
+  align-items:end;
+}
+
+.adminDayGlobalControlFields{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:end;
+}
+
+.app.isAdminMode .header{
+  display:none;
+}
+.app.isAdminMode .messages{
+  padding:0;
 }

@@ -321,7 +321,7 @@ ${
             data-matrix-switcher-button
           >
             <span>${escapeHtml(matrix.title)}</span>
-            <span class="soleMatrixTitleChevron">●</span>
+            <span class="soleMatrixTitleChevron">â—</span>
           </button>
         </h3>
 

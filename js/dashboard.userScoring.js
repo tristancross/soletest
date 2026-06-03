@@ -67,74 +67,108 @@ const SOLE_DAY_CAPS = {
 };
 
 const SOLE_SCORE_BUDGETS = {
-  1: {
-    connection: {
-      quiz: 28,
-      messages: 15,
-      tasks: 5
-    },
-    attraction: {
-      quiz: 28,
-      messages: 10,
-      tasks: 5
-    }
+1: {
+  connection: {
+    quiz: 28,
+    messages: 15,
+    tasks: 0
   },
-
-  2: {
-    connection: {
-      quiz: 38,
-      messages: 11,
-      tasks: 10
-    },
-    attraction: {
-      quiz: 35,
-      messages: 10,
-      tasks: 9
-    }
+  attraction: {
+    quiz: 28,
+    messages: 10,
+    tasks: 0
   },
-
-  3: {
-    connection: {
-      quiz: 48,
-      messages: 9,
-      tasks: 12
-    },
-    attraction: {
-      quiz: 49,
-      messages: 8,
-      tasks: 10
-    }
-  },
-
-  4: {
-    connection: {
-      quiz: 58,
-      messages: 7,
-      tasks: 17
-    },
-    attraction: {
-      quiz: 59,
-      messages: 6,
-      tasks: 14
-    }
-  },
-
-  5: {
-    connection: {
-      quiz: 72,
-      messages: 6,
-      tasks: 22
-    },
-    attraction: {
-      quiz: 73,
-      messages: 5,
-      tasks: 22
-    }
+  confidence: {
+    tasks: 8
   }
+},
+2: {
+  connection: {
+    quiz: 38,
+    messages: 11,
+    tasks: 0
+  },
+  attraction: {
+    quiz: 35,
+    messages: 10,
+    tasks: 0
+  },
+  confidence: {
+    tasks: 10
+  }
+},
+3: {
+  connection: {
+    quiz: 48,
+    messages: 9,
+    tasks: 0
+  },
+  attraction: {
+    quiz: 49,
+    messages: 8,
+    tasks: 0
+  },
+  confidence: {
+    tasks: 12
+  }
+},
+4: {
+  connection: {
+    quiz: 58,
+    messages: 7,
+    tasks: 0
+  },
+  attraction: {
+    quiz: 59,
+    messages: 6,
+    tasks: 0
+  },
+  confidence: {
+    tasks: 14
+  }
+},
+5: {
+  connection: {
+    quiz: 72,
+    messages: 6,
+    tasks: 0
+  },
+  attraction: {
+    quiz: 73,
+    messages: 5,
+    tasks: 0
+  },
+  confidence: {
+    tasks: 16
+  }
+}
 };
 
 function soleGetScoreBudget(dayIndex) {
-  return SOLE_SCORE_BUDGETS[dayIndex] || SOLE_SCORE_BUDGETS[1];
+  const day = soleClamp(
+    Math.round(Number(dayIndex) || 1),
+    1,
+    SOLE_EXPERIMENT_TOTAL_DAYS
+  );
+
+  const fallback = SOLE_SCORE_BUDGETS[SOLE_EXPERIMENT_TOTAL_DAYS];
+  const budget = SOLE_SCORE_BUDGETS[day] || fallback;
+
+  return {
+    connection: {
+      quiz: Number(budget.connection?.quiz || 0),
+      messages: Number(budget.connection?.messages || 0),
+      tasks: Number(budget.connection?.tasks || 0)
+    },
+    attraction: {
+      quiz: Number(budget.attraction?.quiz || 0),
+      messages: Number(budget.attraction?.messages || 0),
+      tasks: Number(budget.attraction?.tasks || 0)
+    },
+    confidence: {
+      tasks: Number(budget.confidence?.tasks || 0)
+    }
+  };
 }
 
 function soleSignalToBudgetPoints(signal, budget) {
@@ -207,10 +241,39 @@ function soleResolveExperimentDayFromUser(user, now = new Date()) {
   return soleClamp(daysElapsed + 1, 1, SOLE_EXPERIMENT_TOTAL_DAYS);
 }
 
-function soleGetExperimentDayIndex(user, now = new Date()) {
-  return soleResolveExperimentDayFromUser(user, now);
-}
+function soleGetExperimentDayIndex(user) {
+  const globalSettings = window.soleDayConfigs?.getExperimentSettingsFromCache?.();
+  const globalDay = Number(globalSettings?.current_day);
 
+  if (
+    Number.isFinite(globalDay) &&
+    globalDay >= 1 &&
+    globalDay <= SOLE_EXPERIMENT_TOTAL_DAYS
+  ) {
+    return Math.round(globalDay);
+  }
+
+  const override = Number(user?.experiment_day_override);
+
+  if (
+    Number.isFinite(override) &&
+    override >= 1 &&
+    override <= SOLE_EXPERIMENT_TOTAL_DAYS
+  ) {
+    return Math.round(override);
+  }
+
+  if (!user?.created_at) return 1;
+
+  const created = new Date(user.created_at);
+  const now = new Date();
+
+  if (Number.isNaN(created.getTime())) return 1;
+
+  const day = Math.floor((now - created) / (1000 * 60 * 60 * 24)) + 1;
+
+  return Math.max(1, Math.min(SOLE_EXPERIMENT_TOTAL_DAYS, day));
+}
 function soleGetMessageSignal({
   sentCount = 0,
   receivedCount = 0,
@@ -328,10 +391,7 @@ function soleCalculateExperimentScore({
     budget.connection.messages
   );
 
-  const connectionTaskPoints = soleSignalToBudgetPoints(
-    taskSignal,
-    budget.connection.tasks
-  );
+const connectionTaskPoints = 0;
 
   const attractionQuizPoints = soleSignalToBudgetPoints(
     attractionQuizSignal,
@@ -343,15 +403,17 @@ function soleCalculateExperimentScore({
     budget.attraction.messages
   );
 
-  const attractionTaskPoints = soleSignalToBudgetPoints(
-    taskSignal,
-    budget.attraction.tasks
-  );
+const attractionTaskPoints = 0;
 
-  const connectionProgress =
-    connectionQuizPoints +
-    connectionMessagePoints +
-    connectionTaskPoints;
+const taskConfidencePoints = soleSignalToBudgetPoints(
+  taskSignal,
+  budget.confidence?.tasks || 0
+);
+
+const connectionProgress =
+  connectionQuizPoints +
+  connectionMessagePoints +
+  connectionTaskPoints;
 
   const attractionProgress =
     attractionQuizPoints +
@@ -395,10 +457,11 @@ function soleCalculateExperimentScore({
     averageGrowth * 0.45 +
     balancedGrowth * 0.55;
 
-  const confidenceBeforeCaps =
-    confidenceBaseline +
-    confidenceGrowth +
-    Number(adjustments.confidenceDelta || 0);
+const confidenceBeforeCaps =
+  confidenceBaseline +
+  confidenceGrowth +
+  taskConfidencePoints +
+  Number(adjustments.confidenceDelta || 0);
 
   const confidence = soleClamp(
     confidenceBeforeCaps,
@@ -452,9 +515,9 @@ const candidateProgress = Math.pow(
     dayIndex: resolvedDayIndex,
     totalDays: SOLE_EXPERIMENT_TOTAL_DAYS,
 
-    connection: soleRound(connection, 1),
-    attraction: soleRound(attraction, 1),
-    confidence: soleRound(confidence, 1),
+connection: soleRound(connection, 2),
+attraction: soleRound(attraction, 2),
+confidence: soleRound(confidence, 2),
     candidates,
 
     raw: {
@@ -480,12 +543,12 @@ const candidateProgress = Math.pow(
           delta: Number(adjustments.attractionDelta || 0)
         },
 
-        confidence: {
-          baseline: soleRound(confidenceBaseline, 1),
-          growth: soleRound(confidenceGrowth, 2),
-          delta: Number(adjustments.confidenceDelta || 0)
-        },
-
+confidence: {
+  baseline: soleRound(confidenceBaseline, 1),
+  growth: soleRound(confidenceGrowth, 2),
+  tasks: soleRound(taskConfidencePoints, 2),
+  delta: Number(adjustments.confidenceDelta || 0)
+},
         candidates: {
           baseline: Math.round(candidateBaseline),
           progress: soleRound(candidateProgress * 100, 2),

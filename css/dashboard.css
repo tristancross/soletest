@@ -1,4 +1,4 @@
-/* dashboard.css — home dashboard cards, progress rings, daily tasks, manifest panel */
+/* dashboard.css â€” home dashboard cards, progress rings, daily tasks, manifest panel */
 .sectionTitle{
   color:var(--muted);
   font-size:12px;
@@ -539,7 +539,7 @@
 
 
 .sidebarTaskCard.isComplete::after{
-    content:"✓";
+    content:"âœ“";
   width:22px;
   height:22px;
   border-radius:999px;
@@ -1252,4 +1252,5 @@ font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-seri
   box-shadow:var(--sole-shadow);
   color:var(--sole-ink);
 }
+
 

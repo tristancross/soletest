@@ -1,4 +1,4 @@
-/* layout.css — main app shell, sidebar/sidebar-adjacent layout, account tray, user list */
+/* layout.css â€” main app shell, sidebar/sidebar-adjacent layout, account tray, user list */
 .app{
   height:100vh;
   display:grid;
@@ -848,4 +848,5 @@
       0 0 24px rgba(255,122,92,.24);
   }
 }
+
 

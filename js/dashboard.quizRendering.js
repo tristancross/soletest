@@ -435,7 +435,7 @@ if (question.type === "slider") {
       lines.push(`
         <div class="quizCompleteLine">
           ${escapeHtml(question.prompt)}:
-                  <strong>${escapeHtml((answer.orderedLabels || []).join(" → "))}</strong>
+                  <strong>${escapeHtml((answer.orderedLabels || []).join(" â†’ "))}</strong>
         </div>
       `);
     }
@@ -516,7 +516,7 @@ if (question.type === "swipeDeck") {
             <strong>${escapeHtml(answer.fileName || "Uploaded file")}</strong>
             ${
               fileUrl
-                ? ` — <a href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener noreferrer">Open file</a>`
+                ? ` â€” <a href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener noreferrer">Open file</a>`
                 : ""
             }
           </div>
@@ -526,7 +526,7 @@ if (question.type === "swipeDeck") {
   });
 
   const eyebrow = adminPreview
-    ? (isPartial ? "Admin preview · in progress" : "Admin preview · completed")
+    ? (isPartial ? "Admin preview Â· in progress" : "Admin preview Â· completed")
     : "Calibration complete";
 
   const hint = adminPreview
@@ -714,6 +714,73 @@ const isFinalStep = currentStep === assignment.questions.length - 1;
       </div>
     </section>
   `;
+}
+
+function canAdvanceQuestion(question, answer) {
+  if (!question) return false;
+
+  const type = question.type;
+
+  if (!answer) return false;
+
+  if (type === "slider") {
+    return Number.isFinite(Number(answer.value));
+  }
+
+  if (type === "scale7") {
+    const value = Number(answer.value);
+    return Number.isFinite(value) && value >= 1 && value <= 7;
+  }
+
+  if (type === "singleSelect" || type === "imageChoice") {
+    return String(answer.value || "").trim().length > 0;
+  }
+
+  if (type === "multiSelect") {
+    return Array.isArray(answer.values) && answer.values.length > 0;
+  }
+
+  if (type === "freeText") {
+    return String(answer.text || "").trim().length > 0;
+  }
+
+  if (type === "ranking") {
+    const orderedValues = Array.isArray(answer.orderedValues)
+      ? answer.orderedValues
+      : [];
+
+    const optionCount = Array.isArray(question.config?.options)
+      ? question.config.options.length
+      : 0;
+
+    return optionCount
+      ? orderedValues.length === optionCount
+      : orderedValues.length > 0;
+  }
+
+  if (type === "swipeDeck") {
+    const decisions = Array.isArray(answer.decisions)
+      ? answer.decisions
+      : [];
+
+    const cards = Array.isArray(question.config?.cards)
+      ? question.config.cards
+      : [];
+
+    return cards.length
+      ? decisions.length >= cards.length
+      : decisions.length > 0;
+  }
+
+  if (type === "fileUpload") {
+    if (answer.status === "uploaded") {
+      return !!(answer.path || answer.url || answer.signedUrl);
+    }
+
+    return false;
+  }
+
+  return Object.keys(answer || {}).length > 0;
 }
 
 function isAssignmentCompleted(me, assignment) {

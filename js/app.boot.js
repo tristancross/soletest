@@ -98,7 +98,9 @@ try {
 }
 
 try {
-  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me);
+ runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: true
+});
 } catch (error) {
   console.warn("Could not load assignments for sidebar scoring", error);
 }
@@ -133,47 +135,56 @@ function setupSidebarDashboardScreens() {
 
 window.sidebarDashboardUI = {
   renderMenu() {
+    const appEl = document.querySelector(".app.soleRedesignApp");
+
+    if (appEl) {
+      delete appEl.dataset.activeModule;
+    }
+
     sidebarPaneEl.innerHTML = defaultMenuMarkup;
     bindSidebarModuleButtons();
-bindProgressHoverLinks();
+    bindProgressHoverLinks();
 
-requestAnimationFrame(async () => {
-  await refreshSidebarProgressFromScoring();
+    requestAnimationFrame(async () => {
+      await refreshSidebarProgressFromScoring();
 
-  updateSidebarDailyTasks();
-  updateInsightNotificationDots();
-});
+      updateSidebarDailyTasks();
+      updateInsightNotificationDots();
+    });
   }
 };
 
-  function bindSidebarModuleButtons() {
-    sidebarPaneEl
-      .querySelectorAll("[data-dashboard-screen]")
-      .forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const screen = btn.dataset.dashboardScreen;
+function bindSidebarModuleButtons() {
+  sidebarPaneEl
+    .querySelectorAll("[data-dashboard-screen]")
+    .forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const screen = btn.dataset.dashboardScreen;
 
-if (screen === "chemistry" || screen === "attraction") {
-  const railAction = screen === "chemistry" ? "connection" : "attraction";
+        if (!["chemistry", "attraction", "solemate"].includes(screen)) return;
 
-  document.querySelectorAll(".soleRailItem").forEach(btn => {
-    btn.classList.toggle("isActive", btn.dataset.soleRail === railAction);
-  });
+        const railAction =
+          screen === "chemistry"
+            ? "connection"
+            : screen;
 
-  await window.dashboardUI.mountSidebarDashboardScreen({
-    screen,
-    sidebarPaneEl,
-    mainEl,
-    sb,
-    me,
-    escapeHtml
-  });
-
-  await updateInsightNotificationDots();
-}
+        document.querySelectorAll(".soleRailItem").forEach(btn => {
+          btn.classList.toggle("isActive", btn.dataset.soleRail === railAction);
         });
+
+        await window.dashboardUI.mountSidebarDashboardScreen({
+          screen,
+          sidebarPaneEl,
+          mainEl,
+          sb,
+          me,
+          escapeHtml
+        });
+
+        await updateInsightNotificationDots();
       });
-  }
+    });
+}
 
  bindSidebarModuleButtons();
 bindProgressHoverLinks();

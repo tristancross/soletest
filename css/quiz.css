@@ -1,4 +1,4 @@
-/* quiz.css — quiz panels, question controls, uploads, swipe deck, quiz animations */
+/* quiz.css â€” quiz panels, question controls, uploads, swipe deck, quiz animations */
 .sidebarScreenBody .quizPanel{
   margin:0;
 }
@@ -581,10 +581,10 @@ width: 100px;
 .quizRankingItem.isDragging{
   opacity:.86;
   transform:scale(1.015);
-  border-color:rgba(255,118,95,.24);
-  box-shadow:
-    0 18px 38px rgba(76,49,31,.12),
-    inset 0 1px 0 rgba(255,255,255,.84);
+    background: linear-gradient(135deg, #ff9a80, #ff6654) !important;
+    color: var(--bg);
+    border-color: rgba(255, 118, 95, .32);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .82), inset 0 0 0 1px rgba(255, 118, 95, .06), 0 8px 20px rgba(76, 49, 31, .045);
   z-index:5;
 }
 
@@ -601,6 +601,7 @@ width: 100px;
 body.isRankingDragging .quizRankingItem{
   cursor:grabbing;
 }
+
 
 
 .quizRankingIndex{
@@ -633,6 +634,10 @@ body.isRankingDragging .quizRankingItem{
   font-size:14px;
   font-weight:650;
   line-height:1.25;
+}
+
+.quizRankingItem.isDragging .quizRankingText, .quizRankingItem.isDragging .quizRankingIndex{
+  color:var(--bg);
 }
 
 

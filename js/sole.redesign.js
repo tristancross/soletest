@@ -5,21 +5,41 @@
   function qsa(sel, root = document){ return Array.from(root.querySelectorAll(sel)); }
 
 function getDisplayName(){
+  const profileName =
+    window.me?.display_name ||
+    window.me?.username ||
+    "";
+
   const railAccountName =
     document.querySelector("#soleRailAccountName")?.textContent?.trim() || "";
 
   const railInitial =
     document.querySelector("#soleRailUserInitial")?.textContent?.trim() || "";
 
+  const storedProfile = (() => {
+    try {
+      const raw = localStorage.getItem("sole_profile");
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      return (
+        parsed?.display_name ||
+        parsed?.username ||
+        parsed?.email ||
+        ""
+      );
+    } catch (_) {
+      return "";
+    }
+  })();
+
   return (
+    profileName ||
     railAccountName ||
-    window.me?.display_name ||
-    window.me?.username ||
+    storedProfile ||
     railInitial ||
     "User"
   );
 }
-
 function getTimeGreeting(){
   const hour = new Date().getHours();
 
@@ -37,16 +57,20 @@ function getTimeGreeting(){
 
 function enhanceGreeting(){
   const pane = qs(".sidebarNavPane");
-  if (!pane || qs(".soleDashboardGreeting")) return;
+  if (!pane) return;
 
-  const greeting = document.createElement("section");
-  greeting.className = "soleDashboardGreeting";
+  let greeting = qs(".soleDashboardGreeting", pane);
+
+  if (!greeting) {
+    greeting = document.createElement("section");
+    greeting.className = "soleDashboardGreeting";
+    pane.prepend(greeting);
+  }
+
   greeting.innerHTML = `
     <h2>${getTimeGreeting()}, ${escapeHtml(getDisplayName())}</h2>
     <p>Thoughtful connections start here.</p>
   `;
-
-  pane.prepend(greeting);
 }
 
   function updateProgressLabels(){
@@ -83,7 +107,12 @@ hero.innerHTML = `
       one connection.
     </p>
 
-<button class="soleModuleExplore soleModuleExploreHero">
+<button
+  class="soleModuleExplore soleModuleExploreHero"
+  type="button"
+  data-dashboard-screen="solemate"
+  aria-label="Open Solemate"
+>
   <span>Explore</span>
   <i class="fa-solid fa-arrow-right"></i>
 </button>
@@ -196,6 +225,7 @@ function getRailActionForModuleScreen(screen){
   if (screen === "chemistry") return "connection";
   if (screen === "connection") return "connection";
   if (screen === "attraction") return "attraction";
+  if (screen === "solemate") return "solemate";
   return null;
 }
 
@@ -251,14 +281,10 @@ setActiveRailItem(getRailActionForModuleScreen(screen));
       return;
     }
 
-    if (action === "insights") {
-      await openModule("chemistry");
-      setTimeout(() => {
-        const insightsTab = qs('[data-module-subview-tab="insights"]');
-        insightsTab?.click?.();
-      }, 80);
-      return;
-    }
+if (action === "solemate" || action === "insights") {
+  await openModule("solemate");
+  return;
+}
 
 if (action === "settings" || action === "account") {
   const account = qs("#soleRailAccount");

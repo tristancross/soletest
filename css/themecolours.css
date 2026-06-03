@@ -1,0 +1,114 @@
+/* MODULE THEME COLOURS --------------------------------------------------- */
+/* Loaded after modules.css / solemate.css / admin.css */
+
+.app.soleRedesignApp{
+  transition:
+    background 520ms ease,
+    border-color 520ms ease;
+}
+
+.app.soleRedesignApp[data-active-module]{
+  background:var(--module-page-bg);
+}
+
+/* ATTRACTION — romance / blush / heat */
+.app.soleRedesignApp[data-active-module="attraction"]{
+  --module-accent:#ff6f7f;
+  --module-accent-soft:rgba(255,111,127,.16);
+
+  --module-page-bg:
+    radial-gradient(circle at 14% 10%, rgba(255,255,255,.40), transparent 25%),
+    radial-gradient(circle at 20% 76%, rgba(255,184,202,.24), transparent 28%),
+    radial-gradient(circle at 48% 18%, rgba(255,116,145,.18), transparent 30%),
+    radial-gradient(circle at 76% 24%, rgba(255,118,88,.20), transparent 34%),
+    radial-gradient(circle at 90% 84%, rgba(255,208,150,.22), transparent 38%),
+    linear-gradient(
+      135deg,
+      rgba(248,237,233,.98) 0%,
+      rgba(247,226,226,.96) 38%,
+      rgba(244,222,215,.96) 68%,
+      rgba(247,234,226,.98) 100%
+    );
+
+  --chat-aura-1:rgba(255,124,116,.34);
+  --chat-aura-2:rgba(255,198,110,.20);
+  --chat-aura-3:rgba(255,166,178,.24);
+}
+
+/* CONNECTION — signal / science / rapport */
+.app.soleRedesignApp[data-active-module="connection"],
+.app.soleRedesignApp[data-active-module="chemistry"]{
+  --module-accent:#4fc7a4;
+  --module-accent-soft:rgba(79,199,164,.16);
+
+  --module-page-bg:
+    radial-gradient(circle at 14% 12%, rgba(255,255,255,.36), transparent 25%),
+    radial-gradient(circle at 26% 78%, rgba(178,239,218,.24), transparent 30%),
+    radial-gradient(circle at 50% 18%, rgba(132,224,210,.18), transparent 30%),
+    radial-gradient(circle at 76% 24%, rgba(130,205,255,.18), transparent 34%),
+    radial-gradient(circle at 90% 80%, rgba(244,226,132,.20), transparent 38%),
+    linear-gradient(
+      135deg,
+      rgba(237,244,238,.98) 0%,
+      rgba(228,241,236,.96) 38%,
+      rgba(226,238,241,.96) 70%,
+      rgba(240,238,226,.98) 100%
+    );
+
+  --chat-aura-1:rgba(114,222,188,.24);
+  --chat-aura-2:rgba(134,201,255,.18);
+  --chat-aura-3:rgba(232,224,126,.18);
+}
+
+/* SOLEMATE — halo / pearl / destiny */
+.app.soleRedesignApp[data-active-module="solemate"]{
+  --module-accent:#e7b85b;
+  --module-accent-soft:rgba(231,184,91,.18);
+
+  --module-page-bg:
+    radial-gradient(circle at 14% 12%, rgba(255,255,255,.42), transparent 25%),
+    radial-gradient(circle at 26% 72%, rgba(255,234,190,.24), transparent 30%),
+    radial-gradient(circle at 54% 16%, rgba(245,209,132,.22), transparent 32%),
+    radial-gradient(circle at 78% 24%, rgba(232,213,255,.16), transparent 31%),
+    radial-gradient(circle at 92% 78%, rgba(185,219,255,.16), transparent 38%),
+    linear-gradient(
+      135deg,
+      rgba(245,240,234,.98) 0%,
+      rgba(244,235,225,.97) 38%,
+      rgba(241,234,229,.97) 68%,
+      rgba(238,234,238,.98) 100%
+    );
+
+  --chat-aura-1:rgba(240,194,112,.24);
+  --chat-aura-2:rgba(216,196,255,.16);
+  --chat-aura-3:rgba(174,214,255,.14);
+}
+
+/* Shared module accent details */
+
+.app.soleRedesignApp[data-active-module] .moduleHeroEyebrow,
+.app.soleRedesignApp[data-active-module] .dashboardEyebrow{
+  color:var(--module-accent);
+}
+
+.app.soleRedesignApp[data-active-module] .moduleRingFill{
+  stroke:var(--module-accent);
+  filter:
+    drop-shadow(0 6px 14px color-mix(in srgb, var(--module-accent) 28%, transparent));
+}
+
+.app.soleRedesignApp[data-active-module] .moduleSubviewTab.active{
+  box-shadow:
+    0 8px 20px rgba(76,49,31,.055),
+    inset 0 1px 0 rgba(255,255,255,.88),
+    inset 0 0 0 1px color-mix(in srgb, var(--module-accent) 22%, transparent);
+}
+
+/* Chat panel aura responds to current module */
+
+.app.soleRedesignApp[data-active-module] .main::before{
+  background:
+    radial-gradient(circle at 42% 42%, var(--chat-aura-1), transparent 38%),
+    radial-gradient(circle at 54% 54%, var(--chat-aura-2), transparent 44%),
+    radial-gradient(circle at 48% 62%, var(--chat-aura-3), transparent 48%);
+}

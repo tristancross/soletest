@@ -35,6 +35,18 @@ if (window.visualViewport) {
 setupSidebarDashboardScreens();
 initAccountTray();
 
+try {
+  await window.soleDayConfigs?.loadExperimentDayConfigs?.(sb, {
+    force: true
+  });
+
+  await window.soleDayConfigs?.loadExperimentSettings?.(sb, {
+    force: true
+  });
+} catch (error) {
+  console.warn("Could not preload experiment day settings", error);
+}
+
 await refreshSidebarProgressFromScoring({
   animateFromZero: true
 });

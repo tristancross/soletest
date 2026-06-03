@@ -1,4 +1,4 @@
-/* styles.css — tokens, base styles, auth, buttons and shared utilities */
+/* styles.css â€” tokens, base styles, auth, buttons and shared utilities */
 :root {
   /* Her-ish warm system palette */
   --bg: #120705;
@@ -342,3 +342,4 @@ select optgroup{
 .btn:hover{
   background:rgba(255,118,95,.10);
 }
+

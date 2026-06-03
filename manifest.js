@@ -271,7 +271,7 @@ async function renderAdminManifestManager({ sb, profiles, escapeHtml, escapeAttr
             <div class="adminManifestStatus">
               ${
                 manifest
-    ? (manifest.is_enabled === false ? "Image uploaded · warp off" : "Image uploaded · warp on")
+    ? (manifest.is_enabled === false ? "Image uploaded Â· warp off" : "Image uploaded Â· warp on")
   : "No image uploaded"
               }
             </div>

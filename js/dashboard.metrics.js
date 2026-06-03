@@ -1,3 +1,4 @@
+
 const dashboardResponseCache = new Map();
 const dashboardProgressCache = new Map();
 
@@ -73,6 +74,64 @@ function getMergedAssignmentAnswers(me, assignment) {
     ...(savedProgress?.answers || {}),
     ...(savedResponse?.answers || {})
   };
+}
+
+function getAssignmentQuestions(assignment = {}) {
+  return Array.isArray(assignment.questions)
+    ? assignment.questions
+    : [];
+}
+
+function getAssignmentStepTotal(assignment = {}) {
+  return Math.max(getAssignmentQuestions(assignment).length, 1);
+}
+
+function doesAnswerCountForStep(answer) {
+  if (answer === undefined || answer === null) return false;
+
+  if (typeof answer === "string") {
+    return answer.trim().length > 0;
+  }
+
+  if (typeof answer === "number") {
+    return Number.isFinite(answer);
+  }
+
+  if (typeof answer === "boolean") {
+    return true;
+  }
+
+  if (Array.isArray(answer)) {
+    return answer.length > 0;
+  }
+
+  if (typeof answer === "object") {
+    if (answer.status === "uploaded") return !!answer.path || !!answer.url || !!answer.signedUrl;
+    if (answer.status === "skipped") return false;
+
+    return Object.keys(answer).some(key => {
+      const value = answer[key];
+
+      if (value === undefined || value === null) return false;
+      if (typeof value === "string") return value.trim().length > 0;
+      if (Array.isArray(value)) return value.length > 0;
+
+      return true;
+    });
+  }
+
+  return false;
+}
+
+function getCompletedStepCount(assignment = {}, currentStep = 0, answers = {}) {
+  const questions = getAssignmentQuestions(assignment);
+
+  if (!questions.length) return 0;
+
+  return questions.reduce((count, question) => {
+    const answer = answers?.[question.id];
+    return count + (doesAnswerCountForStep(answer) ? 1 : 0);
+  }, 0);
 }
 
 function getAnsweredQuestionCount(me, assignment) {
@@ -234,43 +293,229 @@ function getTotalQuestionCount(assignments = []) {
   }, 0);
 }
 
-function getModuleQuizSignalScore(me, assignments = [], moduleKind = "connection") {
-  const filtered = assignments.filter(assignment => {
-    const id = String(assignment.id || "").toLowerCase();
-    const title = String(assignment.title || "").toLowerCase();
-    const category = String(
-      assignment.category ||
-      assignment.module ||
-      assignment.kind ||
-      assignment.type ||
-      ""
-    ).toLowerCase();
+function stableHashString(input = "") {
+  const text = String(input);
+  let hash = 2166136261;
 
-    if (moduleKind === "attraction") {
-      return (
-        id.includes("attraction") ||
-        title.includes("attraction") ||
-        category.includes("attraction")
-      );
-    }
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
 
-    if (moduleKind === "connection") {
-      return (
-        id.includes("connection") ||
-        id.includes("chemistry") ||
-        title.includes("connection") ||
-        title.includes("chemistry") ||
-        category.includes("connection") ||
-        category.includes("chemistry")
-      );
-    }
+  return hash >>> 0;
+}
 
-    return false;
+function seededRandom(seedText = "") {
+  let seed = stableHashString(seedText);
+
+  seed += 0x6D2B79F5;
+  let t = seed;
+
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function allocateSeededWeights(items = [], total = 100, seedPrefix = "weights", spread = 0.55) {
+  if (!items.length) return new Map();
+
+  const rawWeights = items.map((item, index) => {
+    const id = item?.id || item?.template_id || item?.title || index;
+    const random = seededRandom(`${seedPrefix}:${id}:${index}`);
+
+    // Around 1.0, but with controlled variation.
+    // spread .55 gives roughly 0.725x to 1.275x before normalisation.
+    return {
+      item,
+      raw: 1 + ((random - 0.5) * spread)
+    };
   });
 
-  if (!filtered.length) return 0;
+  const rawTotal = rawWeights.reduce((sum, item) => sum + item.raw, 0) || 1;
 
-  return getQuizSignalScore(me, filtered);
+  return new Map(
+    rawWeights.map(({ item, raw }) => {
+      return [
+        item,
+        (raw / rawTotal) * total
+      ];
+    })
+  );
+}
+
+function normaliseModuleName(value) {
+  const category = String(value || "").toLowerCase();
+
+  if (category === "chemistry") return "connection";
+  if (category === "connection") return "connection";
+  if (category === "attraction") return "attraction";
+
+  return category;
+}
+
+function getAssignmentModuleName(assignment) {
+  return normaliseModuleName(
+    assignment?.meta?.category ||
+    assignment?.category ||
+    assignment?.module ||
+    ""
+  );
+}
+
+function isAssignmentForModule(assignment, moduleName) {
+  const target = normaliseModuleName(moduleName);
+  const assignmentModule = getAssignmentModuleName(assignment);
+
+  // If no category exists, keep old permissive behaviour.
+  if (!assignmentModule) return true;
+
+  return assignmentModule === target;
+}
+
+function getQuestionStableId(question, index) {
+  return String(
+    question?.id ||
+    question?.key ||
+    question?.label ||
+    question?.prompt ||
+    `question_${index}`
+  );
+}
+
+function getQuizQuestionWeights(assignment, quizWeight, moduleName) {
+  const questions = assignment?.questions || [];
+  const scoredQuestions = questions.filter(question => !question?.meta?.excludeFromScore);
+
+  const seed = [
+    "quiz-question-weights",
+    moduleName,
+    assignment?.id || assignment?.template_id || assignment?.title || "assignment"
+  ].join(":");
+
+  return allocateSeededWeights(
+    scoredQuestions.map((question, index) => ({
+      ...question,
+      __stableScoreId: getQuestionStableId(question, index)
+    })),
+    quizWeight,
+    seed,
+    0.7
+  );
+}
+
+function getBaselineTimeMs(me) {
+  const raw = me?.score_baseline_set_at;
+  if (!raw) return null;
+
+  const time = new Date(raw).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+function getAssignmentScoreTimestamp(me, assignment) {
+  const progress = getAssignmentProgress(me, assignment.id);
+  const response = getAssignmentResponse(me, assignment.id);
+
+  const raw =
+    progress?.updatedAt ||
+    progress?.submittedAt ||
+    response?.updatedAt ||
+    response?.submittedAt ||
+    null;
+
+  if (!raw) return null;
+
+  const time = new Date(raw).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+function wasAssignmentUpdatedAfterBaseline(me, assignment) {
+  const baselineMs = getBaselineTimeMs(me);
+  if (!baselineMs) return true;
+
+  const assignmentMs = getAssignmentScoreTimestamp(me, assignment);
+  if (!assignmentMs) return false;
+
+  return assignmentMs >= baselineMs;
+}
+
+function getAssignmentDayIndexForScoring(assignment = {}) {
+  const raw =
+    assignment.day_index ??
+    assignment.day_number ??
+    assignment.day ??
+    assignment.experiment_day ??
+    assignment.meta?.day_index ??
+    assignment.meta?.day_number ??
+    assignment.meta?.day ??
+    assignment.effect?.day_index ??
+    assignment.effect?.day_number ??
+    1;
+
+  const num = Math.round(Number(raw) || 1);
+  return Math.max(1, Math.min(5, num));
+}
+
+function getModuleQuizSignalScore(me, assignments = [], moduleName = "connection") {
+const currentDay = getExperimentDayIndex(me);
+
+const moduleAssignments = (assignments || []).filter(assignment => {
+  const assignmentDay = getAssignmentDayIndexForScoring(assignment);
+
+  return (
+    assignmentDay <= currentDay &&
+    isAssignmentForModule(assignment, moduleName)
+  );
+});
+
+  if (!moduleAssignments.length) return 0;
+
+  /**
+   * This makes each quiz worth a slightly different share of the module's
+   * quiz lane. Completing all module quizzes still equals 100.
+   */
+  const quizWeights = allocateSeededWeights(
+    moduleAssignments,
+    100,
+    `module-quiz-weights:${normaliseModuleName(moduleName)}`,
+    0.45
+  );
+
+
+const earned = moduleAssignments.reduce((total, assignment) => {
+  const quizWeight = quizWeights.get(assignment) || 0;
+  const questions = assignment.questions || [];
+
+  if (!questions.length) return total;
+
+  if (!wasAssignmentUpdatedAfterBaseline(me, assignment)) {
+    return total;
+  }
+
+  const mergedAnswers = getMergedAssignmentAnswers(me, assignment);
+    const questionWeights = getQuizQuestionWeights(
+      assignment,
+      quizWeight,
+      moduleName
+    );
+
+    const earnedForQuiz = Array.from(questionWeights.entries()).reduce(
+      (quizTotal, [question, questionWeight]) => {
+        const answer = mergedAnswers[question.id];
+
+        if (!doesAnswerCountTowardProgress(question, answer)) {
+          return quizTotal;
+        }
+
+        return quizTotal + questionWeight;
+      },
+      0
+    );
+
+    return total + earnedForQuiz;
+  }, 0);
+
+  return Math.max(0, Math.min(100, earned));
 }
 
 function getQuizSignalScore(me, assignments = []) {
@@ -412,9 +657,13 @@ function getSampleStrength(messageCount) {
 }
 
 function getTaskSignalScore(me, assignments = []) {
-  if (!assignments.length) return 0;
+  const eligibleAssignments = (assignments || []).filter(assignment => {
+    return wasAssignmentUpdatedAfterBaseline(me, assignment);
+  });
 
-  const progressValues = assignments.map(item =>
+  if (!eligibleAssignments.length) return 0;
+
+  const progressValues = eligibleAssignments.map(item =>
     getAssignmentProgressFraction(me, item)
   );
 
@@ -422,7 +671,7 @@ function getTaskSignalScore(me, assignments = []) {
     return sum + Math.max(0, Math.min(1, Number(value) || 0));
   }, 0);
 
-  return Math.max(0, Math.min(100, (total / assignments.length) * 100));
+ return Math.max(0, Math.min(100, (total / eligibleAssignments.length) * 100));
 }
 
 function getUserScoreOverrides(me) {
@@ -482,24 +731,25 @@ function getUserScoreAdjustments(me) {
 function getBaseDashboardState(messageCount, me, assignments = [], messageStats = {}) {
   const userScoring = window.soleExperimentScoring;
 
-const messageScore = getMessageSignalScore(messageCount, messageStats);
+  const messageScore = getMessageSignalScore(messageCount, messageStats);
   const dayIndex = getExperimentDayIndex(me);
 
-  const hasBaselineStart = !!me?.score_baseline_set_at;
+  // These functions now handle baseline filtering internally.
+  // So: old quiz/task work before score_baseline_set_at is ignored,
+  // but new quiz/task work after baseline still counts.
+  const connectionQuizSignal = getModuleQuizSignalScore(
+    me,
+    assignments,
+    "connection"
+  );
 
-  // Once a baseline is set, old quiz/task progress should not be
-  // re-added on top of the baseline.
-  const connectionQuizSignal = hasBaselineStart
-    ? 0
-    : getModuleQuizSignalScore(me, assignments, "connection");
+  const attractionQuizSignal = getModuleQuizSignalScore(
+    me,
+    assignments,
+    "attraction"
+  );
 
-  const attractionQuizSignal = hasBaselineStart
-    ? 0
-    : getModuleQuizSignalScore(me, assignments, "attraction");
-
-  const taskSignal = hasBaselineStart
-    ? 0
-    : getTaskSignalScore(me, assignments);
+  const taskSignal = getTaskSignalScore(me, assignments);
 
   if (userScoring?.calculateExperimentScore) {
     const calculated = userScoring.calculateExperimentScore({
@@ -527,9 +777,13 @@ const messageScore = getMessageSignalScore(messageCount, messageStats);
 
   const caps = getStageCaps(dayIndex);
 
+  const averageQuizSignal = (connectionQuizSignal + attractionQuizSignal) / 2;
+
   const totalProgress = Math.min(
     100,
-    messageScore * 0.8 + ((connectionQuizSignal + attractionQuizSignal) / 2) * 0.2
+    messageScore * 0.65 +
+      averageQuizSignal * 0.30 +
+      taskSignal * 0.05
   );
 
   const normalized = totalProgress / 100;
@@ -537,9 +791,10 @@ const messageScore = getMessageSignalScore(messageCount, messageStats);
   let confidence = 24 + easeOutQuad(normalized) * 75;
 
   let remainingCandidates =
-    1 + Math.round(
+    1 +
+    Math.round(
       (DEFAULT_CANDIDATE_POOL - 1) *
-      Math.pow(1 - normalized, 2.35)
+        Math.pow(1 - normalized, 2.35)
     );
 
   confidence = Math.min(confidence, caps.maxConfidence);
@@ -554,7 +809,6 @@ const messageScore = getMessageSignalScore(messageCount, messageStats);
     dayIndex
   };
 }
-
 function applyAssignmentEffects(me, baseState, assignments = []) {
   let remainingCandidates = baseState.remainingCandidates;
   let confidence = baseState.confidence;

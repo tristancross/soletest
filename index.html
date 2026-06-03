@@ -11,8 +11,10 @@
   <link rel="stylesheet" href="./css/chat.css" />
   <link rel="stylesheet" href="./css/quiz.css" />
   <link rel="stylesheet" href="./css/modules.css" />
+  <link rel="stylesheet" href="./css/solemate.css" />
   <link rel="stylesheet" href="./css/insights.css" />
   <link rel="stylesheet" href="./css/admin.css" />
+  <link rel="stylesheet" href="./css/themecolours.css" />
   <link rel="stylesheet" href="./css/mobile.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,7 +33,7 @@
       <input id="loginIdentifier" type="text" placeholder="Email or username" />
 <div class="passwordField">
   <input id="loginPassword" type="password" placeholder="Password">
-   <button class="togglePassword" type="button">👁</button>
+   <button class="togglePassword" type="button">ðŸ‘</button>
 </div>
 
       <button id="forgotPasswordBtn" class="btnGhost small" type="button">
@@ -48,12 +50,12 @@
       <input id="signupEmail" type="email" placeholder="Email" />
 <div class="passwordField">
   <input id="signupPassword" type="password" placeholder="Password">
-    <button class="togglePassword" type="button">👁</button>
+    <button class="togglePassword" type="button">ðŸ‘</button>
 </div>
 
 <div class="passwordField">
   <input id="signupPasswordRepeat" type="password" placeholder="Repeat password">
-   <button class="togglePassword" type="button">👁</button>
+   <button class="togglePassword" type="button">ðŸ‘</button>
 </div>
 
       <button id="createAccountBtn" type="button">Create account</button>
@@ -86,10 +88,10 @@
   <span>Connection</span>
 </button>
 
-    <button class="soleRailItem" type="button" data-sole-rail="insights" aria-label="Insights">
-      <i class="fa-solid fa-chart-simple"></i>
-      <span>Insights</span>
-    </button>
+<button class="soleRailItem" type="button" data-sole-rail="solemate" aria-label="Solemate">
+  <i class="fa-solid fa-heart-circle-bolt"></i>
+  <span>Solemate</span>
+</button>
   </div>
 
   <div class="soleRailBottom">
@@ -104,7 +106,7 @@
   </button>
 
   <div class="soleRailAccountMenu" id="soleRailAccountMenu">
-    <div class="soleRailAccountName" id="soleRailAccountName">Test</div>
+    <div class="soleRailAccountName" id="soleRailAccountName"></div>
 
     <button class="soleRailAccountItem" type="button" id="soleRailLogoutBtn">
       <i class="fa-solid fa-arrow-right-from-bracket"></i>
@@ -234,7 +236,7 @@
   <div class="adminRow">
     <label class="smallLabel">View thread:</label>
     <select id="adminA"></select>
-    <span class="muted">â†”</span>
+    <span class="muted">Ã¢â€ â€</span>
     <select id="adminB"></select>
     <button class="btn" id="adminLoadBtn">Load</button>
     <button class="btn btnGhost" id="adminBlockBtn">Block</button>
@@ -244,7 +246,7 @@
   <div class="adminRow">
   <label class="smallLabel">Pair users:</label>
   <select id="pairUserA"></select>
-  <span class="muted">â†”</span>
+  <span class="muted">Ã¢â€ â€</span>
   <select id="pairUserB"></select>
   <button class="btn" id="createPairBtn">Create pair</button>
   <button class="btn btnGhost" id="clearPairBtn">Clear pair</button>
@@ -270,7 +272,7 @@
 <button type="button" class="formatBtn" id="boldBtn" aria-label="Bold"><strong>B</strong></button>
 <button type="button" class="formatBtn" id="italicBtn" aria-label="Italic"><em>I</em></button>
 <button type="button" class="formatBtn" id="underlineBtn" aria-label="Underline"><u>U</u></button>
-<button type="button" class="formatBtn" id="bulletBtn" aria-label="Bulleted list">â€¢</button>
+<button type="button" class="formatBtn" id="bulletBtn" aria-label="Bulleted list">Ã¢â‚¬Â¢</button>
 
 </div>
 
@@ -325,6 +327,7 @@
 <script src="js/dashboard.matrixDefinitions.js"></script>
 <script src="js/dashboard.matrixRendering.js"></script>
 <script src="js/dashboard.userScoring.js"></script>
+<script src="js/dashboard.dayConfig.js"></script>
 <script src="js/dashboard.scoring.js"></script>
 <script src="js/dashboard.metrics.js"></script>
 <script src="js/dashboard.quizRendering.js"></script>

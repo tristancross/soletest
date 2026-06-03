@@ -348,6 +348,138 @@ async function refreshWelcomeDashboard({
   });
 }
 
+function getClampedPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(100, number));
+}
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function formatSmartPercent(value, maxDecimals = 2) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return "0%";
+
+  const roundedToWhole = Math.round(number);
+
+  // Treat values like 42.00000001 as 42%
+  if (Math.abs(number - roundedToWhole) < 0.0001) {
+    return `${roundedToWhole}%`;
+  }
+
+  return `${number.toFixed(maxDecimals)}%`;
+}
+
+function animateModuleNumber({ valueEl, from, to, duration = 900, decimals = 2 }) {
+  if (!valueEl) return;
+
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  if (reducedMotion || from === to) {
+    valueEl.textContent = formatSmartPercent(to, decimals);
+    return;
+  }
+
+  const start = performance.now();
+
+  function tick(now) {
+    const rawProgress = Math.min(1, (now - start) / duration);
+    const eased = easeOutCubic(rawProgress);
+    const current = from + (to - from) * eased;
+
+    valueEl.textContent = formatSmartPercent(current, decimals);
+
+    if (rawProgress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      valueEl.textContent = formatSmartPercent(to, decimals);
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function animateModuleHeroProgress({ rootEl, userId, screen }) {
+  const moduleRingWrap = rootEl.querySelector(".moduleMiniRing");
+  const moduleRing = rootEl.querySelector(".moduleMiniRing .moduleRingFill");
+ const valueEl = rootEl.querySelector("[data-module-progress-value]");
+
+  if (!moduleRingWrap || !moduleRing || !valueEl) return;
+
+  const cacheKey = `${userId || "anonymous"}:${screen || "module"}`;
+
+  window.soleModuleHeroProgressCache = window.soleModuleHeroProgressCache || {};
+
+  const targetProgress = getClampedPercent(moduleRingWrap.dataset.moduleProgress);
+
+  const previousProgress =
+    typeof window.soleModuleHeroProgressCache[cacheKey] === "number"
+      ? window.soleModuleHeroProgressCache[cacheKey]
+      : targetProgress;
+
+  window.soleModuleHeroProgressCache[cacheKey] = targetProgress;
+
+  const radius = Number(moduleRing.getAttribute("r")) || 46;
+  const circumference = 2 * Math.PI * radius;
+
+  const startFilled = (previousProgress / 100) * circumference;
+  const targetFilled = (targetProgress / 100) * circumference;
+
+  moduleRing.style.strokeDasharray = `${startFilled} ${circumference - startFilled}`;
+  valueEl.textContent = `${Math.round(previousProgress)}%`;
+
+  requestAnimationFrame(() => {
+    moduleRing.style.strokeDasharray = `${targetFilled} ${circumference - targetFilled}`;
+  });
+
+animateModuleNumber({
+  valueEl,
+  from: previousProgress,
+  to: targetProgress,
+  duration: 900,
+  decimals: 2
+});
+}
+
+function getAssignmentDayIndex(assignment = {}) {
+  const raw =
+    assignment.day_index ??
+    assignment.day_number ??
+    assignment.day ??
+    assignment.experiment_day ??
+    assignment.template_day_index ??
+    assignment.template?.day_index ??
+    assignment.template?.day_number ??
+    assignment.quiz_template?.day_index ??
+    assignment.quiz_template?.day_number ??
+    assignment.meta?.day_index ??
+    assignment.meta?.day_number ??
+    assignment.meta?.day ??
+    assignment.effect?.day_index ??
+    assignment.effect?.day_number ??
+    1;
+
+  const num = Math.round(Number(raw) || 1);
+  return Math.max(1, Math.min(5, num));
+}
+
+function getCurrentExperimentDayForUser(user) {
+  if (window.soleExperimentScoring?.getExperimentDayIndex) {
+    return window.soleExperimentScoring.getExperimentDayIndex(user);
+  }
+
+  const settings = window.soleDayConfigs?.getExperimentSettingsFromCache?.();
+  const day = Number(settings?.current_day || 1);
+
+  return Math.max(1, Math.min(5, Math.round(day || 1)));
+}
+
+function isAssignmentLockedForUser(assignment, user) {
+  return getAssignmentDayIndex(assignment) > getCurrentExperimentDayForUser(user);
+}
 
 async function mountSidebarDashboardScreen({
   screen,
@@ -358,9 +490,15 @@ async function mountSidebarDashboardScreen({
   escapeHtml,
   activeAssignmentId = null
 }) {
-  if (!sidebarPaneEl) return;
+if (!sidebarPaneEl) return;
 
-  let activeSubview = "calibration";
+const appEl = document.querySelector(".app.soleRedesignApp");
+
+if (appEl) {
+  appEl.dataset.activeModule = screen;
+}
+
+let activeSubview = screen === "solemate" ? "portrait" : "calibration";
 
 const screenConfig = {
   chemistry: {
@@ -389,7 +527,19 @@ const screenConfig = {
       if (!category) return true;
       return category === "attraction";
     }
+  },
+solemate: {
+  title: "Solemate Model",
+  eyebrow: "Solemate",
+  intro: "Sole is assembling the profile of your highest-probability match.",
+  category: "solemate",
+  progressKey: "confidence",
+  icon: "fa-solid fa-heart-circle-bolt",
+  filter: item => {
+    const category = String(item.meta?.category || "").toLowerCase();
+    return category === "solemate";
   }
+}
 };
 
 function getQuizHeroProgress(assignment, me){
@@ -442,6 +592,15 @@ let liveMessageStats = {
 };
 let runtimeAssignments = [];
 
+let liveDashboardState = {
+  remainingCandidates: window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437,
+  confidence: 0,
+  connection: 0,
+  attraction: 0,
+  stage: "Profile forming",
+  dayIndex: 1
+};
+
 try {
   liveMessageStats = window.getDailyMessageStats
     ? await window.getDailyMessageStats(
@@ -451,7 +610,9 @@ try {
       )
     : { count: 0, totalChars: 0, averageChars: 0 };
 
-  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me);
+ runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: true
+});
 
   const responseState = await loadQuizResponsesFromSupabase(sb, me);
 
@@ -464,6 +625,8 @@ try {
     runtimeAssignments,
     liveMessageStats
   );
+
+  liveDashboardState = dash;
 
   liveProgress = Math.max(
     0,
@@ -502,7 +665,9 @@ function getModuleHeroMeta() {
 
 if (!runtimeAssignments.length) {
   try {
-    runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me);
+  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: true
+});
   } catch (error) {
     console.warn("Sidebar screen assignments failed", error);
   }
@@ -604,83 +769,170 @@ try {
 }
 
 function renderModuleCalibrationList() {
-  const completed = filteredAssignments.filter(assignment =>
-    getAssignmentResponse(me, assignment.id)?.completed
-  );
+  const currentDay = getCurrentExperimentDayForUser(me);
 
-  const available = filteredAssignments.filter(assignment =>
-    !getAssignmentResponse(me, assignment.id)?.completed
-  );
+  const sortedAssignments = [...filteredAssignments].sort((a, b) => {
+    const dayA = getAssignmentDayIndex(a);
+    const dayB = getAssignmentDayIndex(b);
 
-const renderCalibrationCard = (assignment, status = "available") => {
-  const isCompleted = status === "completed";
-  const savedProgress = getAssignmentProgress(me, assignment.id);
-  const hasProgress = !!savedProgress && !isCompleted;
+    if (dayA !== dayB) return dayA - dayB;
 
-  const actionLabel = isCompleted
-    ? ""
-    : hasProgress
-      ? "Continue"
-      : "Start";
+    const priorityA = Number(a.priority ?? 100);
+    const priorityB = Number(b.priority ?? 100);
 
-  return `
-    <article
-      class="moduleCalibrationTaskCard ${isCompleted ? "isCompleted" : ""}"
-      data-module-calibration-card="${escapeAttr(assignment.id)}"
-    >
-      <div class="moduleCalibrationTaskMain">
-        <div class="moduleCalibrationTaskIcon">
-          <i class="${escapeAttr(config.icon || "fa-solid fa-circle-dot")}"></i>
+    if (priorityA !== priorityB) return priorityA - priorityB;
+
+    return String(a.title || "").localeCompare(String(b.title || ""));
+  });
+
+  const firstCurrentAssignment = sortedAssignments.find(assignment => {
+    return (
+      !isAssignmentLockedForUser(assignment, me) &&
+      !getAssignmentResponse(me, assignment.id)?.completed
+    );
+  });
+
+  const days = [1, 2, 3, 4, 5];
+
+  const renderCalibrationCard = (assignment) => {
+    const assignmentDay = getAssignmentDayIndex(assignment);
+    const isCompleted = !!getAssignmentResponse(me, assignment.id)?.completed;
+    const isLocked = isAssignmentLockedForUser(assignment, me);
+    const isCurrent = firstCurrentAssignment?.id === assignment.id;
+
+    const savedProgress = getAssignmentProgress(me, assignment.id);
+    const hasProgress = !!savedProgress && !isCompleted && !isLocked;
+
+    const actionLabel = isCompleted
+      ? ""
+      : isLocked
+        ? `Day ${assignmentDay}`
+        : hasProgress
+          ? "Continue"
+          : "Start";
+
+    const cardClasses = [
+      "moduleCalibrationTaskCard",
+      isCompleted ? "isCompleted" : "",
+      isLocked ? "isLocked" : "",
+      isCurrent ? "isCurrent" : ""
+    ].filter(Boolean).join(" ");
+
+    return `
+      <article
+        class="${cardClasses}"
+        data-module-calibration-card="${escapeAttr(assignment.id)}"
+        data-assignment-day="${escapeAttr(assignmentDay)}"
+        ${isCurrent ? `data-current-module-assignment="true"` : ""}
+      >
+        <div class="moduleCalibrationTaskMain">
+          <div class="moduleCalibrationTaskIcon">
+            <i class="${escapeAttr(
+              isLocked
+                ? "fa-solid fa-lock"
+                : isCompleted
+                  ? "fa-solid fa-check"
+                  : (config.icon || "fa-solid fa-circle-dot")
+            )}"></i>
+          </div>
+
+          <div class="moduleCalibrationTaskText">
+            <h4>${escapeHtml(assignment.title || "Untitled calibration")}</h4>
+            <p>
+              ${
+                isLocked
+                  ? `Unlocks on Day ${escapeHtml(String(assignmentDay))}. You are currently on Day ${escapeHtml(String(currentDay))}.`
+                  : escapeHtml(assignment.description || assignment.prompt || "Additional signal mapping required.")
+              }
+            </p>
+          </div>
         </div>
 
-        <div class="moduleCalibrationTaskText">
-          <h4>${escapeHtml(assignment.title || "Untitled calibration")}</h4>
-          <p>${escapeHtml(assignment.description || assignment.prompt || "Additional signal mapping required.")}</p>
+        <div class="moduleCalibrationTaskAction">
+          ${
+            isCompleted
+              ? `<span class="moduleCalibrationTaskTick"></span>`
+              : isLocked
+                ? `
+                  <span class="moduleCalibrationTaskLocked">
+                    ${escapeHtml(actionLabel)}
+                  </span>
+                `
+                : `
+                  <button
+                    type="button"
+                    class="moduleCalibrationTaskStart"
+                    data-start-module-assignment="${escapeAttr(assignment.id)}"
+                  >
+                    ${escapeHtml(actionLabel)}
+                  </button>
+                `
+          }
         </div>
-      </div>
+      </article>
+    `;
+  };
 
-      <div class="moduleCalibrationTaskAction">
-        ${
-          isCompleted
-            ? `<span class="moduleCalibrationTaskTick"></span>`
-            : `
-              <button
-                type="button"
-                class="moduleCalibrationTaskStart"
-                data-start-module-assignment="${escapeAttr(assignment.id)}"
-              >
-                ${escapeHtml(actionLabel)}
-              </button>
-            `
-        }
-      </div>
-    </article>
-  `;
-};
+  const daySections = days.map(dayNumber => {
+    const dayAssignments = sortedAssignments.filter(assignment => {
+      return getAssignmentDayIndex(assignment) === dayNumber;
+    });
 
-  return `
-    <div class="moduleCalibrationList">
-      ${
-        available.length
-          ? `
-            <div class="dashboardEyebrow moduleCalibrationSectionEyebrow">Available</div>
-            ${available.map(item => renderCalibrationCard(item, "available")).join("")}
-          `
-          : `
-            <div class="sidebarEmptyState">
-              <div class="dashboardEyebrow">No calibration tasks required</div>
-              <p>No ${escapeHtml(config.title)} tasks are currently available.</p>
+    if (!dayAssignments.length) return "";
+
+    const dayCompleted = dayAssignments.filter(assignment => {
+      return !!getAssignmentResponse(me, assignment.id)?.completed;
+    }).length;
+
+    const isFutureDay = dayNumber > currentDay;
+    const isCurrentDay = dayNumber === currentDay;
+    const isPastDay = dayNumber < currentDay;
+
+    const statusLabel = isFutureDay
+      ? "Locked"
+      : isCurrentDay
+        ? "Current"
+        : isPastDay
+          ? "Previous"
+          : "";
+
+    return `
+      <section
+        class="moduleCalibrationDaySection ${isFutureDay ? "isFutureDay" : ""} ${isCurrentDay ? "isCurrentDay" : ""}"
+        data-module-day-section="${escapeAttr(dayNumber)}"
+      >
+        <div class="moduleCalibrationDayHeader">
+          <div>
+            <div class="dashboardEyebrow moduleCalibrationSectionEyebrow">
+              Day ${escapeHtml(String(dayNumber))}
             </div>
-          `
-      }
+            <div class="moduleCalibrationDayMeta">
+              ${escapeHtml(String(dayCompleted))} of ${escapeHtml(String(dayAssignments.length))} complete
+            </div>
+          </div>
 
+          <span class="moduleCalibrationDayPill">
+            ${escapeHtml(statusLabel)}
+          </span>
+        </div>
+
+        <div class="moduleCalibrationDayCards">
+          ${dayAssignments.map(renderCalibrationCard).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
+
+  return `
+    <div class="moduleCalibrationList moduleCalibrationPath">
       ${
-        completed.length
-          ? `
-           <div class="dashboardEyebrow moduleCalibrationSectionEyebrow">Completed</div>
-            ${completed.map(item => renderCalibrationCard(item, "completed")).join("")}
-          `
-          : ""
+        daySections ||
+        `
+          <div class="sidebarEmptyState">
+            <div class="dashboardEyebrow">No calibration tasks</div>
+            <p>No ${escapeHtml(config.title)} tasks are currently assigned.</p>
+          </div>
+        `
       }
     </div>
   `;
@@ -690,7 +942,505 @@ const renderCalibrationCard = (assignment, status = "available") => {
 let activeProfileMatrixId = "";
 let profileMarkup = await renderModuleProfilePanel(activeProfileMatrixId);
 
+function soleClamp(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function soleFormatPercent(value, decimals = 1) {
+  const n = soleClamp(value);
+  const whole = Math.round(n);
+
+  if (Math.abs(n - whole) < 0.001) {
+    return `${whole}%`;
+  }
+
+  return `${n.toFixed(decimals)}%`;
+}
+
+function soleFormatCandidates(value) {
+  return Math.max(1, Math.round(Number(value) || 1)).toLocaleString();
+}
+
+function getSolemateDimensions() {
+  const attraction = soleClamp(liveDashboardState.attraction);
+  const connection = soleClamp(liveDashboardState.connection);
+  const confidence = soleClamp(liveDashboardState.confidence);
+  const messageSignal = soleClamp((liveMessageStats.count || 0) * 1.25);
+
+  const dimensions = [
+    {
+      id: "physical_attraction",
+      label: "Physical Attraction",
+      confidence: Math.min(attraction, attraction * 0.82 + confidence * 0.18),
+      weight: 26,
+      copy: "Refined using attraction thresholds and preference signals."
+    },
+    {
+      id: "attachment_style",
+      label: "Attachment Style",
+      confidence: connection * 0.52 + confidence * 0.28 + messageSignal * 0.20,
+      weight: 11,
+      copy: "Refined around closeness, reassurance, independence, and repair."
+    },
+    {
+      id: "rapport",
+      label: "Rapport",
+      confidence: connection * 0.42 + confidence * 0.25 + messageSignal * 0.33,
+      weight: 15,
+      copy: "Refined around conversational rhythm, ease, humour, and response style."
+    },
+    {
+      id: "shared_values",
+      label: "Shared Values",
+      confidence: connection * 0.60 + confidence * 0.32 + attraction * 0.08,
+      weight: 13,
+      copy: "Refined around priorities, convictions, and non-negotiables."
+    },
+    {
+      id: "personality_alignment",
+      label: "Personality Alignment",
+      confidence: connection * 0.44 + attraction * 0.22 + confidence * 0.34,
+      weight: 11,
+      copy: "Refined around temperament, social energy, and everyday compatibility."
+    },
+    {
+      id: "emotional_harmony",
+      label: "Emotional Harmony",
+      confidence: connection * 0.48 + confidence * 0.38 + messageSignal * 0.14,
+      weight: 10,
+      copy: "Refined around emotional steadiness, sensitivity, and conflict recovery."
+    },
+    {
+      id: "lifestyle_compatibility",
+      label: "Lifestyle Compatibility",
+      confidence: connection * 0.34 + confidence * 0.42 + attraction * 0.08 + messageSignal * 0.16,
+      weight: 8,
+      copy: "Refined around routines, pace, habits, and the practical shape of daily life."
+    },
+    {
+      id: "future_longevity",
+      label: "Future Longevity",
+      confidence: Math.min(
+        connection,
+        confidence * 0.46 + connection * 0.36 + Math.min(attraction, connection) * 0.18
+      ),
+      weight: 8,
+      copy: "Refined around long-term stability, trajectory, and sustained fit."
+    }
+  ];
+
+  return dimensions.map(item => ({
+    ...item,
+    confidence: soleClamp(item.confidence)
+  }));
+}
+
+function getSolemateRefinementModel(dimensions) {
+  const startingCandidates =
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  const remainingCandidates = Math.max(
+    1,
+    Math.round(Number(liveDashboardState.remainingCandidates) || startingCandidates)
+  );
+
+  const totalRefined = Math.max(0, startingCandidates - remainingCandidates);
+  const overallConfidence = soleClamp(liveDashboardState.confidence);
+  const stage = overallConfidence / 100;
+
+  const weighted = dimensions.map((item, index) => {
+    let stageMultiplier = 1;
+
+    if (item.id === "physical_attraction") {
+      stageMultiplier = 1.35 - stage * 0.18;
+    }
+
+    if (item.id === "rapport" || item.id === "personality_alignment") {
+      stageMultiplier = 1.12 - stage * 0.10;
+    }
+
+    if (
+      item.id === "emotional_harmony" ||
+      item.id === "lifestyle_compatibility" ||
+      item.id === "future_longevity"
+    ) {
+      stageMultiplier = 0.70 + stage * 0.72;
+    }
+
+    const stableVariance = [
+      1.04,
+      0.96,
+      1.08,
+      1.01,
+      0.94,
+      1.03,
+      0.98,
+      1.06
+    ][index] || 1;
+
+    return {
+      ...item,
+      refinedWeight:
+        item.weight *
+        stageMultiplier *
+        stableVariance *
+        (0.42 + item.confidence / 100)
+    };
+  });
+
+  const totalWeight = weighted.reduce((sum, item) => {
+    return sum + item.refinedWeight;
+  }, 0) || 1;
+
+  let allocated = 0;
+
+  const distributed = weighted.map((item, index) => {
+    const isLast = index === weighted.length - 1;
+
+    const refined = isLast
+      ? Math.max(0, totalRefined - allocated)
+      : Math.round(totalRefined * (item.refinedWeight / totalWeight));
+
+    allocated += refined;
+
+    return {
+      ...item,
+      candidatesRefined: refined
+    };
+  });
+
+  return {
+    startingCandidates,
+    remainingCandidates,
+    totalRefined,
+    dimensions: distributed
+  };
+}
+
+function renderSolematePortrait() {
+  const confidence = soleClamp(liveDashboardState.confidence);
+  const candidateCount = soleFormatCandidates(liveDashboardState.remainingCandidates);
+
+  let title = "The outline is forming";
+  let body = `
+    Sole is beginning to assemble the profile of the person most likely to fit you.
+    At this stage, the model is still broad: it can identify early patterns in attraction,
+    communication, and emotional fit, but it is not yet confident enough to describe your
+    highest-probability match with precision.
+  `;
+
+  if (confidence >= 35) {
+    title = "A pattern is emerging";
+    body = `
+      Sole is detecting a preference for a partner who feels emotionally legible without
+      becoming predictable. The strongest early signals suggest that attraction alone is
+      unlikely to be enough: your profile appears to favour people who can create rapport,
+      maintain warmth, and make connection feel easy rather than effortful.
+    `;
+  }
+
+  if (confidence >= 65) {
+    title = "Your match profile is stabilising";
+    body = `
+      Your Solemate profile currently points toward someone who combines physical pull with
+      emotional steadiness, conversational rhythm, and a life direction that does not require
+      constant negotiation. Sole is deprioritising candidates who may create intensity quickly
+      but appear less likely to sustain trust, ease, and long-term compatibility.
+    `;
+  }
+
+  return `
+    <section class="solematePortraitPanel">
+      <div class="solematePortraitKicker">Solemate portrait</div>
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(body.trim())}</p>
+
+      <div class="solematePortraitNote">
+        This portrait becomes more specific as Sole gathers stronger attraction,
+        connection, and conversational signals.
+      </div>
+    </section>
+  `;
+}
+
+function renderSolemateTraits() {
+  const fallbackTraits = [
+    {
+      eyebrow: "Type Trait",
+      title: "Slow-burn trust",
+      body: "You may be most compatible with people who build closeness gradually rather than forcing intensity early."
+    },
+    {
+      eyebrow: "Type Trait",
+      title: "Playful rapport",
+      body: "Sole is watching for conversational rhythm: humour, ease, and small moments of mutual escalation."
+    },
+    {
+      eyebrow: "Type Trait",
+      title: "Low-drama attachment",
+      body: "Early signals suggest a preference for warmth and consistency over uncertainty, pursuit, or emotional volatility."
+    }
+  ];
+
+  const cards = moduleInsights.length
+    ? moduleInsights.map(insight => `
+        <div class="insightCard ${insight.viewed_at ? "" : "isUnread"}" data-insight-card="${escapeAttr(insight.id)}">
+          <div class="dashboardEyebrow">
+            ${escapeHtml(insight.eyebrow || "Solemate trait")}
+          </div>
+
+          <div class="insightTitleRow">
+            ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
+            <h4>${escapeHtml(insight.title || "Untitled trait")}</h4>
+            <span class="insightExpandIcon">›</span>
+          </div>
+
+          <div class="insightBody">
+            ${insight.body_html || ""}
+          </div>
+        </div>
+      `)
+    : fallbackTraits.map(trait => `
+        <div class="insightCard isOpen">
+          <div class="dashboardEyebrow">${escapeHtml(trait.eyebrow)}</div>
+          <div class="insightTitleRow">
+            <h4>${escapeHtml(trait.title)}</h4>
+          </div>
+          <div class="insightBody">
+            <p>${escapeHtml(trait.body)}</p>
+          </div>
+        </div>
+      `);
+
+  return `
+    <section class="insightsPanel solemateTraitsPanel">
+      ${cards.join("")}
+    </section>
+  `;
+}
+
+function renderSolemateModel() {
+  const dimensions = getSolemateDimensions();
+  const refinement = getSolemateRefinementModel(dimensions);
+
+  const confidence = soleClamp(liveDashboardState.confidence);
+  const refinedPercent = refinement.startingCandidates
+    ? soleClamp((refinement.totalRefined / refinement.startingCandidates) * 100)
+    : 0;
+
+  const cx = 250;
+  const cy = 250;
+
+  const confidenceBaseRadius = 74;
+  const confidenceTravelRadius = 92;
+
+  const labelRadius = 222;
+  const nodeRadius = 198 - refinedPercent * 0.64;
+
+  const points = refinement.dimensions.map((item, index) => {
+    const angle = -90 + index * 45;
+    const rad = angle * Math.PI / 180;
+
+    const radarRadius =
+      confidenceBaseRadius + (item.confidence / 100) * confidenceTravelRadius;
+
+    return {
+      ...item,
+      angle,
+      radarX: cx + Math.cos(rad) * radarRadius,
+      radarY: cy + Math.sin(rad) * radarRadius,
+      labelX: cx + Math.cos(rad) * labelRadius,
+      labelY: cy + Math.sin(rad) * labelRadius,
+      nodeX: cx + Math.cos(rad) * nodeRadius,
+      nodeY: cy + Math.sin(rad) * nodeRadius
+    };
+  });
+
+  const polygonPoints = points.map(item => {
+    return `${item.radarX.toFixed(2)},${item.radarY.toFixed(2)}`;
+  }).join(" ");
+
+  const labels = points.map(item => `
+    <div
+      class="solemateAxisLabel"
+      style="--x:${(item.labelX / 500) * 100}%; --y:${(item.labelY / 500) * 100}%;"
+    >
+      <strong>${escapeHtml(item.label)}</strong>
+      <span>${soleFormatPercent(item.confidence, 1)}</span>
+    </div>
+  `).join("");
+
+  const confidenceNodes = points.map(item => `
+    <circle
+      class="solemateConfidenceNode"
+      cx="${item.radarX.toFixed(2)}"
+      cy="${item.radarY.toFixed(2)}"
+      r="5"
+      data-solemate-tooltip-title="${escapeAttr(item.label)}"
+      data-solemate-tooltip-body="${escapeAttr(`Confidence: ${soleFormatPercent(item.confidence, 1)}`)}"
+    ></circle>
+  `).join("");
+
+  const nodes = points.map(item => `
+    <circle
+      class="solemateRefinementNode"
+      cx="${item.nodeX.toFixed(2)}"
+      cy="${item.nodeY.toFixed(2)}"
+      r="6"
+      data-solemate-tooltip-title="${escapeAttr(item.label)}"
+      data-solemate-tooltip-body="${escapeAttr(`Candidates filtered: ${soleFormatCandidates(item.candidatesRefined)}
+${item.copy}`)}"
+    ></circle>
+  `).join("");
+
+  const spokes = points.map(item => `
+    <line
+      class="solemateSpoke"
+      x1="${cx}"
+      y1="${cy}"
+      x2="${item.labelX.toFixed(2)}"
+      y2="${item.labelY.toFixed(2)}"
+    />
+  `).join("");
+
+  return `
+    <section class="solemateModelPanel">
+      <div class="solemateModelHeader">
+        <p>
+          Dimension percentages represent Sole’s confidence in each part of your
+          highest-probability match profile.
+        </p>
+
+        <div class="solemateModelKey" aria-label="Solemate model key">
+          <div class="solemateModelKeyItem">
+            <span class="solemateKeyDot confidence"></span>
+            <span>Confidence</span>
+          </div>
+
+          <div class="solemateModelKeyItem">
+            <span class="solemateKeyDot refinement"></span>
+            <span>Candidate refinement</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="solemateChartWrap">
+        <svg class="solemateChartSvg" viewBox="0 0 500 500" aria-label="Solemate model">
+          <defs>
+            <radialGradient id="solemateFillGradient" cx="50%" cy="45%" r="58%">
+              <stop offset="0%" stop-color="rgba(255,255,255,.72)" />
+              <stop offset="45%" stop-color="rgba(255,145,119,.34)" />
+              <stop offset="100%" stop-color="rgba(255,112,91,.18)" />
+            </radialGradient>
+          </defs>
+
+          <circle class="solemateCoreBoundary" cx="250" cy="250" r="74"></circle>
+          <circle class="solemateGridCircle" cx="250" cy="250" r="108"></circle>
+          <circle class="solemateGridCircle" cx="250" cy="250" r="142"></circle>
+          <circle class="solemateGridCircle" cx="250" cy="250" r="166"></circle>
+          <circle class="solemateOuterGuide" cx="250" cy="250" r="206"></circle>
+
+          ${spokes}
+
+          <polygon class="solemateConfidenceFill" points="${polygonPoints}"></polygon>
+          <polyline class="solemateConfidenceStroke" points="${polygonPoints} ${points[0].radarX.toFixed(2)},${points[0].radarY.toFixed(2)}"></polyline>
+
+          <circle
+            class="solemateActiveOrbit"
+            cx="250"
+            cy="250"
+            r="${nodeRadius.toFixed(2)}"
+          ></circle>
+
+          ${confidenceNodes}
+          ${nodes}
+        </svg>
+
+        ${labels}
+
+        <div class="solemateCandidateCore">
+          <strong>${soleFormatCandidates(refinement.remainingCandidates)}</strong>
+          <span>Candidates remaining</span>
+        </div>
+      </div>
+
+      <div class="solemateModelHint">
+        Hover a refinement point to see how many candidates that dimension has filtered.
+      </div>
+
+      <div class="solemateTooltip" data-solemate-tooltip hidden>
+        <strong data-solemate-tooltip-title></strong>
+        <div data-solemate-tooltip-body></div>
+      </div>
+    </section>
+  `;
+}
+
+function bindSolemateTooltips() {
+  const tooltip = subviewContentEl.querySelector("[data-solemate-tooltip]");
+  if (!tooltip) return;
+
+  const titleEl = tooltip.querySelector("[data-solemate-tooltip-title]");
+  const bodyEl = tooltip.querySelector("[data-solemate-tooltip-body]");
+
+  subviewContentEl
+    .querySelectorAll("[data-solemate-tooltip-title]")
+    .forEach(node => {
+      if (node === titleEl) return;
+
+      node.addEventListener("mouseenter", () => {
+        titleEl.textContent = node.dataset.solemateTooltipTitle || "";
+        bodyEl.textContent = node.dataset.solemateTooltipBody || "";
+
+        tooltip.hidden = false;
+        tooltip.style.display = "block";
+      });
+
+      node.addEventListener("mousemove", event => {
+        const containerRect = subviewContentEl.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        let left = event.clientX - containerRect.left + 16;
+        let top = event.clientY - containerRect.top + 16;
+
+        const maxLeft = containerRect.width - tooltipRect.width - 14;
+        const maxTop = containerRect.height - tooltipRect.height - 14;
+
+        if (left > maxLeft) {
+          left = event.clientX - containerRect.left - tooltipRect.width - 16;
+        }
+
+        if (top > maxTop) {
+          top = event.clientY - containerRect.top - tooltipRect.height - 16;
+        }
+
+        tooltip.style.left = `${Math.max(14, left)}px`;
+        tooltip.style.top = `${Math.max(14, top)}px`;
+      });
+
+      node.addEventListener("mouseleave", () => {
+        tooltip.hidden = true;
+        tooltip.style.display = "none";
+      });
+    });
+}
+
 async function renderSubviewContent() {
+
+if (screen === "solemate") {
+  if (activeSubview === "portrait") {
+    return renderSolematePortrait();
+  }
+
+  if (activeSubview === "traits") {
+    return renderSolemateTraits();
+  }
+
+  if (activeSubview === "model") {
+    return renderSolemateModel();
+  }
+}
+
   if (activeQuizAssignment) {
     return await renderAssignments(me, [activeQuizAssignment], escapeHtml, {
       adminPreview: false,
@@ -728,7 +1478,7 @@ const formattedDate = `${date.toLocaleTimeString([], {
 <div class="insightTitleRow">
   ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
   <h4>${escapeHtml(insight.title || "Untitled insight")}</h4>
-  <span class="insightExpandIcon">›</span>
+  <span class="insightExpandIcon">â€º</span>
 </div>
 
 <div class="insightBody">
@@ -805,25 +1555,53 @@ ${
   </div>
 </div>
     `
-    : `
-      <div class="moduleSubviewTabs">
-        <button
-          class="moduleSubviewTab ${activeSubview === "calibration" ? "active" : ""}"
-          data-module-subview="calibration"
-          type="button"
-        >
-          Calibration
-        </button>
+    : screen === "solemate"
+      ? `
+        <div class="moduleSubviewTabs solemateTabs">
+          <button
+            class="moduleSubviewTab ${activeSubview === "portrait" ? "active" : ""}"
+            data-module-subview="portrait"
+            type="button"
+          >
+            Portrait
+          </button>
 
-        <button
-          class="moduleSubviewTab ${activeSubview === "profile" ? "active" : ""}"
-          data-module-subview="profile"
-          type="button"
-        >
-          Profile
-        </button>
-      </div>
-    `
+          <button
+            class="moduleSubviewTab ${activeSubview === "traits" ? "active" : ""}"
+            data-module-subview="traits"
+            type="button"
+          >
+            Traits
+          </button>
+
+          <button
+            class="moduleSubviewTab ${activeSubview === "model" ? "active" : ""}"
+            data-module-subview="model"
+            type="button"
+          >
+            Model
+          </button>
+        </div>
+      `
+      : `
+        <div class="moduleSubviewTabs">
+          <button
+            class="moduleSubviewTab ${activeSubview === "calibration" ? "active" : ""}"
+            data-module-subview="calibration"
+            type="button"
+          >
+            Calibration
+          </button>
+
+          <button
+            class="moduleSubviewTab ${activeSubview === "profile" ? "active" : ""}"
+            data-module-subview="profile"
+            type="button"
+          >
+            Profile
+          </button>
+        </div>
+      `
 }
 </div>
 
@@ -839,7 +1617,7 @@ ${
     </svg>
 
     <div class="moduleMiniRingInner">
-      <strong>${moduleProgress}%</strong>
+    <strong data-module-progress-value>${formatSmartPercent(moduleProgress, 2)}</strong>
     </div>
   </div>
 
@@ -901,14 +1679,30 @@ async function renderActiveModuleAssignment(assignment) {
   window.soleMatrixRendering?.animateMatrices?.(sidebarPaneEl);
 }
 
+function scrollCurrentModuleAssignmentIntoView() {
+  const currentCard = subviewContentEl.querySelector(
+    "[data-current-module-assignment='true']"
+  );
+
+  if (!currentCard) return;
+
+  window.setTimeout(() => {
+    currentCard.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }, 180);
+}
+
 function bindCalibrationCards() {
   subviewContentEl.querySelectorAll("[data-module-calibration-card]").forEach(card => {
     card.addEventListener("click", async () => {
       const assignmentId = card.dataset.moduleCalibrationCard;
-      const assignment = filteredAssignments.find(item => item.id === assignmentId);
+const assignment = filteredAssignments.find(item => item.id === assignmentId);
 
-      if (!assignment) return;
-      if (getAssignmentResponse(me, assignment.id)?.completed) return;
+if (!assignment) return;
+if (isAssignmentLockedForUser(assignment, me)) return;
+if (getAssignmentResponse(me, assignment.id)?.completed) return;
 
 activeAssignmentId = assignment.id;
 activeSubview = "calibration";
@@ -992,7 +1786,12 @@ function bindInsightCards() {
 bindInsightCards();
 bindCalibrationCards();
 bindMatrixSwitcher();
+bindSolemateTooltips();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+
+if (!activeQuizAssignment && activeSubview === "calibration") {
+  scrollCurrentModuleAssignmentIntoView();
+}
 
 
 if (activeQuizAssignment) {
@@ -1038,30 +1837,100 @@ subviewContentEl.innerHTML = await renderSubviewContent();
 bindInsightCards();
 bindCalibrationCards();
 bindMatrixSwitcher();
+bindSolemateTooltips();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
 
+if (activeSubview === "calibration") {
+  scrollCurrentModuleAssignmentIntoView();
+}
 
 
   });
 });
 
-const moduleRing = sidebarPaneEl.querySelector(".moduleMiniRing .moduleRingFill");
-const moduleRingWrap = sidebarPaneEl.querySelector(".moduleMiniRing");
+animateModuleHeroProgress({
+  rootEl: sidebarPaneEl,
+  userId: me?.id,
+  screen
+});
 
-if (moduleRing && moduleRingWrap) {
-  const radius = Number(moduleRing.getAttribute("r")) || 46;
-  const circumference = 2 * Math.PI * radius;
-  const progress = Number(moduleRingWrap.dataset.moduleProgress || 0);
-  const clamped = Math.max(0, Math.min(100, progress));
-  const filled = (clamped / 100) * circumference;
+async function refreshLiveSolemateModel() {
+  if (screen !== "solemate") return;
+  if (!sidebarPaneEl.isConnected) return;
 
-  moduleRing.style.strokeDasharray = `0 ${circumference}`;
+  const stillOnSolemate = !!sidebarPaneEl.querySelector(".moduleSubviewTabs.solemateTabs");
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      moduleRing.style.strokeDasharray = `${filled} ${circumference - filled}`;
+  if (!stillOnSolemate) {
+    if (window.soleSidebarModuleRefreshTimer) {
+      clearInterval(window.soleSidebarModuleRefreshTimer);
+      window.soleSidebarModuleRefreshTimer = null;
+    }
+    return;
+  }
+
+  const previousConfidence = Number(liveDashboardState.confidence || 0);
+  const previousCandidates = Number(liveDashboardState.remainingCandidates || 0);
+
+  try {
+    liveMessageStats = window.getDailyMessageStats
+      ? await window.getDailyMessageStats(
+          sb,
+          me,
+          me?.score_baseline_set_at || null
+        )
+      : { count: 0, totalChars: 0, averageChars: 0 };
+
+    const dash = getDashboardState(
+      me,
+      liveMessageStats.count || 0,
+      runtimeAssignments,
+      liveMessageStats
+    );
+
+    liveDashboardState = dash;
+
+    liveProgress = Math.max(
+      0,
+      Math.min(100, Number(dash?.[config.progressKey] || 0))
+    );
+
+    const nextConfidence = Number(liveDashboardState.confidence || 0);
+    const nextCandidates = Number(liveDashboardState.remainingCandidates || 0);
+
+    const hasChanged =
+      Math.abs(nextConfidence - previousConfidence) > 0.001 ||
+      nextCandidates !== previousCandidates;
+
+    if (!hasChanged) return;
+
+    const moduleRingWrap = sidebarPaneEl.querySelector(".moduleMiniRing");
+    if (moduleRingWrap) {
+      moduleRingWrap.dataset.moduleProgress = String(liveProgress);
+    }
+
+    animateModuleHeroProgress({
+      rootEl: sidebarPaneEl,
+      userId: me?.id,
+      screen
     });
-  });
+
+    subviewContentEl.innerHTML = await renderSubviewContent();
+
+    bindInsightCards();
+    bindCalibrationCards();
+    bindMatrixSwitcher();
+    bindSolemateTooltips();
+    window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+  } catch (error) {
+    console.warn("Could not refresh live Solemate model", error);
+  }
+}
+
+if (screen === "solemate") {
+  window.soleSidebarModuleRefreshTimer = window.setInterval(
+    refreshLiveSolemateModel,
+    2500
+  );
 }
 
 sidebarPaneEl.querySelector("[data-sidebar-info]")?.addEventListener("click", () => {
@@ -1170,7 +2039,7 @@ async function mountAdminUserTasks({
           <div>
             <strong>${escapeHtml(task.title || "Untitled task")}</strong>
             <div class="muted">
-                           ${escapeHtml(task.task_type)} · ${escapeHtml(task.status)}
+                           ${escapeHtml(task.task_type)} Â· ${escapeHtml(task.status)}
             </div>
           </div>
 
@@ -1339,7 +2208,7 @@ async function mountAdminUserInsights({
           <div>
             <strong>${escapeHtml(insight.title || "Untitled insight")}</strong>
             <div class="muted">
-                          ${escapeHtml(insight.category)} · ${escapeHtml(insight.status)}
+                          ${escapeHtml(insight.category)} Â· ${escapeHtml(insight.status)}
             </div>
           </div>
 

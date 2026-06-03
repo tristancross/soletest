@@ -21,6 +21,480 @@ await loadAdminProfiles();
   renderAdminWorkspace(screen);
 }
 
+async function bindAdminGlobalDayControls(root = document) {
+  const daySelect = root.querySelector("#adminGlobalDaySelect");
+  const saveBtn = root.querySelector("#adminSaveGlobalDayBtn");
+
+  if (!daySelect || !saveBtn) return;
+
+  try {
+    const settings = await window.soleDayConfigs.loadExperimentSettings(sb, {
+      force: true
+    });
+
+    daySelect.value = String(settings.current_day || 1);
+  } catch (error) {
+    console.warn("Could not load global experiment day", error);
+    daySelect.value = "1";
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    const nextDay = Number(daySelect.value || 1);
+
+    saveBtn.disabled = true;
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = "Saving...";
+
+    try {
+      await window.soleDayConfigs.saveExperimentCurrentDay(sb, nextDay);
+      saveBtn.textContent = "Saved";
+
+      setTimeout(() => {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+      }, 700);
+    } catch (error) {
+      console.error("Could not save global experiment day", error);
+      alert(error.message || "Could not save global experiment day.");
+
+      saveBtn.textContent = originalText;
+      saveBtn.disabled = false;
+    }
+  });
+}
+
+async function renderAdminDaysWorkspace(content) {
+  content.innerHTML = `
+    <section class="adminPanel">
+      <h3>Experiment Days</h3>
+      <p class="muted">
+        Set the global experiment day, configure each dayâ€™s available scoring budget,
+        and review which quiz templates are assigned to each day.
+      </p>
+
+      <div class="adminDayGlobalControl">
+        <div class="adminDayUserControlCopy">
+          <div class="dashboardEyebrow">Global experiment day</div>
+          <h4>Set current day for everyone</h4>
+          <p>
+            This controls which experiment day the whole test is currently on.
+            User-specific overrides can be added later for exceptions and testing.
+          </p>
+        </div>
+
+        <div class="adminDayGlobalControlFields">
+          <label class="adminScoreField">
+            <span>Current day</span>
+            <select id="adminGlobalDaySelect">
+              <option value="1">Day 1</option>
+              <option value="2">Day 2</option>
+              <option value="3">Day 3</option>
+              <option value="4">Day 4</option>
+              <option value="5">Day 5</option>
+            </select>
+          </label>
+
+          <button type="button" class="btn" id="adminSaveGlobalDayBtn">
+            Save global day
+          </button>
+        </div>
+      </div>
+
+      <div id="adminDaysList" class="adminDaysList">
+        Loading day configuration...
+      </div>
+    </section>
+  `;
+
+  await bindAdminGlobalDayControls(content);
+
+  const list = content.querySelector("#adminDaysList");
+  if (!list) return;
+
+  let configs = [];
+
+  try {
+    configs = await window.soleDayConfigs.loadExperimentDayConfigs(sb, {
+      force: true
+    });
+  } catch (error) {
+    console.warn("Could not load day configs", error);
+    configs = window.soleDayConfigs.getDefaultExperimentDayConfigs();
+  }
+
+  let templates = [];
+
+  try {
+    templates = await loadQuizTemplatesFromSupabase(sb);
+    console.log("DAY TEMPLATE SHAPE", templates[0]);
+  } catch (error) {
+    console.warn("Could not load templates for day curriculum preview", error);
+    templates = [];
+  }
+
+  list.innerHTML = configs.map(config => {
+    const dayTemplates = getTemplatesForAdminDay(templates, config.day_number);
+
+    const connectionTemplates = dayTemplates.filter(template => {
+      return getTemplateModuleName(template) === "connection";
+    });
+
+    const attractionTemplates = dayTemplates.filter(template => {
+      return getTemplateModuleName(template) === "attraction";
+    });
+
+    return `
+      <article class="adminDayCard" data-admin-day-card="${config.day_number}">
+        <div class="adminDayCardHeader">
+          <div>
+            <div class="dashboardEyebrow">Day ${config.day_number}</div>
+            <input
+              class="adminDayTitleInput"
+              type="text"
+              value="${escapeAttr(config.label || `Day ${config.day_number}`)}"
+              data-day-field="label"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="btn btnGhost"
+            data-save-day-config="${config.day_number}"
+          >
+            Save day
+          </button>
+        </div>
+
+        <div class="adminDayGrid">
+          <label class="adminScoreField">
+            <span>Connection quiz budget</span>
+            <input type="number" step="0.1" value="${Number(config.connection_quiz_budget || 0)}" data-day-field="connection_quiz_budget">
+          </label>
+
+          <label class="adminScoreField">
+            <span>Connection message budget</span>
+            <input type="number" step="0.1" value="${Number(config.connection_message_budget || 0)}" data-day-field="connection_message_budget">
+          </label>
+
+          <label class="adminScoreField">
+            <span>Attraction quiz budget</span>
+            <input type="number" step="0.1" value="${Number(config.attraction_quiz_budget || 0)}" data-day-field="attraction_quiz_budget">
+          </label>
+
+          <label class="adminScoreField">
+            <span>Attraction message budget</span>
+            <input type="number" step="0.1" value="${Number(config.attraction_message_budget || 0)}" data-day-field="attraction_message_budget">
+          </label>
+
+          <label class="adminScoreField">
+  <span>Task confidence budget</span>
+  <input
+    type="number"
+    step="0.1"
+    value="${Number(config.task_confidence_budget || 0)}"
+    data-day-field="task_confidence_budget"
+  >
+</label>
+
+<label class="adminScoreField">
+  <span>Reply goal</span>
+  <input
+    type="number"
+    step="1"
+    value="${Number(config.reply_goal || 50)}"
+    data-day-field="reply_goal"
+  >
+</label>
+
+          <label class="adminScoreField">
+            <span>Confidence max</span>
+            <input type="number" step="0.1" value="${Number(config.confidence_max || 0)}" data-day-field="confidence_max">
+          </label>
+
+          <label class="adminScoreField">
+            <span>Connection max</span>
+            <input type="number" step="0.1" value="${Number(config.connection_max || 0)}" data-day-field="connection_max">
+          </label>
+
+          <label class="adminScoreField">
+            <span>Attraction max</span>
+            <input type="number" step="0.1" value="${Number(config.attraction_max || 0)}" data-day-field="attraction_max">
+          </label>
+
+          <label class="adminScoreField">
+            <span>Candidate pool floor</span>
+            <input type="number" step="1" value="${Number(config.candidate_pool_min || 1)}" data-day-field="candidate_pool_min">
+          </label>
+        </div>
+
+        <div class="adminDayCurriculum">
+          <div class="adminDayCurriculumColumn">
+            <div class="adminDayCurriculumTitle">
+              Connection templates
+              <span>${connectionTemplates.length}</span>
+            </div>
+            ${renderAdminDayTemplateList(connectionTemplates)}
+          </div>
+
+          <div class="adminDayCurriculumColumn">
+            <div class="adminDayCurriculumTitle">
+              Attraction templates
+              <span>${attractionTemplates.length}</span>
+            </div>
+            ${renderAdminDayTemplateList(attractionTemplates)}
+          </div>
+        </div>
+
+        <p class="adminScoreHint">
+          For now this is a preview. Next weâ€™ll make these templates movable between days,
+          then the scoring model will read from this curriculum structure.
+        </p>
+      </article>
+    `;
+  }).join("");
+
+  bindAdminDayControls(content);
+}
+
+function normaliseAdminDayNumber(value) {
+  const num = Math.round(Number(value) || 1);
+  return Math.max(1, Math.min(5, num));
+}
+
+function getTemplateModuleName(template = {}) {
+  const raw = String(
+    template.category ||
+    template.module ||
+    template.meta?.category ||
+    template.meta?.module ||
+    ""
+  ).toLowerCase();
+
+  if (raw === "chemistry") return "connection";
+  if (raw === "connection") return "connection";
+  if (raw === "attraction") return "attraction";
+
+  return raw || "connection";
+}
+
+function getTemplateDayNumber(template = {}) {
+  return normaliseAdminDayNumber(
+    template.day_index ||
+    template.day_number ||
+    template.day ||
+    template.experiment_day ||
+    template.meta?.day_index ||
+    template.meta?.day_number ||
+    template.meta?.day ||
+    1
+  );
+}
+
+function getTemplatesForAdminDay(templates = [], dayNumber) {
+  const safeDay = normaliseAdminDayNumber(dayNumber);
+
+  return (templates || []).filter(template => {
+    return getTemplateDayNumber(template) === safeDay;
+  });
+}
+
+function getTemplateQuestionCount(template = {}) {
+  const candidates = [
+    template.questions,
+    template.questions_json,
+    template.config?.questions,
+    template.content?.questions,
+    template.payload?.questions,
+    template.data?.questions,
+    template.template?.questions,
+    template.quiz?.questions,
+    template.meta?.questions
+  ];
+
+  for (const value of candidates) {
+    if (Array.isArray(value)) return value.length;
+  }
+
+  const stringCandidates = [
+    template.questions_json,
+    template.config_json,
+    template.content_json,
+    template.payload_json
+  ];
+
+  for (const raw of stringCandidates) {
+    if (!raw || typeof raw !== "string") continue;
+
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (Array.isArray(parsed)) return parsed.length;
+      if (Array.isArray(parsed?.questions)) return parsed.questions.length;
+      if (Array.isArray(parsed?.config?.questions)) return parsed.config.questions.length;
+    } catch (error) {
+      // Ignore malformed JSON and keep trying.
+    }
+  }
+
+  const numericCandidates = [
+    template.question_count,
+    template.questions_count,
+    template.total_questions,
+    template.meta?.question_count,
+    template.meta?.questions_count
+  ];
+
+  for (const value of numericCandidates) {
+    const num = Number(value);
+    if (Number.isFinite(num) && num >= 0) return Math.round(num);
+  }
+
+  return 0;
+}
+
+function renderAdminDayTemplateList(templates = []) {
+  if (!templates.length) {
+    return `
+      <div class="adminDayTemplateEmpty">
+        No templates assigned.
+      </div>
+    `;
+  }
+
+  return `
+    <div class="adminDayTemplateList">
+      ${templates.map(template => `
+        <div class="adminDayTemplateRow">
+          <strong>${escapeHtml(template.title || template.name || "Untitled template")}</strong>
+          <span>
+         ${escapeHtml(String(getTemplateQuestionCount(template)))} questions
+          </span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function bindAdminDayUserControls(root = document) {
+  const userSelect = root.querySelector("#adminDayUserSelect");
+  const daySelect = root.querySelector("#adminDayOverrideSelect");
+  const saveBtn = root.querySelector("#adminSaveUserDayBtn");
+
+  if (!userSelect || !daySelect || !saveBtn) return;
+
+  userSelect.addEventListener("change", () => {
+    const userId = userSelect.value;
+    const profile = adminProfiles.find(item => item?.id === userId);
+
+    if (!profile) {
+      daySelect.value = "";
+      return;
+    }
+
+    daySelect.value = profile.experiment_day_override
+      ? String(profile.experiment_day_override)
+      : "";
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const userId = userSelect.value;
+
+    if (!userId) {
+      alert("Choose a user first.");
+      return;
+    }
+
+    const rawDay = daySelect.value;
+    const dayValue = rawDay ? normaliseAdminDayNumber(rawDay) : null;
+
+    saveBtn.disabled = true;
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = "Saving...";
+
+    try {
+      const updatedProfile = await updateAdminUserScoring(userId, {
+        experiment_day_override: dayValue
+      });
+
+      if (updatedProfile) {
+        saveBtn.textContent = "Saved";
+      } else {
+        saveBtn.textContent = "Not saved";
+      }
+
+      setTimeout(() => {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+      }, 700);
+    } catch (error) {
+      console.error("Could not update user experiment day", error);
+      alert(error.message || "Could not update user day.");
+
+      saveBtn.textContent = originalText;
+      saveBtn.disabled = false;
+    }
+  });
+}
+
+function readAdminDayConfigPatch(card) {
+  const patch = {};
+
+  card.querySelectorAll("[data-day-field]").forEach(input => {
+    const field = input.dataset.dayField;
+    const raw = input.value;
+
+    if (field === "label") {
+      patch[field] = raw.trim();
+      return;
+    }
+
+if (field === "candidate_pool_min") {
+  patch[field] = Math.round(Number(raw) || 1);
+  return;
+}
+
+if (field === "reply_goal") {
+  patch[field] = Math.round(Number(raw) || 0);
+  return;
+}
+
+    patch[field] = Number(raw) || 0;
+  });
+
+  return patch;
+}
+
+function bindAdminDayControls(root = document) {
+  root.querySelectorAll("[data-save-day-config]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const dayNumber = Number(btn.dataset.saveDayConfig);
+      const card = root.querySelector(`[data-admin-day-card="${dayNumber}"]`);
+
+      if (!card) return;
+
+      const patch = readAdminDayConfigPatch(card);
+
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = "Saving...";
+
+      try {
+        await window.soleDayConfigs.saveExperimentDayConfig(sb, dayNumber, patch);
+        btn.textContent = "Saved";
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }, 700);
+      } catch (error) {
+        console.error("Could not save day config", error);
+        alert(error.message || "Could not save day config.");
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
 async function updateAdminUserScoring(userId, patch = {}) {
   if (!adminMode || !userId) return null;
 
@@ -297,7 +771,7 @@ return `
         <span>Experiment day</span>
         <select data-score-field="experiment_day_override">
           <option value="" ${dayOverride === "" ? "selected" : ""}>
-            Auto — Day ${automaticDay}
+            Auto â€” Day ${automaticDay}
           </option>
           ${[1, 2, 3, 4, 5].map(day => `
             <option value="${day}" ${Number(dayOverride) === day ? "selected" : ""}>
@@ -810,7 +1284,7 @@ function renderAdminWorkspace(screen = "users") {
           <p>Control centre</p>
         </div>
 
-        ${["users", "tasks", "pairings", "chats", "insights", "templates"].map(item => `
+       ${["users", "days", "tasks", "pairings", "chats", "insights", "templates"].map(item => `
           <button
             type="button"
             class="adminNavBtn ${screen === item ? "isActive" : ""}"
@@ -844,8 +1318,9 @@ function renderAdminWorkspaceContent(screen) {
   const content = document.getElementById("adminWorkspaceContent");
   if (!content) return;
 
-  if (screen === "users") return renderAdminUsersWorkspace(content);
-  if (screen === "tasks") return renderAdminTasksWorkspace(content);
+if (screen === "users") return renderAdminUsersWorkspace(content);
+if (screen === "days") return renderAdminDaysWorkspace(content);
+if (screen === "tasks") return renderAdminTasksWorkspace(content);
   if (screen === "pairings") return renderAdminPairingsWorkspace(content);
   if (screen === "chats") return renderAdminChatsWorkspace(content);
   if (screen === "insights") return renderAdminInsightsWorkspace(content);
@@ -1096,7 +1571,7 @@ function renderAdminPairingsWorkspace(content) {
                 <div>
                   <strong>
                     ${escapeHtml(group.userA.display_name)}
-                    ↔
+                    â†”
                     ${escapeHtml(group.userB.display_name)}
                   </strong>
 
@@ -1406,7 +1881,7 @@ async function loadAdminThread(){
   const aName = profs.find(p => p.id === viewA)?.display_name || "A";
   const bName = profs.find(p => p.id === viewB)?.display_name || "B";
 
-  chatTitle.textContent = `ADMIN: ${aName} ↔ ${bName}`;
+  chatTitle.textContent = `ADMIN: ${aName} â†” ${bName}`;
   chatSubtitle.textContent = "Read-only";
 
   await loadThread(viewA, viewB, /*alignAs*/ viewA);

@@ -9,7 +9,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "attraction_aesthetics_specificity",
         label: "Specificity",
         description:
-          "Measures the narrowness or breadth of someone’s attraction template.",
+          "Measures the narrowness or breadth of someoneâ€™s attraction template.",
         lowDescription:
           "A more open-ended, elastic and constantly evolving attraction pattern. Attraction may form through context, chemistry or accumulation rather than a fixed type.",
         highDescription:
@@ -152,7 +152,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         lowDescription:
           "Attraction may emerge through quieter forms of presence. Subtlety, privacy or qualities that reveal themselves slowly may feel more compelling than obvious charisma.",
         highDescription:
-          "Presence matters strongly. Someone’s ability to occupy a room, hold attention or feel vividly there may be highly attractive."
+          "Presence matters strongly. Someoneâ€™s ability to occupy a room, hold attention or feel vividly there may be highly attractive."
       },
       {
         key: "attraction_chemistry_atmosphere",
@@ -187,7 +187,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "attraction_romance_destiny",
         label: "Destiny",
         description:
-          "Measures belief in “The One,” fated connection and romantic inevitability.",
+          "Measures belief in â€œThe One,â€ fated connection and romantic inevitability.",
         lowDescription:
           "Romance does not need to feel fated to matter. Practical compatibility, lived experience and ordinary closeness may feel more meaningful than signs or coincidence.",
         highDescription:
@@ -197,7 +197,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "attraction_romance_devotion",
         label: "Devotion",
         description:
-          "Measures the desire to be emotionally prioritised, chosen and made central in someone’s romantic world.",
+          "Measures the desire to be emotionally prioritised, chosen and made central in someoneâ€™s romantic world.",
         lowDescription:
           "Romance may feel better with more air around it. Intense affection can feel overwhelming if it starts to crowd autonomy; connection does not need to consume the whole self.",
         highDescription:
@@ -415,7 +415,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "connection_attachment_proximity",
         label: "Proximity",
         description:
-          "Measures desire for closeness, shared time and involvement in each other’s everyday life.",
+          "Measures desire for closeness, shared time and involvement in each otherâ€™s everyday life.",
         lowDescription:
           "Intimacy can coexist with space and separateness. Connection may not require constant contact or deep involvement in daily routines.",
         highDescription:
@@ -504,7 +504,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "connection_interpersonal_trust",
         label: "Trust",
         description:
-          "Measures ease with believing others’ intentions and allowing emotional reliance.",
+          "Measures ease with believing othersâ€™ intentions and allowing emotional reliance.",
         lowDescription:
           "Trust may be earned gradually and carefully. Evidence, consistency and time may matter before emotional reliance feels safe.",
         highDescription:
@@ -535,7 +535,7 @@ const SOLE_MATRIX_DEFINITIONS = {
 };
 
 const SOLE_MATRIX_NEUTRAL_DESCRIPTIONS = {
-  // Attraction — Aesthetics
+  // Attraction â€” Aesthetics
   attraction_aesthetics_specificity:
     "A flexible but recognisable attraction pattern. There may be some recurring preferences, but context, mood and chemistry can still shift what feels compelling.",
 
@@ -560,7 +560,7 @@ const SOLE_MATRIX_NEUTRAL_DESCRIPTIONS = {
   attraction_aesthetics_fluidity:
     "Attraction can move between clarity and ambiguity. Legible presentation may appeal, but so can contrast, softness, mixed signals or qualities that are harder to categorise.",
 
-  // Attraction — Chemistry
+  // Attraction â€” Chemistry
   attraction_chemistry_pursuit:
     "Desire can build through both ease and anticipation. A connection may feel best when there is momentum, but not so much uncertainty that it becomes destabilizing.",
 
@@ -585,7 +585,7 @@ const SOLE_MATRIX_NEUTRAL_DESCRIPTIONS = {
   attraction_chemistry_vulnerability:
     "Openness can deepen attraction when it feels earned. Chemistry may build through a balance of honesty, composure and gradual emotional revelation.",
 
-  // Attraction — Romance
+  // Attraction â€” Romance
   attraction_romance_destiny:
     "Romance may feel meaningful without needing to feel completely fated. Coincidence, timing and symbolism can matter, but practical compatibility still carries weight.",
 
@@ -610,7 +610,7 @@ const SOLE_MATRIX_NEUTRAL_DESCRIPTIONS = {
   attraction_romance_novelty:
     "Freshness and continuity may both appeal. Romance can be strengthened by surprise and reinvention, but also by recognisable rhythms and deepening familiarity.",
 
-  // Connection — Values
+  // Connection â€” Values
   connection_values_structure:
     "A balance between planning and flexibility. Clear expectations may help, but there is still room for adaptation, improvisation and letting things develop naturally.",
 
@@ -635,7 +635,7 @@ const SOLE_MATRIX_NEUTRAL_DESCRIPTIONS = {
   connection_values_intuition:
     "Both instinct and evidence may guide interpretation. Impressions, atmosphere and felt meaning can matter, but so can clarity, facts and grounded reasoning.",
 
-  // Connection — Attachment
+  // Connection â€” Attachment
   connection_attachment_autonomy:
     "Closeness and independence both matter. A relationship may feel healthiest when shared life and separate identity are kept in active balance.",
 
@@ -660,7 +660,7 @@ const SOLE_MATRIX_NEUTRAL_DESCRIPTIONS = {
   connection_attachment_confidence:
     "A moderate level of security in connection. Uncertainty may still register, but it does not necessarily destabilise the whole emotional footing.",
 
-  // Connection — Interpersonal
+  // Connection â€” Interpersonal
   connection_interpersonal_collaboration:
     "A balance between shared problem-solving and individual responsibility. Some things may work best jointly, while others feel cleaner when handled independently.",
 

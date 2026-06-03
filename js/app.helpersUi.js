@@ -115,7 +115,7 @@ function showSoleNotice(message, {
     </div>
 
     <button type="button" class="soleNoticeClose" aria-label="Dismiss notice">
-      ×
+      Ã—
     </button>
   `;
 
@@ -289,8 +289,15 @@ function fitAllProgressDialValues() {
     .forEach(fitProgressDialValue);
 }
 
-function formatHudPercent(value) {
-  return `${Math.max(0, Math.min(100, Number(value) || 0)).toFixed(1)}%`;
+function formatHudPercent(value, maxDecimals = 2) {
+  const number = Math.max(0, Math.min(100, Number(value) || 0));
+  const roundedToWhole = Math.round(number);
+
+  if (Math.abs(number - roundedToWhole) < 0.0001) {
+    return `${roundedToWhole}%`;
+  }
+
+  return `${number.toFixed(maxDecimals)}%`;
 }
 
 function updateSidebarProgress({
@@ -521,7 +528,7 @@ async function setTypingIndicatorVerb(prefix, nextVerb, animateChange = true) {
 
   const oldVerb = currentTypingVerb || "";
 
-  // animate OUT right’ left
+  // animate OUT rightâ€™ left
   for (let i = oldVerb.length; i >= 0; i--) {
     if (token !== typingVerbAnimationToken) return;
     typingIndicator.textContent = prefix + oldVerb.slice(0, i);
@@ -530,7 +537,7 @@ async function setTypingIndicatorVerb(prefix, nextVerb, animateChange = true) {
 
   await sleep(100);
 
-  // animate IN left ’ right
+  // animate IN left â€™ right
   for (let i = 0; i <= nextVerb.length; i++) {
     if (token !== typingVerbAnimationToken) return;
     typingIndicator.textContent = prefix + nextVerb.slice(0, i);

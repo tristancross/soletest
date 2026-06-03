@@ -110,7 +110,27 @@ try {
   console.warn("Could not load reply goal task", error);
 }
 
-const replyTarget = Number(replyGoalTask?.target_count || 50);
+let dayReplyGoal = 50;
+
+try {
+  const dayIndex = window.soleExperimentScoring?.getExperimentDayIndex
+    ? window.soleExperimentScoring.getExperimentDayIndex(me)
+    : 1;
+
+  const dayConfig = window.soleDayConfigs?.getExperimentDayConfigFromCache
+    ? window.soleDayConfigs.getExperimentDayConfigFromCache(dayIndex)
+    : null;
+
+  dayReplyGoal = Number(dayConfig?.reply_goal || 50);
+} catch (error) {
+  console.warn("Could not resolve day reply goal", error);
+}
+
+const replyTarget = Number(
+  replyGoalTask?.target_count ||
+  dayReplyGoal ||
+  50
+);
 const replyWindowMinutes = Number(replyGoalTask?.timeframe_minutes || 1440);
 const replyStartsAt = replyGoalTask?.starts_at
   ? new Date(replyGoalTask.starts_at)

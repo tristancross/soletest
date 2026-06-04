@@ -5,9 +5,14 @@
   function qsa(sel, root = document){ return Array.from(root.querySelectorAll(sel)); }
 
 function getDisplayName(){
+  const globalMe =
+    typeof me !== "undefined"
+      ? me
+      : window.me;
+
   const profileName =
-    window.me?.display_name ||
-    window.me?.username ||
+    globalMe?.display_name ||
+    globalMe?.username ||
     "";
 
   const railAccountName =
@@ -68,8 +73,7 @@ function enhanceGreeting(){
   }
 
   greeting.innerHTML = `
-    <h2>${getTimeGreeting()}, ${escapeHtml(getDisplayName())}</h2>
-    <p>Thoughtful connections start here.</p>
+    <h2>${getTimeGreeting()}, ${escapeHtml(getDisplayName())}!</h2>
   `;
 }
 
@@ -100,7 +104,7 @@ function insertDailyHero(sidebarPane){
 hero.innerHTML = `
   <div class="soleDailyHeroContent">
 
-    <h3>Your Solemate</h3>
+    <h3>Your SoleMate</h3>
 
     <p>
       Each signal sharpens your profile as Sole narrows the field toward
@@ -421,6 +425,9 @@ if (action === "settings" || action === "account") {
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[m]));
   }
+
+  window.soleRedesignRefreshGreeting = enhanceGreeting;
+window.soleRedesignEnhanceDashboard = enhanceDashboard;
 
   function init(){
     bindRail();

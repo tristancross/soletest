@@ -14,3 +14,5 @@ const adminA = document.getElementById("adminA");
 const adminB = document.getElementById("adminB");
 const adminLoadBtn = document.getElementById("adminLoadBtn");
 const typingIndicator = document.getElementById("typingIndicator");
+const chatModelVersion = document.getElementById("chatModelVersion");
+// const chatModelStatus = document.getElementById("chatModelStatus");

@@ -59,11 +59,10 @@
 
 .quizLabel {
     color: var(--sole-ink);
-    font-size: 20px;
     line-height: 1;
     letter-spacing: .01em;
     margin-bottom: 10px;
-    font-family: "Instrument Serif", "Source Serif 4", Georgia, serif;
+    /* font-family: "Instrument Serif", "Source Serif 4", Georgia, serif; */
 }
 
 .quizValues{

@@ -117,10 +117,10 @@ document.querySelectorAll(".togglePassword").forEach(btn => {
 
     if (input.type === "password"){
       input.type = "text";
-      btn.textContent = "Ã°Å¸â„¢Ë†";
+      btn.textContent = "◡";
     } else {
       input.type = "password";
-      btn.textContent = "Ã°Å¸â€˜Â";
+      btn.textContent = "👁";
     }
 
   };

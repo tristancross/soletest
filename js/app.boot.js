@@ -34,6 +34,17 @@ function applyMe(){
 
   adminToggleBtn.hidden = !me.is_admin;
   adminControls.hidden = true;
+
+  try {
+  localStorage.setItem("sole_profile", JSON.stringify({
+    id: me?.id || "",
+    username: me?.username || "",
+    display_name: me?.display_name || "",
+    email: me?.email || ""
+  }));
+} catch (_) {}
+
+window.soleRedesignRefreshGreeting?.();
 }
 
 async function refreshSidebarProgressFromScoring({

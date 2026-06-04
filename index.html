@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="./css/solemate.css" />
   <link rel="stylesheet" href="./css/insights.css" />
   <link rel="stylesheet" href="./css/admin.css" />
+  <link rel="stylesheet" href="./css/fonts.css" />
   <link rel="stylesheet" href="./css/themecolours.css" />
   <link rel="stylesheet" href="./css/mobile.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -22,6 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://use.typekit.net/kmm4srq.css">
 </head>
 <body>
 <div id="authScreen" class="authScreen">
@@ -90,7 +92,7 @@
 
 <button class="soleRailItem" type="button" data-sole-rail="solemate" aria-label="Solemate">
   <i class="fa-solid fa-heart-circle-bolt"></i>
-  <span>Solemate</span>
+  <span>SoleMate</span>
 </button>
   </div>
 
@@ -102,7 +104,7 @@
 
 <div class="soleRailAccount" id="soleRailAccount">
   <button class="soleRailUser" type="button" data-sole-rail="account" aria-label="Account">
-    <span id="soleRailUserInitial">A</span>
+    <span id="soleRailUserInitial"></span>
   </button>
 
   <div class="soleRailAccountMenu" id="soleRailAccountMenu">
@@ -155,7 +157,7 @@
 </section>
 <section class="sidebarTasksPane">
     <div class="sidebarTasksHeader">
-  <div class="sectionTitle">Daily tasks</div>
+  <div class="sectionTitle">Daily Tasks</div>
   <div class="sidebarTasksCount" id="sidebarTasksCount">0 of 0 completed</div>
 </div>
 
@@ -221,9 +223,17 @@
     <main class="main">
 <header class="header">
 <div class="chatMeta">
-  <div class="chatMetaInner is-active" id="chatMetaInner">
+<div class="chatMetaInner is-active" id="chatMetaInner">
+  <div class="chatTitleHolder">
     <div class="chatTitle" id="chatTitle"></div>
-    <div class="chatSubtitle" id="chatSubtitle"></div>
+    <span class="chatModelVersion" id="chatModelVersion">1.03</span>
+  </div>
+</div>
+  <div class="chatModelEyebrow">
+    <span class="chatModelLabel">
+      Conversational Model
+      <i class="fa-regular fa-circle-dot"></i>
+    </span>
   </div>
 </div>
 <button class="mobileMenuBtn" id="mobileMenuBtn" aria-label="Open chats">
@@ -236,7 +246,7 @@
   <div class="adminRow">
     <label class="smallLabel">View thread:</label>
     <select id="adminA"></select>
-    <span class="muted">Ã¢â€ â€</span>
+    <span class="muted">•</span>
     <select id="adminB"></select>
     <button class="btn" id="adminLoadBtn">Load</button>
     <button class="btn btnGhost" id="adminBlockBtn">Block</button>
@@ -246,7 +256,7 @@
   <div class="adminRow">
   <label class="smallLabel">Pair users:</label>
   <select id="pairUserA"></select>
-  <span class="muted">Ã¢â€ â€</span>
+  <span class="muted">•</span>
   <select id="pairUserB"></select>
   <button class="btn" id="createPairBtn">Create pair</button>
   <button class="btn btnGhost" id="clearPairBtn">Clear pair</button>
@@ -272,7 +282,7 @@
 <button type="button" class="formatBtn" id="boldBtn" aria-label="Bold"><strong>B</strong></button>
 <button type="button" class="formatBtn" id="italicBtn" aria-label="Italic"><em>I</em></button>
 <button type="button" class="formatBtn" id="underlineBtn" aria-label="Underline"><u>U</u></button>
-<button type="button" class="formatBtn" id="bulletBtn" aria-label="Bulleted list">Ã¢â‚¬Â¢</button>
+<button type="button" class="formatBtn" id="bulletBtn" aria-label="Bulleted list">•</button>
 
 </div>
 
@@ -342,6 +352,7 @@
   <script src="js/app.mobile.js"></script>
   <script src="js/app.voiceMessage.js"></script>
   <script src="js/app.sidebar.js"></script>
+  <script src="js/app.chatHeader.js"></script>
   <script src="js/app.statusUpdates.js"></script>
   <script src="js/app.normalChat.js"></script>
   <script src="js/app.renderThread.js"></script>

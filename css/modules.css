@@ -405,7 +405,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   padding:7px 18px;
   border-radius:999px;
   font:inherit;
-  font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
+  /* font-family:"Instrument Serif", "Source Serif 4", Georgia, serif; */
   font-size:24px;
   line-height:1;
   cursor:pointer;
@@ -980,7 +980,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 
 .moduleHeroCopy h2{
   margin:0;
-  font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
+  /* font-family:"Instrument Serif", "Source Serif 4", Georgia, serif; */
   font-size:34px;
   line-height:1;
   font-weight:400;
@@ -992,7 +992,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   max-width:390px;
   color:var(--sole-soft-ink);
   font-size:13px;
-  line-height:1.45;
+  /* line-height:1.45; */
 }
 
 .moduleHeroProgress{
@@ -1135,18 +1135,18 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 
 .moduleHeroCopy h2{
   margin:0;
-  font-family:"Instrument Serif", "Source Serif 4", Georgia, serif;
+  /* font-family:"Instrument Serif", "Source Serif 4", Georgia, serif; */
   font-size:32px;
   font-weight:400;
   color:var(--sole-ink);
 }
 
 .moduleHeroCopy p{
-  margin:0;
+  margin: 5px 0 0;
   max-width:430px;
   color:var(--sole-soft-ink);
   font-size:13px;
-  line-height:1.48;
+  /* line-height:1.48; */
 }
 
 .moduleHeroProgressCard{

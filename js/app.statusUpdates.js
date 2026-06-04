@@ -40,12 +40,14 @@ let ambientStateTimer = null;
 function setChatSubtitleStatus(text) {
   if (text === lastStatusText) return;
 
-  chatSubtitle.classList.add("statusChanging");
+  if (!chatModelStatus) return;
+
+  chatModelStatus.classList.add("statusChanging");
 
   setTimeout(() => {
-    chatSubtitle.textContent = text || "";
-    chatSubtitle.classList.toggle("statusActive", !!text);
-    chatSubtitle.classList.remove("statusChanging");
+    chatModelStatus.textContent = text || "";
+    chatModelStatus.classList.toggle("statusActive", !!text);
+    chatModelStatus.classList.remove("statusChanging");
     lastStatusText = text;
   }, 160);
 }

@@ -675,11 +675,19 @@ function getModuleProgressPercent() {
 }
 
 function getModuleHeroMeta() {
-  if (screen === "chemistry") {
+  if (screen === "chemistry" || screen === "connection") {
     return {
       eyebrow: "Connection",
       title: "Compatibility model",
       intro: "Sole is building a picture of how you attach, communicate, and sustain intimacy."
+    };
+  }
+
+  if (screen === "solemate") {
+    return {
+      eyebrow: "SoleMate",
+      title: "Type analysis",
+      intro: "Sole is beginning to identify the patterns, tendencies, and relationship archetypes shaping your highest-probability match."
     };
   }
 

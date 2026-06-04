@@ -771,7 +771,7 @@ return `
         <span>Experiment day</span>
         <select data-score-field="experiment_day_override">
           <option value="" ${dayOverride === "" ? "selected" : ""}>
-            Auto â€” Day ${automaticDay}
+            Auto - Day ${automaticDay}
           </option>
           ${[1, 2, 3, 4, 5].map(day => `
             <option value="${day}" ${Number(dayOverride) === day ? "selected" : ""}>
@@ -1571,7 +1571,7 @@ function renderAdminPairingsWorkspace(content) {
                 <div>
                   <strong>
                     ${escapeHtml(group.userA.display_name)}
-                    â†”
+                    &
                     ${escapeHtml(group.userB.display_name)}
                   </strong>
 
@@ -1881,7 +1881,7 @@ async function loadAdminThread(){
   const aName = profs.find(p => p.id === viewA)?.display_name || "A";
   const bName = profs.find(p => p.id === viewB)?.display_name || "B";
 
-  chatTitle.textContent = `ADMIN: ${aName} â†” ${bName}`;
+  chatTitle.textContent = `ADMIN: ${aName} → ${bName}`;
   chatSubtitle.textContent = "Read-only";
 
   await loadThread(viewA, viewB, /*alignAs*/ viewA);

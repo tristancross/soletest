@@ -516,7 +516,7 @@ if (question.type === "swipeDeck") {
             <strong>${escapeHtml(answer.fileName || "Uploaded file")}</strong>
             ${
               fileUrl
-                ? ` â€” <a href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener noreferrer">Open file</a>`
+                ? ` — <a href="${escapeAttr(fileUrl)}" target="_blank" rel="noopener noreferrer">Open file</a>`
                 : ""
             }
           </div>
@@ -526,7 +526,7 @@ if (question.type === "swipeDeck") {
   });
 
   const eyebrow = adminPreview
-    ? (isPartial ? "Admin preview Â· in progress" : "Admin preview Â· completed")
+    ? (isPartial ? "Admin preview · in progress" : "Admin preview · completed")
     : "Calibration complete";
 
   const hint = adminPreview

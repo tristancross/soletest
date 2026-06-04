@@ -1,6 +1,56 @@
 /* MODULE THEME COLOURS --------------------------------------------------- */
 /* Loaded after modules.css / solemate.css / admin.css */
 
+/* BODY / OUTER ATMOSPHERE ----------------------------------------------- */
+
+/* OUTER APP ATMOSPHERE --------------------------------------------------- */
+
+body{
+  transition:background 520ms ease;
+}
+
+/* Default / home */
+body{
+  background:
+    linear-gradient(
+      135deg,
+      #f5eee9 0%,
+      #efe3dc 50%,
+      #f6eee8 100%
+    );
+}
+
+body:has(.app.soleRedesignApp[data-active-module="attraction"]){
+  background:
+    linear-gradient(
+      135deg,
+      #f4ebe6 0%,
+      #ecdcd5 50%,
+      #f5ede7 100%
+    );
+}
+
+body:has(.app.soleRedesignApp[data-active-module="connection"]),
+body:has(.app.soleRedesignApp[data-active-module="chemistry"]){
+  background:
+    linear-gradient(
+      135deg,
+      #eef2ee 0%,
+      #dde9e5 50%,
+      #f1eee7 100%
+    );
+}
+
+body:has(.app.soleRedesignApp[data-active-module="solemate"]){
+  background:
+    linear-gradient(
+      135deg,
+      #f1ebe2 0%,
+      #e4d8c8 50%,
+      #f2ece4 100%
+    );
+}
+
 .app.soleRedesignApp{
   transition:
     background 520ms ease,
@@ -8,82 +58,53 @@
 }
 
 .app.soleRedesignApp[data-active-module]{
-  background:var(--module-page-bg);
-}
-
-/* ATTRACTION — romance / blush / heat */
-.app.soleRedesignApp[data-active-module="attraction"]{
-  --module-accent:#ff6f7f;
-  --module-accent-soft:rgba(255,111,127,.16);
-
-  --module-page-bg:
-    radial-gradient(circle at 14% 10%, rgba(255,255,255,.40), transparent 25%),
-    radial-gradient(circle at 20% 76%, rgba(255,184,202,.24), transparent 28%),
-    radial-gradient(circle at 48% 18%, rgba(255,116,145,.18), transparent 30%),
-    radial-gradient(circle at 76% 24%, rgba(255,118,88,.20), transparent 34%),
-    radial-gradient(circle at 90% 84%, rgba(255,208,150,.22), transparent 38%),
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255,255,255,.42), transparent 24%),
+    radial-gradient(circle at 82% 86%, var(--module-accent-mist), transparent 34%),
     linear-gradient(
       135deg,
-      rgba(248,237,233,.98) 0%,
-      rgba(247,226,226,.96) 38%,
-      rgba(244,222,215,.96) 68%,
-      rgba(247,234,226,.98) 100%
+      rgba(248,241,236,.98) 0%,
+      rgba(246,237,232,.98) 42%,
+      rgba(244,239,235,.98) 100%
     );
-
-  --chat-aura-1:rgba(255,124,116,.34);
-  --chat-aura-2:rgba(255,198,110,.20);
-  --chat-aura-3:rgba(255,166,178,.24);
 }
 
-/* CONNECTION — signal / science / rapport */
+/* ATTRACTION — vivid heat */
+.app.soleRedesignApp[data-active-module="attraction"]{
+  --module-accent:#ff4f3f;
+  --module-accent-soft:rgba(255,79,63,.20);
+
+  --module-page-bg:#ff6b5a;
+
+  --chat-aura-1:rgba(255,79,63,.34);
+  --chat-aura-2:rgba(255,156,64,.22);
+  --chat-aura-3:rgba(255,50,90,.18);
+}
+
+/* CONNECTION — vivid signal */
 .app.soleRedesignApp[data-active-module="connection"],
 .app.soleRedesignApp[data-active-module="chemistry"]{
-  --module-accent:#4fc7a4;
-  --module-accent-soft:rgba(79,199,164,.16);
+  --module-accent:#00a887;
+  --module-accent-soft:rgba(0,168,135,.20);
 
-  --module-page-bg:
-    radial-gradient(circle at 14% 12%, rgba(255,255,255,.36), transparent 25%),
-    radial-gradient(circle at 26% 78%, rgba(178,239,218,.24), transparent 30%),
-    radial-gradient(circle at 50% 18%, rgba(132,224,210,.18), transparent 30%),
-    radial-gradient(circle at 76% 24%, rgba(130,205,255,.18), transparent 34%),
-    radial-gradient(circle at 90% 80%, rgba(244,226,132,.20), transparent 38%),
-    linear-gradient(
-      135deg,
-      rgba(237,244,238,.98) 0%,
-      rgba(228,241,236,.96) 38%,
-      rgba(226,238,241,.96) 70%,
-      rgba(240,238,226,.98) 100%
-    );
+  --module-page-bg:#20c7a7;
 
-  --chat-aura-1:rgba(114,222,188,.24);
-  --chat-aura-2:rgba(134,201,255,.18);
-  --chat-aura-3:rgba(232,224,126,.18);
+  --chat-aura-1:rgba(0,168,135,.28);
+  --chat-aura-2:rgba(0,142,210,.20);
+  --chat-aura-3:rgba(80,220,180,.18);
 }
 
-/* SOLEMATE — halo / pearl / destiny */
+/* SOLEMATE — vivid gold */
 .app.soleRedesignApp[data-active-module="solemate"]{
-  --module-accent:#e7b85b;
-  --module-accent-soft:rgba(231,184,91,.18);
+  --module-accent:#d99a00;
+  --module-accent-soft:rgba(217,154,0,.22);
 
-  --module-page-bg:
-    radial-gradient(circle at 14% 12%, rgba(255,255,255,.42), transparent 25%),
-    radial-gradient(circle at 26% 72%, rgba(255,234,190,.24), transparent 30%),
-    radial-gradient(circle at 54% 16%, rgba(245,209,132,.22), transparent 32%),
-    radial-gradient(circle at 78% 24%, rgba(232,213,255,.16), transparent 31%),
-    radial-gradient(circle at 92% 78%, rgba(185,219,255,.16), transparent 38%),
-    linear-gradient(
-      135deg,
-      rgba(245,240,234,.98) 0%,
-      rgba(244,235,225,.97) 38%,
-      rgba(241,234,229,.97) 68%,
-      rgba(238,234,238,.98) 100%
-    );
+  --module-page-bg:#f0b429;
 
-  --chat-aura-1:rgba(240,194,112,.24);
-  --chat-aura-2:rgba(216,196,255,.16);
-  --chat-aura-3:rgba(174,214,255,.14);
+  --chat-aura-1:rgba(217,154,0,.28);
+  --chat-aura-2:rgba(255,188,60,.20);
+  --chat-aura-3:rgba(170,115,20,.16);
 }
-
 /* Shared module accent details */
 
 .app.soleRedesignApp[data-active-module] .moduleHeroEyebrow,
@@ -241,4 +262,177 @@
     background 720ms cubic-bezier(.16, 1, .3, 1),
     border-color 520ms ease,
     box-shadow 520ms ease;
+}
+
+/* MODULE PERSONALITIES --------------------------------------------------- */
+
+/* Shared: module pages get a subtle “department surface” */
+.app.soleRedesignApp[data-active-module] .moduleHeroMasthead::after{
+  content:"";
+  position:absolute;
+  right:18px;
+  top:18px;
+  width:86px;
+  height:86px;
+  border-radius:999px;
+  pointer-events:none;
+  opacity:.42;
+  background:var(--module-symbol);
+  filter:blur(.2px);
+}
+
+/* ATTRACTION: signal flare / heat-map */
+.app.soleRedesignApp[data-active-module="attraction"]{
+  --module-accent:#ff654f;
+  --module-accent-soft:rgba(255,101,79,.16);
+  --module-accent-mist:rgba(255,101,79,.13);
+
+  --module-symbol:
+    radial-gradient(circle at 50% 50%, rgba(255,101,79,.8) 0 5px, transparent 6px),
+    radial-gradient(circle at 28% 68%, rgba(255,194,85,.75) 0 3px, transparent 4px),
+    radial-gradient(circle at 72% 34%, rgba(255,255,255,.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 50% 50%, rgba(255,101,79,.18), transparent 54%);
+}
+
+/* CONNECTION: node field / relational map */
+.app.soleRedesignApp[data-active-module="connection"],
+.app.soleRedesignApp[data-active-module="chemistry"]{
+  --module-accent:#28a991;
+  --module-accent-soft:rgba(40,169,145,.15);
+  --module-accent-mist:rgba(40,169,145,.12);
+
+  --module-symbol:
+    radial-gradient(circle at 28% 32%, rgba(40,169,145,.9) 0 4px, transparent 5px),
+    radial-gradient(circle at 68% 34%, rgba(40,169,145,.75) 0 4px, transparent 5px),
+    radial-gradient(circle at 48% 70%, rgba(40,169,145,.65) 0 4px, transparent 5px),
+    linear-gradient(32deg, transparent 44%, rgba(40,169,145,.34) 45% 47%, transparent 48%),
+    linear-gradient(142deg, transparent 43%, rgba(40,169,145,.28) 44% 46%, transparent 47%),
+    radial-gradient(circle at 50% 50%, rgba(40,169,145,.12), transparent 56%);
+}
+
+/* SOLEMATE: convergence / target lock */
+.app.soleRedesignApp[data-active-module="solemate"]{
+  --module-accent:#b88a2e;
+  --module-accent-soft:rgba(184,138,46,.15);
+  --module-accent-mist:rgba(184,138,46,.12);
+
+  --module-symbol:
+    radial-gradient(circle at 50% 50%, rgba(184,138,46,.9) 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 50%, transparent 0 20px, rgba(184,138,46,.28) 21px 22px, transparent 23px),
+    radial-gradient(circle at 50% 50%, transparent 0 38px, rgba(184,138,46,.22) 39px 40px, transparent 41px),
+    radial-gradient(circle at 50% 50%, rgba(184,138,46,.10), transparent 58%);
+}
+
+/* Stronger module identity in tabs/buttons, without flooding the page */
+.app.soleRedesignApp[data-active-module] .moduleSubviewTab.active{
+  color:var(--sole-ink);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,.92), transparent 34%),
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.78),
+      color-mix(in srgb, var(--module-accent) 13%, #fff)
+    );
+}
+
+.app.soleRedesignApp[data-active-module] .moduleCalibrationTaskCard.isCurrent{
+  border-color:color-mix(in srgb, var(--module-accent) 28%, transparent);
+  background: none;
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--module-accent) 9%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.86);
+    background: 0 8px 20px rgba(76,49,31,.055),
+    inset 0 1px 0 rgba(255,255,255,.88),
+    inset 0 0 0 1px color-mix(in srgb, var(--module-accent) 22%, transparent)
+}
+
+.app.soleRedesignApp[data-active-module] .moduleCalibrationTaskCard.isCurrent .moduleCalibrationTaskStart{
+  background:var(--module-accent);
+  border-color:var(--module-accent);
+  color:#fff;
+}
+
+/* Keep chat calm, but let the “machine signal” inherit module colour */
+.app.soleRedesignApp[data-active-module] .main{
+  background:rgba(255,255,255,.86);
+}
+
+.app.soleRedesignApp[data-active-module] .responseNeuralDot,
+.app.soleRedesignApp[data-active-module] #typingIndicator.show::before{
+  background:var(--module-accent);
+}
+
+/* SOLEMATE CLEAN GOLD PASS ---------------------------------------------- */
+
+body:has(.app.soleRedesignApp[data-active-module="solemate"]){
+  background:
+    linear-gradient(
+      135deg,
+      #f3eee6 0%,
+      #ece4d6 50%,
+      #f6f1e9 100%
+    );
+}
+
+.app.soleRedesignApp[data-active-module="solemate"]{
+  --module-accent:#caa24a;
+  --module-accent-soft:rgba(202,162,74,.13);
+  --module-accent-mist:rgba(202,162,74,.085);
+
+  --chat-aura-1:rgba(202,162,74,.13);
+  --chat-aura-2:rgba(244,213,142,.09);
+  --chat-aura-3:rgba(255,255,255,.08);
+
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255,255,255,.48), transparent 24%),
+    radial-gradient(circle at 82% 86%, rgba(202,162,74,.075), transparent 34%),
+    linear-gradient(
+      135deg,
+      #f8f3ec 0%,
+      #f2ece2 44%,
+      #f7f2eb 100%
+    );
+}
+
+/* de-orange SoleMate cards */
+.app.soleRedesignApp[data-active-module="solemate"] .moduleCalibrationTaskCard,
+.app.soleRedesignApp[data-active-module="solemate"] .moduleHeroProgressCard,
+.app.soleRedesignApp[data-active-module="solemate"] .soleMatrixPanel,
+.app.soleRedesignApp[data-active-module="solemate"] .quizCard,
+.app.soleRedesignApp[data-active-module="solemate"] .quizCompleteCard{
+  background:
+    radial-gradient(circle at 16% 14%, rgba(255,255,255,.82), transparent 34%),
+    radial-gradient(circle at 94% 80%, rgba(202,162,74,.075), transparent 38%),
+    linear-gradient(135deg, rgba(255,255,255,.70), rgba(249,245,236,.46));
+  border-color:rgba(120,88,38,.095);
+}
+
+/* SoleMate active tab: champagne, not orange */
+.app.soleRedesignApp[data-active-module="solemate"] .moduleSubviewTab.active{
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,255,255,.94), transparent 34%),
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.80),
+      rgba(202,162,74,.12)
+    );
+  box-shadow:
+    0 8px 20px rgba(90,68,35,.045),
+    inset 0 1px 0 rgba(255,255,255,.88),
+    inset 0 0 0 1px rgba(202,162,74,.20);
+}
+
+/* SoleMate portrait panel specifically */
+.app.soleRedesignApp[data-active-module="solemate"] .solematePortraitCard,
+.app.soleRedesignApp[data-active-module="solemate"] .solemateModelPanel,
+.app.soleRedesignApp[data-active-module="solemate"] .solemateChartPanel{
+  background:
+    radial-gradient(circle at 82% 30%, rgba(202,162,74,.08), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.70), rgba(248,244,236,.46));
+  border-color:rgba(120,88,38,.10);
+}
+
+/* keep the chat almost white on SoleMate */
+.app.soleRedesignApp[data-active-module="solemate"] .main{
+  background:rgba(255,255,255,.90);
 }

@@ -112,3 +112,133 @@
     radial-gradient(circle at 54% 54%, var(--chat-aura-2), transparent 44%),
     radial-gradient(circle at 48% 62%, var(--chat-aura-3), transparent 48%);
 }
+
+
+/* MODULE SCREEN TRANSITIONS --------------------------------------------- */
+
+.sidebarNavPane{
+  position:relative;
+}
+
+.sidebarNavPane > *{
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease,
+    filter 220ms ease;
+}
+
+.sidebarNavPane.isModuleHidden > *{
+  opacity:0;
+  transform:translateY(8px) scale(.992);
+  filter:blur(8px);
+  pointer-events:none;
+}
+
+.sidebarNavPane.isModuleEntering > *{
+  animation:soleModuleFadeIn 520ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.sidebarNavPane.isModuleLoading::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:80;
+  pointer-events:none;
+
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255,255,255,.26), transparent 20%),
+    radial-gradient(circle at 50% 48%, var(--module-accent-soft, rgba(255,118,95,.18)), transparent 42%),
+    radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--module-accent, var(--sole-coral)) 12%, transparent), transparent 62%);
+
+  backdrop-filter:blur(8px) saturate(1.04);
+  -webkit-backdrop-filter:blur(8px) saturate(1.04);
+
+  opacity:0;
+  animation:soleModuleVeilIn 180ms ease forwards;
+}
+
+.sidebarNavPane.isModuleLoading::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:48%;
+  z-index:81;
+
+  width:38px;
+  height:38px;
+  border-radius:999px;
+
+  transform:translate(-50%, -50%);
+
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.98) 0%, rgba(255,255,255,.72) 12%, transparent 24%),
+    radial-gradient(circle at 50% 52%, var(--module-accent, var(--sole-coral)) 0%, color-mix(in srgb, var(--module-accent, var(--sole-coral)) 78%, #fff 22%) 48%, color-mix(in srgb, var(--module-accent, var(--sole-coral)) 72%, #000 8%) 100%);
+
+  box-shadow:
+    0 0 0 9px color-mix(in srgb, var(--module-accent, var(--sole-coral)) 13%, transparent),
+    0 0 26px color-mix(in srgb, var(--module-accent, var(--sole-coral)) 46%, transparent),
+    0 0 64px color-mix(in srgb, var(--module-accent, var(--sole-coral)) 30%, transparent),
+    inset 4px 4px 8px rgba(255,255,255,.34),
+    inset -6px -7px 12px rgba(60,30,20,.12);
+
+  opacity:0;
+  pointer-events:none;
+
+  animation:soleModuleLoadingBall 760ms cubic-bezier(.16, 1, .3, 1) infinite alternate;
+}
+
+@keyframes soleModuleFadeIn{
+  from{
+    opacity:0;
+    transform:translateY(10px) scale(.992);
+    filter:blur(8px);
+  }
+
+  55%{
+    filter:blur(0);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:blur(0);
+  }
+}
+
+@keyframes soleModuleVeilIn{
+  from{
+    opacity:0;
+  }
+
+  to{
+    opacity:1;
+  }
+}
+
+@keyframes soleModuleLoadingBall{
+  from{
+    opacity:.58;
+    transform:translate(-50%, -50%) scale(.82);
+  }
+
+  to{
+    opacity:1;
+    transform:translate(-50%, -50%) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .sidebarNavPane > *,
+  .sidebarNavPane.isModuleEntering > *,
+  .sidebarNavPane.isModuleLoading::after,
+  .sidebarNavPane.isModuleLoading::before{
+    animation:none;
+    transition:none;
+  }
+}
+.app.soleRedesignApp{
+  transition:
+    background 720ms cubic-bezier(.16, 1, .3, 1),
+    border-color 520ms ease,
+    box-shadow 520ms ease;
+}

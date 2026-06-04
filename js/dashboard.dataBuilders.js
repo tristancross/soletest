@@ -1378,14 +1378,17 @@ const patchedQuestions = orderedBaseQuestions
 function mapDbAssignmentToRuntime(row) {
   const template = row.rendered_template || row.quiz_template;
   const questions = Array.isArray(template?.questions_json) ? template.questions_json : [];
-
-
+  const dayIndex = Math.max(1, Math.min(5, Math.round(Number(template?.day_index || 1))));
 
   return {
-    
     id: row.id,
     templateId: template?.id || null,
     type: "assessmentCard",
+
+    day_index: dayIndex,
+    day_number: dayIndex,
+    template_day_index: dayIndex,
+
     title: template?.title || "Untitled quiz",
     prompt: template?.prompt || "",
     description: template?.description || "",
@@ -1402,14 +1405,18 @@ effect: {
   confidenceIncrease: Number(template?.confidence_increase ?? 0),
   stageLabel: template?.stage_label || "",
   matrixId: template?.matrix_id || "",
-  matrix_id: template?.matrix_id || ""
+  matrix_id: template?.matrix_id || "",
+  day_index: dayIndex,
+  day_number: dayIndex
 },
-    meta: {
-      category: template?.category || null,
-      assignedBy: row.created_by || "admin",
-      assignedAt: row.created_at || null,
-      assignmentMode: row.assignment_mode
-    },
+meta: {
+  category: template?.category || null,
+  day_index: dayIndex,
+  day_number: dayIndex,
+  assignedBy: row.created_by || "admin",
+  assignedAt: row.created_at || null,
+  assignmentMode: row.assignment_mode
+},
     questions
   };
 }
@@ -1439,15 +1446,16 @@ quiz_template:quiz_template_id (
   description,
   status,
   priority,
+  day_index,
   cta_label,
   save_mode,
-category,
-matrix_id,
-impact_weight,
-candidate_reduction,
-confidence_increase,
-stage_label,
-questions_json,
+  category,
+  matrix_id,
+  impact_weight,
+  candidate_reduction,
+  confidence_increase,
+  stage_label,
+  questions_json,
   quiz_template_overrides (
     id,
     template_id,

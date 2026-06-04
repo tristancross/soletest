@@ -237,26 +237,90 @@ function setActiveRailItem(action){
   });
 }
 
-async function openModule(screen){
-setActiveRailItem(getRailActionForModuleScreen(screen));
+function wait(ms){
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
 
-  const sidebarPaneEl = qs(".sidebarNavPane");
+function getSidebarPane(){
+  return qs(".sidebarNavPane");
+}
+
+function clearModuleTransitionClasses(pane){
+  if (!pane) return;
+
+  pane.classList.remove(
+    "isModuleHidden",
+    "isModuleLoading",
+    "isModuleEntering"
+  );
+}
+
+async function openModule(screen){
+  const sidebarPaneEl = getSidebarPane();
+
   if (!sidebarPaneEl || !window.dashboardUI?.mountSidebarDashboardScreen) return;
 
-  sidebarPaneEl.querySelector(".soleDailyHero")?.remove();
-  sidebarPaneEl.querySelector(".soleModuleTiles")?.remove();
-  sidebarPaneEl.querySelector(".soleDashboardGreeting")?.remove();
+  if (window.soleModuleTransitioning) return;
+  window.soleModuleTransitioning = true;
 
-  await window.dashboardUI.mountSidebarDashboardScreen({
-    screen,
-    sidebarPaneEl,
-    mainEl,
-    sb,
-    me,
-    escapeHtml
-  });
+  const appEl = qs(".app.soleRedesignApp");
 
-  await window.updateInsightNotificationDots?.();
+  try {
+    clearModuleTransitionClasses(sidebarPaneEl);
+
+    /*
+      Fade the current module/home content away first.
+      Do NOT show the new module content until it has mounted.
+    */
+    sidebarPaneEl.classList.add("isModuleHidden");
+
+    await wait(180);
+
+    setActiveRailItem(getRailActionForModuleScreen(screen));
+
+    if (appEl) {
+      appEl.dataset.activeModule = screen;
+      appEl.dataset.transitionModule = screen;
+    }
+
+    sidebarPaneEl.classList.add("isModuleLoading");
+
+    sidebarPaneEl.querySelector(".soleDailyHero")?.remove();
+    sidebarPaneEl.querySelector(".soleModuleTiles")?.remove();
+    sidebarPaneEl.querySelector(".soleDashboardGreeting")?.remove();
+
+    await window.dashboardUI.mountSidebarDashboardScreen({
+      screen,
+      sidebarPaneEl,
+      mainEl,
+      sb,
+      me,
+      escapeHtml
+    });
+
+    await window.updateInsightNotificationDots?.();
+
+    /*
+      New content exists now, but is still hidden by .isModuleHidden.
+      Remove the veil, then animate the new content in.
+    */
+    sidebarPaneEl.classList.remove("isModuleLoading");
+    sidebarPaneEl.classList.add("isModuleEntering");
+
+    requestAnimationFrame(() => {
+      sidebarPaneEl.classList.remove("isModuleHidden");
+    });
+
+    window.setTimeout(() => {
+      sidebarPaneEl.classList.remove("isModuleEntering");
+    }, 560);
+  } finally {
+    window.soleModuleTransitioning = false;
+
+    if (appEl) {
+      delete appEl.dataset.transitionModule;
+    }
+  }
 }
 
   async function handleRailClick(target){
@@ -265,11 +329,51 @@ setActiveRailItem(getRailActionForModuleScreen(screen));
 
    setActiveRailItem(action);
 
-    if (action === "home") {
-      window.sidebarDashboardUI?.renderMenu?.();
-      setTimeout(enhanceDashboard, 0);
-      return;
+if (action === "home") {
+  const sidebarPaneEl = getSidebarPane();
+  const appEl = qs(".app.soleRedesignApp");
+
+  if (window.soleModuleTransitioning) return;
+  window.soleModuleTransitioning = true;
+
+  try {
+    clearModuleTransitionClasses(sidebarPaneEl);
+
+    sidebarPaneEl?.classList.add("isModuleHidden");
+
+    await wait(170);
+
+    setActiveRailItem("home");
+
+    if (appEl) {
+      delete appEl.dataset.activeModule;
+      delete appEl.dataset.transitionModule;
     }
+
+    sidebarPaneEl?.classList.add("isModuleLoading");
+
+    window.sidebarDashboardUI?.renderMenu?.();
+
+    setTimeout(enhanceDashboard, 0);
+
+    await wait(80);
+
+    sidebarPaneEl?.classList.remove("isModuleLoading");
+    sidebarPaneEl?.classList.add("isModuleEntering");
+
+    requestAnimationFrame(() => {
+      sidebarPaneEl?.classList.remove("isModuleHidden");
+    });
+
+    window.setTimeout(() => {
+      sidebarPaneEl?.classList.remove("isModuleEntering");
+    }, 560);
+  } finally {
+    window.soleModuleTransitioning = false;
+  }
+
+  return;
+}
 
     if (action === "connection" || action === "calibration") {
       await openModule("chemistry");

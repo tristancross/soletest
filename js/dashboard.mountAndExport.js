@@ -492,6 +492,24 @@ async function mountSidebarDashboardScreen({
 }) {
 if (!sidebarPaneEl) return;
 
+if (sb && me?.id) {
+  try {
+    const { data: freshProfile, error: freshProfileError } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", me.id)
+      .maybeSingle();
+
+    if (freshProfileError) {
+      console.warn("Could not refresh profile for module day state", freshProfileError);
+    } else if (freshProfile) {
+      me = freshProfile;
+    }
+  } catch (error) {
+    console.warn("Profile refresh failed during module day state", error);
+  }
+}
+
 const appEl = document.querySelector(".app.soleRedesignApp");
 
 if (appEl) {
@@ -590,6 +608,15 @@ let liveMessageStats = {
   totalChars: 0,
   averageChars: 0
 };
+
+try {
+  await window.soleDayConfigs?.loadExperimentSettings?.(sb, {
+    force: true
+  });
+} catch (error) {
+  console.warn("Could not refresh experiment settings for module screen", error);
+}
+
 let runtimeAssignments = [];
 
 let liveDashboardState = {

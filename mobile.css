@@ -1,0 +1,981 @@
+/* mobile.css — clean mobile-only overrides for Sole
+   Load after all other CSS files.
+   Mobile model:
+   - Dashboard/Home and Messages are separate full-screen views.
+   - Existing .soleRailNav becomes a hamburger overlay.
+   - No bottom dock, no 76px gutter.
+   - Global top buttons provide Messages + Menu on every mobile screen.
+*/
+
+/* =========================================================
+   SOLE — DESKTOP SAFETY RESET
+   Ensures mobile view classes / mobile nav never affect desktop.
+   ========================================================= */
+
+@media (min-width: 769px) {
+.mobileSidebarBackdrop, .mobileMenuBtn{
+  display: none;
+}
+
+  html,
+  body {
+    width: auto !important;
+    height: auto !important;
+    overflow: auto !important;
+  }
+
+  .app.soleRedesignApp {
+    display: grid !important;
+    grid-template-columns: 96px minmax(470px, .9fr) minmax(560px, 1.1fr) !important;
+    gap: 0 !important;
+
+    height: calc(100vh - 16px) !important;
+    min-height: 0 !important;
+
+    margin: 8px !important;
+    padding: 0 !important;
+
+    border: 1px solid var(--sole-line) !important;
+    border-radius: 22px !important;
+
+    overflow: hidden !important;
+    transform: none !important;
+    background: var(--bg) !important;
+  }
+
+  .soleRailNav {
+    grid-column: 1 !important;
+
+    position: static !important;
+
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+
+    padding: 28px 14px 22px !important;
+
+    border: 0 !important;
+    border-right: 1px solid var(--sole-line) !important;
+    border-radius: 22px 0 0 22px !important;
+
+    background: rgba(255, 255, 255, .28) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    transform: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+
+    overflow: visible !important;
+    z-index: auto !important;
+  }
+
+  .sidebar.soleDashboardPane {
+    grid-column: 2 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    overflow: hidden !important;
+    background: rgba(255, 238, 222, 0.035) !important;
+  }
+
+  .main {
+    grid-column: 3 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    margin: 20px !important;
+    padding: 0 !important;
+
+    border: 1px solid var(--sole-line) !important;
+    border-radius: 28px !important;
+
+    overflow: hidden !important;
+    background: rgba(255, 255, 255, .85) !important;
+    box-shadow: var(--sole-shadow) !important;
+  }
+
+  .soleRailItems {
+    width: 100% !important;
+    display: grid !important;
+    gap: 14px !important;
+  }
+
+  .soleRailBottom {
+    margin-top: auto !important;
+    display: grid !important;
+    justify-items: center !important;
+    gap: 18px !important;
+    width: 100% !important;
+  }
+
+  .soleRailItem {
+    width: 70px !important;
+    min-height: 70px !important;
+
+    display: grid !important;
+    place-items: center !important;
+    gap: 6px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border-radius: 16px !important;
+
+    text-align: center !important;
+  }
+
+  .soleRailItem i {
+    width: auto !important;
+    height: auto !important;
+    flex: initial !important;
+    font-size: 20px !important;
+  }
+
+  .soleRailItem span {
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+
+  .soleRailUser {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 999px !important;
+  }
+
+  .mobileTopActions,
+  .mobileRailScrim,
+  .mobileDock,
+  .mobileBottomNav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --mobile-page-pad: 14px;
+    --mobile-header-h: 70px;
+    --mobile-action-size: 42px;
+    --mobile-action-gap: 8px;
+    --mobile-safe-top: max(10px, env(safe-area-inset-top));
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden !important;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  /* -------------------------------------------------------
+     App shell
+     ------------------------------------------------------- */
+
+  .app.soleRedesignApp {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    overflow: hidden !important;
+    transform: none !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    gap: 0 !important;
+
+    background: var(--bg) !important;
+  }
+
+  .sidebar.soleDashboardPane,
+  .main {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    overflow: hidden !important;
+  }
+
+  /* Default mobile landing screen */
+  .sidebar.soleDashboardPane {
+    display: flex !important;
+    flex-direction: column !important;
+    background: transparent !important;
+  }
+
+  .main {
+    display: none !important;
+  }
+
+  body.mobileViewHome .sidebar.soleDashboardPane {
+    display: flex !important;
+  }
+
+  body.mobileViewHome .main {
+    display: none !important;
+  }
+
+  body.mobileViewMessages .sidebar.soleDashboardPane {
+    display: none !important;
+  }
+
+  body.mobileViewMessages .main {
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+  }
+
+  /* -------------------------------------------------------
+     Global top actions: Messages + Hamburger Menu
+     Requires:
+     .mobileTopActions
+     #mobileChatBtn
+     #mobileMenuBtnGlobal
+     ------------------------------------------------------- */
+
+  .mobileTopActions {
+    position: fixed;
+    top: var(--mobile-safe-top);
+    right: 10px;
+    z-index: 10050;
+
+    display: flex;
+    align-items: center;
+    gap: var(--mobile-action-gap);
+  }
+
+  .mobileTopActionBtn {
+    appearance: none;
+    border: 1px solid rgba(50, 36, 28, 0.08);
+    border-radius: 16px;
+
+    width: var(--mobile-action-size);
+    height: var(--mobile-action-size);
+
+    display: grid;
+    place-items: center;
+
+    background: rgba(255, 255, 255, 0.68);
+    color: var(--sole-ink);
+
+    box-shadow:
+      0 10px 24px rgba(76, 49, 31, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.82);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    cursor: pointer;
+  }
+
+  .mobileTopActionBtn i {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  body.mobileViewMessages #mobileChatBtn {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255, 166, 124, 0.18), transparent 58%),
+      rgba(255, 255, 255, 0.82);
+  }
+
+  .mobileTopActions .mobileMenuUnreadBadge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+
+    border-radius: 999px;
+
+    background: #ff3b30;
+    color: #fff;
+
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  /* Hide the old chat-header menu button on mobile.
+     The global top action replaces it. */
+  .header .mobileMenuBtn {
+    display: none !important;
+  }
+
+  /* Give dashboard brand enough room for top-right buttons */
+  .sidebarTop {
+    padding: 18px 110px 6px 14px !important;
+    border-bottom: 0 !important;
+  }
+
+  .soleBrandLetter {
+    font-size: 31px !important;
+  }
+
+  .soleLogoIcon01 {
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px !important;
+  }
+
+  /* -------------------------------------------------------
+     Dashboard / Home
+     ------------------------------------------------------- */
+
+  .sidebarNavPane {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+
+    padding: 0 var(--mobile-page-pad) 22px !important;
+    gap: 14px !important;
+  }
+
+  .dashboardGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboardPanel,
+  .quizPanel {
+    padding: 0 !important;
+    margin: 0 auto 24px !important;
+  }
+
+  .dashCard {
+    min-height: auto !important;
+  }
+
+  .soleDailyHero {
+    min-height: 190px !important;
+    border-radius: 22px !important;
+    padding: 22px 24px !important;
+  }
+
+  .soleDailyHero h3 {
+    font-size: clamp(31px, 9vw, 42px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .soleDailyHero p {
+    max-width: 280px !important;
+    font-size: 13px !important;
+  }
+
+  .soleModuleExploreHero {
+    width: min(310px, 100%) !important;
+  }
+
+  .soleModuleTiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .soleModuleTile {
+    min-height: 150px !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+  }
+
+  .soleModuleTile p {
+    font-size: 12px !important;
+    max-width: 170px !important;
+  }
+
+  .soleModuleExplore {
+    width: 126px !important;
+  }
+
+  .sidebarTasksHeader {
+    padding: 10px 18px 5px !important;
+  }
+
+  .sidebarTaskList {
+    padding: 2px 14px 10px !important;
+  }
+
+  .sidebarTaskCard {
+    min-height: 52px !important;
+  }
+
+  .progressStatsRow {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .progressStat {
+    --dial-size: 56px;
+    min-width: 0 !important;
+    padding: 16px 10px 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .progressStat strong {
+    font-size: 13px !important;
+  }
+
+  .progressStatLabel,
+  .progressStat span {
+    font-size: 9px !important;
+  }
+
+  /* -------------------------------------------------------
+     Chat / Messages
+     ------------------------------------------------------- */
+
+  .header {
+    min-height: var(--mobile-header-h) !important;
+    flex: 0 0 auto !important;
+
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+
+    padding: 9px 8px 8px !important;
+
+    background: rgba(255, 255, 255, 0.62) !important;
+    border-bottom: 1px solid rgba(50, 36, 28, 0.08) !important;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    position: relative !important;
+    z-index: 40 !important;
+  }
+
+  .chatMeta {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  .chatTitle {
+    font-size: 23px !important;
+    line-height: 1 !important;
+  }
+
+  .chatModelVersion {
+    font-size: 9px !important;
+  }
+
+  .chatModelEyebrow,
+  .chatSubtitle {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .chatSubtitle {
+    max-width: calc(100vw - 82px) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .messages {
+    min-height: 0 !important;
+    height: auto !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+
+    padding: 14px 14px 10px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    align-items: stretch !important;
+  }
+
+  .messages > .row {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .messages > .row:first-child {
+    margin-top: auto;
+  }
+
+  .msgWrap {
+    max-width: 84% !important;
+  }
+
+  .bubble {
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+  }
+
+  .row.me .bubble {
+    border-radius: 18px !important;
+  }
+
+  .row.them .bubble {
+    padding: 0 0 0 6px !important;
+  }
+
+  #typingIndicator {
+    max-width: 90% !important;
+    margin: 8px 0 !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+
+  .responseNeuralRow {
+    min-height: 70px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .responseNeuralWrap,
+  .responseNeuralField {
+    width: 64px !important;
+    height: 64px !important;
+    flex-basis: 64px !important;
+  }
+
+  .composer {
+    flex: 0 0 auto !important;
+
+    position: relative !important;
+    bottom: auto !important;
+    z-index: 35 !important;
+
+    width: 100% !important;
+
+    padding: 7px 6px max(7px, env(safe-area-inset-bottom)) !important;
+
+    background: rgba(255, 255, 255, 0.58) !important;
+    border-top: 1px solid rgba(50, 36, 28, 0.08) !important;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .composerInner {
+    width: 100% !important;
+    max-width: none !important;
+
+    min-height: 52px !important;
+
+    padding: 7px 8px 7px 14px !important;
+
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.74) !important;
+  }
+
+  .input {
+    font-size: 16px !important;
+  }
+
+  .micBtn,
+  .sendBtnIcon {
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+  }
+
+  /* -------------------------------------------------------
+     Hamburger rail overlay
+     Uses existing .soleRailNav + .soleRailItem structure
+     ------------------------------------------------------- */
+
+  .mobileRailScrim {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10001 !important;
+
+    background: rgba(30, 22, 18, 0.22) !important;
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    opacity: 0 !important;
+    pointer-events: none !important;
+
+    transition: opacity 220ms ease !important;
+  }
+
+  body.mobileMenuOpen .mobileRailScrim {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .soleRailNav {
+        position: fixed !important;
+        top: 0px !important;
+        right: 0px !important;
+        left: auto !important;
+        bottom: 0px !important;
+        width: 100vw;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        z-index: 10002 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 14px !important;
+        gap: 10px !important;
+        border: 1px solid rgba(48, 37, 31, 0.12) !important;
+        /* border-radius: 24px !important; */
+        background: radial-gradient(circle at 80% 0%, rgba(255, 167, 125, 0.14), transparent 42%), rgba(250, 244, 239, 0.96) !important;
+        box-shadow: 0 30px 90px rgba(60, 38, 24, 0.20) !important;
+        backdrop-filter: blur(28px) !important;
+        -webkit-backdrop-filter: blur(28px) !important;
+        transform: translateX(calc(100% + 24px)) scale(0.98) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: transform 260ms cubic-bezier(.16, 1, .3, 1), opacity 180ms ease !important;
+        overflow-y: auto !important;
+  }
+
+  body.mobileMenuOpen .soleRailNav {
+    transform: translateX(0) scale(1) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .soleRailMenuBtn {
+    display: none !important;
+  }
+
+  .soleRailItems,
+  .soleRailBottom {
+    width: 100% !important;
+    display: grid !important;
+    gap: 8px !important;
+    justify-items: stretch !important;
+    margin: 0 !important;
+  }
+
+  .soleRailBottom {
+    margin-top: auto !important;
+  }
+
+  .soleRailItem {
+    width: 100% !important;
+    min-height: 54px !important;
+
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+
+    padding: 12px 14px !important;
+    margin: 0 !important;
+
+    border-radius: 18px !important;
+
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+    text-align: left !important;
+  }
+
+  .soleRailItem i {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    font-size: 19px !important;
+    margin: 0 !important;
+  }
+
+  .soleRailItem span {
+    font-size: 13px !important;
+  }
+
+  .soleRailItem.isActive {
+    background:
+      radial-gradient(circle at 24% 18%, rgba(255, 255, 255, .88), transparent 36%),
+      linear-gradient(135deg, rgba(255, 255, 255, .70), rgba(255, 226, 217, .62)) !important;
+
+    box-shadow:
+      0 8px 20px rgba(76, 49, 31, .055),
+      inset 0 1px 0 rgba(255, 255, 255, .88),
+      inset 0 0 0 1px rgba(255, 118, 95, .11) !important;
+  }
+
+  .soleRailAccount {
+    width: 100% !important;
+  }
+
+  .soleRailUser {
+    width: 100% !important;
+    height: 48px !important;
+    border-radius: 16px !important;
+  }
+
+  .soleRailAccountMenu {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: calc(100% + 10px) !important;
+    width: auto !important;
+  }
+
+  /* -------------------------------------------------------
+     Quiz / module / admin smaller-screen helpers
+     ------------------------------------------------------- */
+
+  .quizScale7 {
+    gap: 7px !important;
+  }
+
+  .quizScale7Btn[data-value="1"],
+  .quizScale7Btn[data-value="7"] {
+    --size: 48px;
+  }
+
+  .quizScale7Btn[data-value="2"],
+  .quizScale7Btn[data-value="6"] {
+    --size: 40px;
+  }
+
+  .quizScale7Btn[data-value="3"],
+  .quizScale7Btn[data-value="5"] {
+    --size: 32px;
+  }
+
+  .quizScreen,
+  .quizShell,
+  .questionShell,
+  .rankingShell {
+    width: 100% !important;
+    min-height: 100dvh !important;
+    padding: var(--mobile-page-pad) !important;
+  }
+
+  .quizQuestion,
+  .questionText,
+  .rankingQuestion {
+    font-size: clamp(22px, 7vw, 34px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .quizAnswerList,
+  .answerList,
+  .rankingList {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .quizAnswer,
+  .answerButton,
+  .rankingItem {
+    width: 100% !important;
+    min-height: 52px !important;
+    border-radius: 16px !important;
+    padding: 14px 15px !important;
+    font-size: 15px !important;
+    text-align: left !important;
+  }
+
+  .quizContinue,
+  .continueButton,
+  .primaryButton {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 999px;
+  }
+
+  .moduleCalibrationList,
+  .calibrationList,
+  .quizList,
+  .moduleList,
+  .insightsGrid,
+  .moduleGrid,
+  .dashboardModuleGrid,
+  .profileModules {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .moduleCalibrationCard,
+  .calibrationCard,
+  .quizCard,
+  .moduleCard,
+  .insightCard {
+    width: 100% !important;
+    border-radius: 22px !important;
+    padding: 16px !important;
+  }
+
+  .adminQuizFieldRow,
+  .adminGrid,
+  .adminPanelGrid,
+  .adminBuilderGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .adminQuizQuestionTop {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+}
+
+/* Matrix gets a slightly wider breakpoint because it breaks earlier */
+@media (max-width: 1000px) {
+  .soleMatrixPanel {
+    padding: 14px 8px !important;
+    border-radius: 18px !important;
+  }
+
+  .soleMatrixHeader {
+    flex-direction: column !important;
+    margin-bottom: 0 !important;
+  }
+
+  .soleMatrixChartWrap {
+    margin-top: -8px !important;
+  }
+
+  .soleMatrixSvg {
+    min-height: 380px !important;
+    height: min(112vw, 520px) !important;
+    transform: scale(1.1) !important;
+    transform-origin: center center !important;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 430px) {
+  :root {
+    --mobile-page-pad: 12px;
+  }
+
+  .soleModuleTiles {
+    grid-template-columns: 1fr !important;
+  }
+
+  .progressStatsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .msgWrap {
+    max-width: 92% !important;
+  }
+
+  .chatSubtitle {
+    max-width: calc(100vw - 92px) !important;
+  }
+}
+
+/* Landscape phones */
+@media (max-width: 768px) and (orientation: landscape) {
+  :root {
+    --mobile-header-h: 56px;
+  }
+
+  .header {
+    min-height: var(--mobile-header-h) !important;
+  }
+
+  .messages {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .responseNeuralWrap,
+  .responseNeuralField {
+    width: 48px !important;
+    height: 48px !important;
+    flex-basis: 48px !important;
+  }
+}
+
+/* Desktop safety */
+@media (min-width: 769px) {
+  .mobileTopActions,
+  .mobileRailScrim,
+  .mobileDock,
+  .mobileBottomNav {
+    display: none !important;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  @media (max-width: 768px) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}

@@ -26,9 +26,14 @@ async function getAssignedPartner(userId) {
 
   const partnerId = data.user_a === userId ? data.user_b : data.user_a;
 
+  const tableName = me?.is_admin ? "profiles" : "paired_profile_public";
+  const columns = me?.is_admin
+    ? "*"
+    : "id, display_name, username";
+
   const { data: partner, error: partnerError } = await sb
-    .from("profiles")
-    .select("*")
+    .from(tableName)
+    .select(columns)
     .eq("id", partnerId)
     .maybeSingle();
 

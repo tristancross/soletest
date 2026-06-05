@@ -19,6 +19,11 @@ function syncAppHeightToViewport() {
 const chatMetaInner = document.getElementById("chatMetaInner");
 
 
+function setHeaderSubtitle(text = "") {
+  if (!chatSubtitle) return;
+  chatSubtitle.textContent = text;
+}
+
 
 document.addEventListener("visibilitychange", async () => {
   if (isCurrentChatActuallyVisible()) {

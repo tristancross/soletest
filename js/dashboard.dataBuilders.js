@@ -1160,16 +1160,16 @@ async function loadUserInsightsFromSupabase(sb, userId, options = {}) {
 async function createUserInsightInSupabase(sb, me, payload) {
   const { data, error } = await sb
     .from("user_insights")
-    .insert({
-      user_id: payload.userId,
-title: payload.title,
-eyebrow: payload.eyebrow || null,
-body_html: payload.bodyHtml || "",
-      category: payload.category || "general",
-      status: payload.status || "draft",
-      eyebrow: payload.eyebrow || null,
-      created_by: me?.id || null
-    })
+.insert({
+  user_id: payload.userId,
+  title: payload.title,
+  eyebrow: payload.eyebrow || null,
+  body_html: payload.bodyHtml || "",
+  icon_class: payload.iconClass || null,
+  category: payload.category || "general",
+  status: payload.status || "draft",
+  created_by: me?.id || null
+})
     .select("*")
     .single();
 
@@ -1185,6 +1185,7 @@ async function updateUserInsightInSupabase(sb, insightId, payload) {
 title: payload.title,
 eyebrow: payload.eyebrow || null,
 body_html: payload.bodyHtml || "",
+  icon_class: payload.iconClass || null,
       category: payload.category || "general",
       status: payload.status || "draft",
       eyebrow: payload.eyebrow || null,

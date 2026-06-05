@@ -1,6 +1,15 @@
 // ====== SIDEBAR ======
 async function renderSidebar(activeId){
-  const { data: profiles, error } = await sb.from("profiles").select("*").order("display_name");
+  const tableName = me?.is_admin ? "profiles" : "paired_profile_public";
+  const columns = me?.is_admin
+    ? "*"
+    : "id, display_name, username";
+
+  const { data: profiles, error } = await sb
+    .from(tableName)
+    .select(columns)
+    .order("display_name");
+
   const unreadCounts = await getUnreadCounts();
   if (error) return alert(error.message);
 
@@ -14,8 +23,8 @@ async function renderSidebar(activeId){
   userList.innerHTML = "";
 
   // In normal mode we list non-admin profiles (excluding self).
-profiles
-  .filter(p => p.id !== me.id && !p.is_admin)
+(profiles || [])
+  .filter(p => p.id !== me.id && (me?.is_admin ? !p.is_admin : true))
   .filter(p => {
     if (me.is_admin) return true;
     if (!assignedPartner) return true; // testing fallback

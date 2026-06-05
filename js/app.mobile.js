@@ -45,7 +45,7 @@ async function updateInsightNotificationDots() {
 }
 
 async function updateSidebarDailyTasks() {
-  const taskCards = document.querySelectorAll(".sidebarTaskCard");
+const taskCards = document.querySelectorAll(".sidebarTaskCard[data-task-id]");
   const countEl = document.getElementById("sidebarTasksCount");
 
   if (!taskCards.length || !me) return;
@@ -299,20 +299,104 @@ function updateNoChatState() {
 }
 
 
-mobileMenuBtn.addEventListener("click", () => {
-  if (appEl.classList.contains("mobileSidebarOpen")) {
-    closeMobileSidebar();
-  } else {
-    openMobileSidebar();
-  }
-});
+function setMobileView(view) {
+  if (!isMobileLayout()) return;
 
-mobileSidebarBackdrop.addEventListener("click", () => {
-  closeMobileSidebar();
-});
+  const isMessages = view === "messages";
 
-window.addEventListener("resize", () => {
-  if (!isMobileLayout()) {
-    closeMobileSidebar();
+  document.body.classList.toggle("mobileViewMessages", isMessages);
+  document.body.classList.toggle("mobileViewHome", !isMessages);
+
+  if (isMessages && them) {
+    requestAnimationFrame(() => {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    markThreadAsRead(me.id, them.id)
+      .then(() => updateMobileMenuUnreadBadge?.())
+      .catch(error => console.warn("Could not mark mobile thread as read", error));
   }
-});
+}
+
+function openMobileRailMenu() {
+  if (!isMobileLayout()) return;
+
+  document.body.classList.add("mobileMenuOpen");
+  document.getElementById("mobileMenuBtnGlobal")?.setAttribute("aria-expanded", "true");
+}
+
+function closeMobileRailMenu() {
+  document.body.classList.remove("mobileMenuOpen");
+  document.getElementById("mobileMenuBtnGlobal")?.setAttribute("aria-expanded", "false");
+}
+
+function initMobileTopNavigation() {
+  const chatBtn = document.getElementById("mobileChatBtn");
+  const menuBtn = document.getElementById("mobileMenuBtnGlobal");
+  const oldHeaderMenuBtn = document.getElementById("mobileMenuBtn");
+  const scrim = document.getElementById("mobileRailScrim");
+
+  chatBtn?.addEventListener("click", () => {
+    setMobileView("messages");
+    closeMobileRailMenu();
+  });
+
+  menuBtn?.addEventListener("click", () => {
+    if (document.body.classList.contains("mobileMenuOpen")) {
+      closeMobileRailMenu();
+    } else {
+      openMobileRailMenu();
+    }
+  });
+
+  oldHeaderMenuBtn?.addEventListener("click", () => {
+    if (document.body.classList.contains("mobileMenuOpen")) {
+      closeMobileRailMenu();
+    } else {
+      openMobileRailMenu();
+    }
+  });
+
+  scrim?.addEventListener("click", closeMobileRailMenu);
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeMobileRailMenu();
+  });
+
+  document.addEventListener("click", event => {
+    const railTarget = event.target.closest("[data-sole-rail]");
+    if (!railTarget) return;
+
+    const action = railTarget.dataset.soleRail;
+
+    if (action === "home") {
+      setMobileView("home");
+    } else if (action !== "account" && action !== "settings") {
+      setMobileView("home");
+    }
+
+    closeMobileRailMenu();
+  });
+
+  window.addEventListener("resize", () => {
+    if (!isMobileLayout()) {
+      closeMobileRailMenu();
+      document.body.classList.remove("mobileViewHome", "mobileViewMessages", "mobileMenuOpen");
+      appEl.classList.remove("mobileSidebarOpen");
+      return;
+    }
+
+    if (
+      !document.body.classList.contains("mobileViewHome") &&
+      !document.body.classList.contains("mobileViewMessages")
+    ) {
+      setMobileView("home");
+    }
+  });
+
+  if (isMobileLayout()) {
+    setMobileView("home");
+  }
+}
+
+initMobileTopNavigation();

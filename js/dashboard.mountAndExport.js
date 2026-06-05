@@ -156,6 +156,24 @@ function animateRankingReorder(listEl, reorderFn) {
   });
 }
 
+async function markSolematePortraitViewed(sb, userId) {
+  if (!sb || !userId) return;
+
+  const { error } = await sb
+    .from("user_solemate_portraits")
+    .update({
+      viewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("user_id", userId)
+    .eq("status", "revealed")
+    .is("viewed_at", null);
+
+  if (error) {
+    console.warn("Could not mark SoleMate portrait as viewed", error);
+  }
+}
+
 function bindRankingQuestion({ messagesEl, sb, me, assignment }) {
   const cardEl = messagesEl.querySelector(
     `[data-assignment-id="${CSS.escape(assignment.id)}"]`
@@ -402,10 +420,68 @@ function animateModuleNumber({ valueEl, from, to, duration = 900, decimals = 2 }
   requestAnimationFrame(tick);
 }
 
+function animateQuizInlineProgressTo({ rootEl, userId, assignmentId, targetProgress }) {
+  const barEl = rootEl.querySelector(".quizInlineProgressBar");
+  if (!barEl) return;
+
+  const target = getClampedPercent(targetProgress);
+  const start = getClampedPercent(parseFloat(barEl.style.width || "0"));
+
+  const cacheKey = `${userId || "anonymous"}:${assignmentId || "quiz"}`;
+
+  window.soleQuizInlineProgressCache = window.soleQuizInlineProgressCache || {};
+  window.soleQuizInlineProgressCache[cacheKey] = target;
+
+  barEl.dataset.quizProgress = String(target);
+  barEl.style.transition = "none";
+  barEl.style.width = `${start}%`;
+
+  barEl.getBoundingClientRect();
+
+  requestAnimationFrame(() => {
+    barEl.style.transition = "";
+    barEl.style.width = `${target}%`;
+  });
+}
+
+function animateQuizInlineProgress({ rootEl, userId, assignmentId }) {
+  const barEl = rootEl.querySelector(".quizInlineProgressBar");
+  if (!barEl) return;
+
+  const targetProgress = getClampedPercent(barEl.dataset.quizProgress);
+  const cacheKey = `${userId || "anonymous"}:${assignmentId || "quiz"}`;
+
+  window.soleQuizInlineProgressCache = window.soleQuizInlineProgressCache || {};
+
+  const hasPrevious =
+    typeof window.soleQuizInlineProgressCache[cacheKey] === "number";
+
+  const previousProgress = hasPrevious
+    ? window.soleQuizInlineProgressCache[cacheKey]
+    : targetProgress;
+
+  window.soleQuizInlineProgressCache[cacheKey] = targetProgress;
+
+  if (!hasPrevious || previousProgress === targetProgress) {
+    barEl.style.width = `${targetProgress}%`;
+    return;
+  }
+
+  barEl.style.transition = "none";
+  barEl.style.width = `${previousProgress}%`;
+
+  barEl.getBoundingClientRect();
+
+  requestAnimationFrame(() => {
+    barEl.style.transition = "";
+    barEl.style.width = `${targetProgress}%`;
+  });
+}
+
 function animateModuleHeroProgress({ rootEl, userId, screen }) {
   const moduleRingWrap = rootEl.querySelector(".moduleMiniRing");
   const moduleRing = rootEl.querySelector(".moduleMiniRing .moduleRingFill");
- const valueEl = rootEl.querySelector("[data-module-progress-value]");
+  const valueEl = rootEl.querySelector("[data-module-progress-value]");
 
   if (!moduleRingWrap || !moduleRing || !valueEl) return;
 
@@ -415,10 +491,12 @@ function animateModuleHeroProgress({ rootEl, userId, screen }) {
 
   const targetProgress = getClampedPercent(moduleRingWrap.dataset.moduleProgress);
 
-  const previousProgress =
-    typeof window.soleModuleHeroProgressCache[cacheKey] === "number"
-      ? window.soleModuleHeroProgressCache[cacheKey]
-      : targetProgress;
+  const hasPrevious =
+    typeof window.soleModuleHeroProgressCache[cacheKey] === "number";
+
+  const previousProgress = hasPrevious
+    ? window.soleModuleHeroProgressCache[cacheKey]
+    : targetProgress;
 
   window.soleModuleHeroProgressCache[cacheKey] = targetProgress;
 
@@ -428,20 +506,27 @@ function animateModuleHeroProgress({ rootEl, userId, screen }) {
   const startFilled = (previousProgress / 100) * circumference;
   const targetFilled = (targetProgress / 100) * circumference;
 
+  // Make sure the current visible state is the previous value.
   moduleRing.style.strokeDasharray = `${startFilled} ${circumference - startFilled}`;
-  valueEl.textContent = `${Math.round(previousProgress)}%`;
+  valueEl.textContent = formatSmartPercent(previousProgress, 2);
+
+  if (!hasPrevious || previousProgress === targetProgress) {
+    moduleRing.style.strokeDasharray = `${targetFilled} ${circumference - targetFilled}`;
+    valueEl.textContent = formatSmartPercent(targetProgress, 2);
+    return;
+  }
 
   requestAnimationFrame(() => {
     moduleRing.style.strokeDasharray = `${targetFilled} ${circumference - targetFilled}`;
-  });
 
-animateModuleNumber({
-  valueEl,
-  from: previousProgress,
-  to: targetProgress,
-  duration: 900,
-  decimals: 2
-});
+    animateModuleNumber({
+      valueEl,
+      from: previousProgress,
+      to: targetProgress,
+      duration: 900,
+      decimals: 2
+    });
+  });
 }
 
 function getAssignmentDayIndex(assignment = {}) {
@@ -792,15 +877,32 @@ const matrixMarkup = window.soleMatrixRendering
   `;
 }
 
-  let moduleInsights = [];
+let moduleInsights = [];
 
 try {
   moduleInsights = await loadUserInsightsFromSupabase(sb, me.id, {
     status: "revealed",
-    category: config.category
+    category: screen === "solemate" ? "general" : config.category
   });
 } catch (error) {
   console.warn("Sidebar insights failed", error);
+}
+
+window.currentSolematePortrait = null;
+
+if (screen === "solemate") {
+  const { data, error } = await sb
+    .from("user_solemate_portraits")
+    .select("*")
+    .eq("user_id", me.id)
+    .eq("status", "revealed")
+    .maybeSingle();
+
+  if (error) {
+    console.warn("SoleMate portrait failed", error);
+  } else {
+    window.currentSolematePortrait = data || null;
+  }
 }
 
 function renderModuleCalibrationList() {
@@ -896,7 +998,7 @@ function renderModuleCalibrationList() {
                 : `
                   <button
                     type="button"
-                    class="moduleCalibrationTaskStart"
+                 class="moduleCalibrationTaskStart ${hasProgress ? "isContinue" : "isStart"}"
                     data-start-module-assignment="${escapeAttr(assignment.id)}"
                   >
                     ${escapeHtml(actionLabel)}
@@ -1153,46 +1255,40 @@ function getSolemateRefinementModel(dimensions) {
 }
 
 function renderSolematePortrait() {
-  const confidence = soleClamp(liveDashboardState.confidence);
-  const candidateCount = soleFormatCandidates(liveDashboardState.remainingCandidates);
+  const portrait = window.currentSolematePortrait || null;
 
-  let title = "The outline is forming";
-  let body = `
-    Sole is beginning to assemble the profile of the person most likely to fit you.
-    At this stage, the model is still broad: it can identify early patterns in attraction,
-    communication, and emotional fit, but it is not yet confident enough to describe your
-    highest-probability match with precision.
+  const title = portrait?.title || "The outline is forming";
+  const eyebrow = portrait?.eyebrow || "Solemate portrait";
+  const bodyHtml = portrait?.body_html || `
+    <p>
+      Sole is beginning to assemble the profile of the person most likely to fit you.
+      At this stage, the model is still broad: it can identify early patterns in attraction,
+      communication, and emotional fit, but it is not yet confident enough to describe your
+      highest-probability match with precision.
+    </p>
   `;
 
-  if (confidence >= 35) {
-    title = "A pattern is emerging";
-    body = `
-      Sole is detecting a preference for a partner who feels emotionally legible without
-      becoming predictable. The strongest early signals suggest that attraction alone is
-      unlikely to be enough: your profile appears to favour people who can create rapport,
-      maintain warmth, and make connection feel easy rather than effortful.
-    `;
-  }
-
-  if (confidence >= 65) {
-    title = "Your match profile is stabilising";
-    body = `
-      Your Solemate profile currently points toward someone who combines physical pull with
-      emotional steadiness, conversational rhythm, and a life direction that does not require
-      constant negotiation. Sole is deprioritising candidates who may create intensity quickly
-      but appear less likely to sustain trust, ease, and long-term compatibility.
-    `;
-  }
+  const note = portrait?.note || `
+    This portrait becomes more specific as Sole gathers stronger attraction,
+    connection, and conversational signals.
+  `;
 
   return `
-    <section class="solematePortraitPanel">
-      <div class="solematePortraitKicker">Solemate portrait</div>
+    <section
+     class="solematePortraitPanel ${portrait && !portrait.viewed_at ? "isUnread isNewlyUnlocked" : ""}"
+      data-solemate-portrait="${escapeAttr(portrait?.id || "")}"
+    >
+      ${portrait && !portrait.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
+
+      <div class="solematePortraitKicker">${escapeHtml(eyebrow)}</div>
       <h3>${escapeHtml(title)}</h3>
-      <p>${escapeHtml(body.trim())}</p>
+
+      <div class="solematePortraitBody">
+        ${bodyHtml}
+      </div>
 
       <div class="solematePortraitNote">
-        This portrait becomes more specific as Sole gathers stronger attraction,
-        connection, and conversational signals.
+        ${escapeHtml(note.trim())}
       </div>
     </section>
   `;
@@ -1203,46 +1299,81 @@ function renderSolemateTraits() {
     {
       eyebrow: "Type Trait",
       title: "Slow-burn trust",
-      body: "You may be most compatible with people who build closeness gradually rather than forcing intensity early."
+      body: "You may be most compatible with people who build closeness gradually rather than forcing intensity early.",
+      iconClass: "fa-solid fa-seedling"
     },
     {
       eyebrow: "Type Trait",
       title: "Playful rapport",
-      body: "Sole is watching for conversational rhythm: humour, ease, and small moments of mutual escalation."
+      body: "Sole is watching for conversational rhythm: humour, ease, and small moments of mutual escalation.",
+      iconClass: "fa-solid fa-wand-magic-sparkles"
     },
     {
       eyebrow: "Type Trait",
       title: "Low-drama attachment",
-      body: "Early signals suggest a preference for warmth and consistency over uncertainty, pursuit, or emotional volatility."
+      body: "Early signals suggest a preference for warmth and consistency over uncertainty, pursuit, or emotional volatility.",
+      iconClass: "fa-solid fa-heart-circle-check"
     }
   ];
 
   const cards = moduleInsights.length
-    ? moduleInsights.map(insight => `
-        <div class="insightCard ${insight.viewed_at ? "" : "isUnread"}" data-insight-card="${escapeAttr(insight.id)}">
-          <div class="dashboardEyebrow">
-            ${escapeHtml(insight.eyebrow || "Solemate trait")}
-          </div>
+    ? moduleInsights.map(insight => {
+        const iconClass = insight.icon_class || "fa-solid fa-sparkles";
 
-          <div class="insightTitleRow">
-            ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
-            <h4>${escapeHtml(insight.title || "Untitled trait")}</h4>
-            <span class="insightExpandIcon">›</span>
-          </div>
+        return `
+          <div
+            class="insightCard soleTraitUnlockCard ${insight.viewed_at ? "" : "isUnread isNewlyUnlocked"}"
+            data-insight-card="${escapeAttr(insight.id)}"
+          >
+            <div class="soleTraitCardMain">
+              <div class="soleTraitContent">
+                <div class="soleTraitHeader">
+          <div class="soleTraitIcon" aria-hidden="true">
+                <i class="${escapeAttr(iconClass)}"></i>
+              </div>
+                        <div class="soleHeaderCopy" aria-hidden="true">
+                        <div class="dashboardEyebrow">
+                          ${escapeHtml(insight.eyebrow || "SoleMate trait")}
+                        </div>
+        
+                        <div class="insightTitleRow">
+                        
+                          ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
+                          <h4>${escapeHtml(insight.title || "Untitled trait")}</h4>
+                          <span class="insightExpandIcon">›</span>
+                        </div>
+                                </div>
 
-          <div class="insightBody">
-            ${insight.body_html || ""}
+                </div>
+
+                <div class="insightBody">
+                  ${insight.body_html || ""}
+                </div>
+              </div>
+
+
+            </div>
           </div>
-        </div>
-      `)
+        `;
+      })
     : fallbackTraits.map(trait => `
-        <div class="insightCard isOpen">
-          <div class="dashboardEyebrow">${escapeHtml(trait.eyebrow)}</div>
-          <div class="insightTitleRow">
-            <h4>${escapeHtml(trait.title)}</h4>
-          </div>
-          <div class="insightBody">
-            <p>${escapeHtml(trait.body)}</p>
+        <div class="insightCard soleTraitUnlockCard isOpen">
+          <div class="soleTraitCardMain">
+            <div class="soleTraitContent">
+              <div class="dashboardEyebrow">${escapeHtml(trait.eyebrow)}</div>
+
+              <div class="insightTitleRow">
+                <h4>${escapeHtml(trait.title)}</h4>
+              </div>
+
+              <div class="insightBody">
+                <p>${escapeHtml(trait.body)}</p>
+              </div>
+            </div>
+
+            <div class="soleTraitIcon" aria-hidden="true">
+              <i class="${escapeAttr(trait.iconClass)}"></i>
+            </div>
           </div>
         </div>
       `);
@@ -1545,6 +1676,28 @@ return renderModuleCalibrationList();
 
 const moduleProgress = getModuleProgressPercent();
 const moduleMeta = getModuleHeroMeta();
+
+const moduleProgressCacheKey = `${me?.id || "anonymous"}:${screen || "module"}`;
+
+window.soleModuleHeroProgressCache = window.soleModuleHeroProgressCache || {};
+
+const moduleDisplayProgress =
+  typeof window.soleModuleHeroProgressCache[moduleProgressCacheKey] === "number"
+    ? window.soleModuleHeroProgressCache[moduleProgressCacheKey]
+    : moduleProgress;
+
+const quizProgressCacheKey = activeQuizAssignment
+  ? `${me?.id || "anonymous"}:${activeQuizAssignment.id || "quiz"}`
+  : "";
+
+window.soleQuizInlineProgressCache = window.soleQuizInlineProgressCache || {};
+
+const quizDisplayProgress =
+  activeQuizAssignment &&
+  typeof window.soleQuizInlineProgressCache[quizProgressCacheKey] === "number"
+    ? window.soleQuizInlineProgressCache[quizProgressCacheKey]
+    : activeQuizProgress?.progressPercent || 0;
+
 const subviewHtml = await renderSubviewContent();
 
 sidebarPaneEl.innerHTML = `
@@ -1583,10 +1736,11 @@ ${
   </div>
 
   <div class="quizInlineProgress">
-    <div
-      class="quizInlineProgressBar"
-      style="width:${activeQuizProgress.progressPercent}%"
-    ></div>
+<div
+  class="quizInlineProgressBar"
+  data-quiz-progress="${activeQuizProgress.progressPercent}"
+  style="width:${quizDisplayProgress}%"
+></div>
   </div>
 </div>
     `
@@ -1648,12 +1802,18 @@ ${
   <div class="moduleMiniRing" data-module-progress="${moduleProgress}">
     <svg viewBox="0 0 120 120" aria-hidden="true">
       <circle class="moduleRingTrack" cx="60" cy="60" r="46"></circle>
-      <circle class="moduleRingFill" cx="60" cy="60" r="46"></circle>
+<circle
+  class="moduleRingFill"
+  cx="60"
+  cy="60"
+  r="46"
+  style="stroke-dasharray:${((moduleDisplayProgress / 100) * (2 * Math.PI * 46))} ${(2 * Math.PI * 46) - ((moduleDisplayProgress / 100) * (2 * Math.PI * 46))}"
+/>
     </svg>
 
-    <div class="moduleMiniRingInner">
-    <strong data-module-progress-value>${formatSmartPercent(moduleProgress, 2)}</strong>
-    </div>
+<div class="moduleMiniRingInner">
+  <strong data-module-progress-value>${formatSmartPercent(moduleDisplayProgress, 2)}</strong>
+</div>
   </div>
 
   <div class="moduleHeroProgressLabel">calibrated</div>
@@ -1814,15 +1974,50 @@ function bindInsightCards() {
         .update({ viewed_at: new Date().toISOString() })
         .eq("id", card.dataset.insightCard)
         .is("viewed_at", null);
+
+      await updateInsightNotificationDots?.();
+      await updateSolemateTraitNotificationDot?.();
+      await updateSolematePortraitNotificationDot?.();
     });
   });
 }
 
+async function bindSolematePortraitCard() {
+  const card = document.querySelector("[data-solemate-portrait]");
+  if (!card || !me?.id) return;
+
+  card.addEventListener("click", async () => {
+    const portraitId = card.dataset.solematePortrait;
+    if (!portraitId || !card.classList.contains("isUnread")) return;
+
+    const { error } = await sb
+      .from("user_solemate_portraits")
+      .update({ viewed_at: new Date().toISOString() })
+      .eq("id", portraitId)
+      .eq("user_id", me.id);
+
+  if (error) {
+  console.error("Portrait viewed update failed", error);
+  return;
+}
+
+    card.classList.remove("isUnread");
+    card.querySelector(".insightUnreadDot")?.remove();
+
+    await updateSolematePortraitNotificationDot?.();
+  });
+}
+
 bindInsightCards();
+await bindSolematePortraitCard();
 bindCalibrationCards();
 bindMatrixSwitcher();
 bindSolemateTooltips();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+
+await updateInsightNotificationDots?.();
+await updateSolemateTraitNotificationDot?.();
+await updateSolematePortraitNotificationDot?.();
 
 if (!activeQuizAssignment && activeSubview === "calibration") {
   scrollCurrentModuleAssignmentIntoView();
@@ -1838,17 +2033,37 @@ if (activeQuizAssignment) {
     me,
     escapeHtml,
     adminPreview: false,
-    onRefresh: async () => {
-      await mountSidebarDashboardScreen({
-        screen,
-        sidebarPaneEl,
-        mainEl,
-        sb,
-        me,
-        escapeHtml,
-        activeAssignmentId: activeQuizAssignment.id
-      });
-    }
+onRefresh: async () => {
+  await mountSidebarDashboardScreen({
+    screen,
+    sidebarPaneEl,
+    mainEl,
+    sb,
+    me,
+    escapeHtml,
+    activeAssignmentId: activeQuizAssignment.id
+  });
+},
+onOptimisticAdvance: ({ nextStep, answers }) => {
+  const totalSteps = getAssignmentStepTotal(activeQuizAssignment);
+
+  const completedSteps = getCompletedStepCount(
+    activeQuizAssignment,
+    nextStep,
+    answers
+  );
+
+  const nextProgress = totalSteps
+    ? Math.round((completedSteps / totalSteps) * 100)
+    : 0;
+
+  animateQuizInlineProgressTo({
+    rootEl: sidebarPaneEl,
+    userId: me?.id,
+    assignmentId: activeQuizAssignment.id,
+    targetProgress: nextProgress
+  });
+}
   });
 
   bindRankingQuestion({
@@ -1870,10 +2085,16 @@ btn.addEventListener("click", async () => {
 subviewContentEl.innerHTML = await renderSubviewContent();
 
 bindInsightCards();
+await bindSolematePortraitCard();
 bindCalibrationCards();
 bindMatrixSwitcher();
 bindSolemateTooltips();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+
+
+await updateInsightNotificationDots?.();
+await updateSolemateTraitNotificationDot?.();
+await updateSolematePortraitNotificationDot?.();
 
 if (activeSubview === "calibration") {
   scrollCurrentModuleAssignmentIntoView();
@@ -1888,6 +2109,14 @@ animateModuleHeroProgress({
   userId: me?.id,
   screen
 });
+
+if (activeQuizAssignment) {
+  animateQuizInlineProgress({
+    rootEl: sidebarPaneEl,
+    userId: me?.id,
+    assignmentId: activeQuizAssignment.id
+  });
+}
 
 async function refreshLiveSolemateModel() {
   if (screen !== "solemate") return;
@@ -1948,6 +2177,14 @@ async function refreshLiveSolemateModel() {
       userId: me?.id,
       screen
     });
+
+    if (activeQuizAssignment) {
+  animateQuizInlineProgress({
+    rootEl: sidebarPaneEl,
+    userId: me?.id,
+    assignmentId: activeQuizAssignment.id
+  });
+}
 
     subviewContentEl.innerHTML = await renderSubviewContent();
 
@@ -2043,10 +2280,18 @@ async function mountAdminUserTasks({
       </div>
 
       <div class="adminQuizFieldRow">
+      <div class="adminQuizField">
+  <label>Icon</label>
+  <input
+    type="text"
+    data-insight-field="iconClass"
+    placeholder="fa-solid fa-person-walking-luggage"
+  />
+</div>
         <div class="adminQuizField">
           <label>Category</label>
           <select data-task-field="category">
-            <option value="general">General</option>
+            <option value="general">SoleMate</option>
             <option value="chemistry">Connection</option>
             <option value="attraction">Attraction</option>
           </select>
@@ -2159,6 +2404,43 @@ async function mountAdminUserTasks({
   });
 }
 
+async function loadUserSolematePortraitFromSupabase(sb, userId) {
+  const { data, error } = await sb
+    .from("user_solemate_portraits")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
+}
+
+async function saveUserSolematePortraitInSupabase(sb, me, userId, payload) {
+  const now = new Date().toISOString();
+
+  const { data, error } = await sb
+    .from("user_solemate_portraits")
+    .upsert(
+      {
+        user_id: userId,
+        eyebrow: payload.eyebrow || "Solemate portrait",
+        title: payload.title || "The outline is forming",
+        body_html: payload.bodyHtml || "",
+        note: payload.note || "",
+        status: payload.status || "revealed",
+        viewed_at: null,
+        created_by: me?.id || null,
+        updated_at: now
+      },
+      { onConflict: "user_id" }
+    )
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 async function mountAdminUserInsights({
   mountEl,
   sb,
@@ -2187,18 +2469,27 @@ async function mountAdminUserInsights({
         </div>
 
         <div class="adminQuizField">
-  <label>Topline</label>
-  <input
-    type="text"
-    data-insight-field="eyebrow"
-    placeholder="Mapping insight"
-  />
-</div>
+          <label>Topline</label>
+          <input
+            type="text"
+            data-insight-field="eyebrow"
+            placeholder="Mapping insight"
+          />
+        </div>
+
+        <div class="adminQuizField">
+          <label>Font Awesome icon</label>
+          <input
+            type="text"
+            data-insight-field="iconClass"
+            placeholder="fa-solid fa-person-walking-luggage"
+          />
+        </div>
 
         <div class="adminQuizField">
           <label>Category</label>
           <select data-insight-field="category">
-            <option value="general">General</option>
+            <option value="general">SoleMate</option>
             <option value="chemistry">Connection</option>
             <option value="attraction">Attraction</option>
           </select>
@@ -2243,7 +2534,14 @@ async function mountAdminUserInsights({
           <div>
             <strong>${escapeHtml(insight.title || "Untitled insight")}</strong>
             <div class="muted">
-                          ${escapeHtml(insight.category)} Â· ${escapeHtml(insight.status)}
+              ${escapeHtml(insight.category === "general" ? "SoleMate" : insight.category)}
+              ·
+              ${escapeHtml(insight.status)}
+              ${
+                insight.icon_class
+                  ? `· <i class="${escapeAttr(insight.icon_class)}"></i> ${escapeHtml(insight.icon_class)}`
+                  : ""
+              }
             </div>
           </div>
 
@@ -2268,14 +2566,15 @@ async function mountAdminUserInsights({
   });
 
   mountEl.querySelector("[data-save-insight]")?.addEventListener("click", async () => {
-const payload = {
-  userId: user.id,
-  title: getField("title")?.value?.trim() || "",
-  eyebrow: getField("eyebrow")?.value?.trim() || "",
-  category: getField("category")?.value || "general",
-  status: getField("status")?.value || "draft",
-  bodyHtml: getField("bodyHtml")?.innerHTML || ""
-};
+    const payload = {
+      userId: user.id,
+      title: getField("title")?.value?.trim() || "",
+      eyebrow: getField("eyebrow")?.value?.trim() || "",
+      iconClass: getField("iconClass")?.value?.trim() || "",
+      category: getField("category")?.value || "general",
+      status: getField("status")?.value || "draft",
+      bodyHtml: getField("bodyHtml")?.innerHTML || ""
+    };
 
     if (!payload.title) {
       alert("Add an insight title.");
@@ -2302,11 +2601,12 @@ const payload = {
 
       editingInsightId = insight.id;
 
-  getField("title").value = insight.title || "";
-getField("eyebrow").value = insight.eyebrow || "";
-getField("category").value = insight.category || "general";
-getField("status").value = insight.status || "draft";
-getField("bodyHtml").innerHTML = insight.body_html || "";
+      getField("title").value = insight.title || "";
+      getField("eyebrow").value = insight.eyebrow || "";
+      getField("iconClass").value = insight.icon_class || "";
+      getField("category").value = insight.category || "general";
+      getField("status").value = insight.status || "draft";
+      getField("bodyHtml").innerHTML = insight.body_html || "";
 
       mountEl.querySelector("[data-save-insight]").textContent = "Update insight";
     });
@@ -2326,6 +2626,119 @@ getField("bodyHtml").innerHTML = insight.body_html || "";
   });
 }
 
+async function mountAdminUserPortrait({
+  mountEl,
+  sb,
+  me,
+  user,
+  escapeHtml
+}) {
+  if (!mountEl || !user?.id) return;
+
+  let portrait = null;
+
+  try {
+    portrait = await loadUserSolematePortraitFromSupabase(sb, user.id);
+  } catch (error) {
+    mountEl.innerHTML = `<div class="adminQuizError">${escapeHtml(error?.message || "Could not load portrait.")}</div>`;
+    return;
+  }
+
+  mountEl.innerHTML = `
+    <div class="adminQuizBuilder" data-admin-portrait-builder>
+      <div class="adminQuizFieldRow">
+        <div class="adminQuizField">
+          <label>Topline</label>
+          <input
+            type="text"
+            data-portrait-field="eyebrow"
+            value="${escapeHtml(portrait?.eyebrow || "Solemate portrait")}"
+          />
+        </div>
+
+        <div class="adminQuizField">
+          <label>Title</label>
+          <input
+            type="text"
+            data-portrait-field="title"
+            value="${escapeHtml(portrait?.title || "The outline is forming")}"
+          />
+        </div>
+
+        <div class="adminQuizField">
+          <label>Status</label>
+          <select data-portrait-field="status">
+            <option value="draft" ${portrait?.status === "draft" ? "selected" : ""}>Draft</option>
+            <option value="revealed" ${!portrait || portrait?.status === "revealed" ? "selected" : ""}>Revealed</option>
+            <option value="archived" ${portrait?.status === "archived" ? "selected" : ""}>Archived</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="adminQuizField">
+        <label>Portrait body</label>
+
+        <div class="insightEditorToolbar">
+          <button type="button" class="btn btnGhost" data-portrait-format="bold">Bold</button>
+          <button type="button" class="btn btnGhost" data-portrait-format="italic">Italic</button>
+          <button type="button" class="btn btnGhost" data-portrait-format="insertUnorderedList">Bullets</button>
+        </div>
+
+        <div
+          class="insightRichEditor"
+          contenteditable="true"
+          data-portrait-field="bodyHtml"
+        >${portrait?.body_html || ""}</div>
+      </div>
+
+      <div class="adminQuizField">
+        <label>Small note</label>
+        <textarea
+          rows="3"
+          data-portrait-field="note"
+        >${escapeHtml(portrait?.note || "This portrait becomes more specific as Sole gathers stronger attraction, connection, and conversational signals.")}</textarea>
+      </div>
+
+      <div class="adminQuizActions">
+        <button type="button" class="btn" data-save-portrait>
+          Save portrait
+        </button>
+      </div>
+    </div>
+  `;
+
+  const getField = name => mountEl.querySelector(`[data-portrait-field="${name}"]`);
+
+  mountEl.querySelectorAll("[data-portrait-format]").forEach(button => {
+    button.addEventListener("click", () => {
+      document.execCommand(button.dataset.portraitFormat, false, null);
+      getField("bodyHtml")?.focus();
+    });
+  });
+
+  mountEl.querySelector("[data-save-portrait]")?.addEventListener("click", async () => {
+    const payload = {
+      eyebrow: getField("eyebrow")?.value?.trim() || "",
+      title: getField("title")?.value?.trim() || "",
+      status: getField("status")?.value || "revealed",
+      bodyHtml: getField("bodyHtml")?.innerHTML || "",
+      note: getField("note")?.value?.trim() || ""
+    };
+
+    if (!payload.title) {
+      alert("Add a portrait title.");
+      return;
+    }
+
+    try {
+      await saveUserSolematePortraitInSupabase(sb, me, user.id, payload);
+      alert("Portrait saved.");
+      await mountAdminUserPortrait({ mountEl, sb, me, user, escapeHtml });
+    } catch (error) {
+      alert(error?.message || "Could not save portrait.");
+    }
+  });
+}
 
 window.dashboardUI = {
   buildWelcomeMarkup,
@@ -2340,5 +2753,8 @@ window.dashboardUI = {
   mountSidebarDashboardScreen,
   mountAdminUserInsights,
   mountAdminUserTasks,
+  loadUserSolematePortraitFromSupabase,
+saveUserSolematePortraitInSupabase,
+mountAdminUserPortrait,
   DASHBOARD_ASSIGNMENTS
 };

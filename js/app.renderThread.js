@@ -2,10 +2,10 @@
 async function loadThread(aId, bId, alignAsSenderId){
   messagesEl.innerHTML = "";
   messagesEl.appendChild(typingIndicator);
-hideTypingIndicator();
+  hideTypingIndicator();
 
   lastRendered = null;
-lastRenderedWrap = null;
+  lastRenderedWrap = null;
 
   const filter = threadFilter(aId, bId);
   const { data: msgs, error } = await sb
@@ -16,8 +16,25 @@ lastRenderedWrap = null;
 
   if (error) return alert(error.message);
 
-  for (const m of msgs) await renderMessage(m, alignAsSenderId, false);
-  syncResponseStateForLatestMessage(msgs[msgs.length - 1], alignAsSenderId);
+  const rawMessages = msgs || [];
+  const overrides = await loadMessageOverrides(
+    rawMessages
+      .map(message => message.id)
+      .filter(Boolean)
+  );
+
+  const resolvedMessages = rawMessages
+    .map(message => resolveMessageForViewer(message, overrides, alignAsSenderId))
+    .filter(message => !message.hidden_for_viewer);
+
+  for (const m of resolvedMessages) {
+    await renderMessage(m, alignAsSenderId, false);
+  }
+
+  syncResponseStateForLatestMessage(
+    resolvedMessages[resolvedMessages.length - 1],
+    alignAsSenderId
+  );
 
   requestAnimationFrame(() => {
     scrollToBottom();
@@ -26,14 +43,17 @@ lastRenderedWrap = null;
     });
   });
 }
-
 async function renderMessage(m, alignAsSenderId, animate = false){
+  if (m.hidden_for_viewer) return;
+
+const displayText = m.display_text ?? m.text ?? "";
   const mine = m.sender_id === alignAsSenderId;
 
 if (m.message_type === "voice"){
 
   const row = document.createElement("div");
   row.className = "row " + (mine ? "me" : "them");
+  row.dataset.messageId = m.id || "";
 
   const wrap = document.createElement("div");
   wrap.className = "msgWrap";
@@ -179,17 +199,17 @@ updateVoiceUI();
 }
 
 if (m.is_system) {
-
   const row = document.createElement("div");
   row.className = "row systemRow";
+  row.dataset.messageId = m.id || "";
 
   const wrap = document.createElement("div");
   wrap.className = "systemMessage";
 
-  wrap.innerHTML = `
-    <div class="systemLabel">SOLE</div>
-    <div class="systemText">${escapeHtml(m.text)}</div>
-  `;
+wrap.innerHTML = `
+  <div class="systemLabel">SOLE</div>
+  <div class="systemText">${formatMessageText(displayText)}</div>
+`;
 
   row.appendChild(wrap);
 
@@ -199,7 +219,6 @@ if (m.is_system) {
     messagesEl.appendChild(row);
   }
 
-  // break normal sender-grouping across a system insert
   lastRendered = null;
   lastRenderedWrap = null;
 
@@ -213,6 +232,7 @@ if (m.is_system) {
 
   const row = document.createElement("div");
   row.className = "row " + (mine ? "me" : "them");
+  row.dataset.messageId = m.id || "";
 
   const wrap = document.createElement("div");
   wrap.className = "msgWrap";
@@ -236,8 +256,128 @@ if (m.is_system) {
     messagesEl.appendChild(row);
   }
 
-bubble.innerHTML = formatMessageText(m.text);
+bubble.innerHTML = formatMessageText(displayText);
 
   lastRendered = m;
   lastRenderedWrap = wrap;
+}
+
+async function loadMessageOverrides(messageIds = []) {
+  if (!messageIds.length) return [];
+
+  const { data, error } = await sb
+    .from("message_overrides")
+    .select("*")
+    .in("message_id", messageIds);
+
+  if (error) {
+    console.warn("Could not load message overrides", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+function resolveMessageForViewer(message, overrides = [], viewerId) {
+  const viewerSpecific = overrides.find(item =>
+    item.message_id === message.id &&
+    item.viewer_id === viewerId
+  );
+
+  const globalOverride = overrides.find(item =>
+    item.message_id === message.id &&
+    item.viewer_id === null
+  );
+
+  const override = viewerSpecific || globalOverride;
+
+  if (!override) {
+    return {
+      ...message,
+      display_text: message.text,
+      hidden_for_viewer: false
+    };
+  }
+
+  if (override.is_hidden) {
+    return {
+      ...message,
+      display_text: "",
+      hidden_for_viewer: true
+    };
+  }
+
+  return {
+    ...message,
+    display_text: override.replacement_text ?? message.text,
+    hidden_for_viewer: false
+  };
+}
+
+async function applyMessageOverrideToRenderedMessage(messageId, alignAsSenderId) {
+  if (!messageId) return false;
+
+  const existingRow = messagesEl.querySelector(
+    `[data-message-id="${CSS.escape(messageId)}"]`
+  );
+
+  const { data: message, error } = await sb
+    .from("messages")
+    .select("*")
+    .eq("id", messageId)
+    .maybeSingle();
+
+  if (error || !message) {
+    console.warn("Could not load moderated message", error);
+    return false;
+  }
+
+  const overrides = await loadMessageOverrides([messageId]);
+  const resolved = resolveMessageForViewer(message, overrides, alignAsSenderId);
+
+  // Hidden for this viewer: remove just this row.
+if (resolved.hidden_for_viewer) {
+  if (!existingRow) {
+    return false;
+  }
+
+  existingRow.remove();
+
+  lastRendered = null;
+  lastRenderedWrap = null;
+
+  return true;
+}
+  // If the message is currently missing, it was probably just unhidden.
+  // Rebuilding only on unhide is acceptable and avoids tricky chronological reinsertion.
+  if (!existingRow) {
+    return false;
+  }
+
+  const displayText = resolved.display_text ?? resolved.text ?? "";
+
+  if (resolved.is_system) {
+    const systemText = existingRow.querySelector(".systemText");
+    if (systemText) {
+      systemText.innerHTML = formatMessageText(displayText);
+      existingRow.classList.add("messageOverrideFlash");
+      setTimeout(() => existingRow.classList.remove("messageOverrideFlash"), 700);
+      return true;
+    }
+  }
+
+  if (resolved.message_type === "voice") {
+    // For now, voice messages are only affected by hide/unhide.
+    return true;
+  }
+
+  const bubble = existingRow.querySelector(".bubble");
+  if (bubble) {
+    bubble.innerHTML = formatMessageText(displayText);
+    existingRow.classList.add("messageOverrideFlash");
+    setTimeout(() => existingRow.classList.remove("messageOverrideFlash"), 700);
+    return true;
+  }
+
+  return false;
 }

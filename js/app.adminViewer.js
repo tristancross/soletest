@@ -1,4 +1,31 @@
 // ====== ADMIN VIEWER ======
+let adminPairPanelChannel = null;
+let adminPairOverridePanelChannel = null;
+let adminPairPresenceChannel = null;
+let adminPairPanelDraftTimeout = null;
+
+async function cleanupAdminPairTranscriptChannels() {
+  if (adminPairPanelChannel) {
+    await sb.removeChannel(adminPairPanelChannel);
+    adminPairPanelChannel = null;
+  }
+
+  if (adminPairOverridePanelChannel) {
+    await sb.removeChannel(adminPairOverridePanelChannel);
+    adminPairOverridePanelChannel = null;
+  }
+
+  if (adminPairPresenceChannel) {
+    await sb.removeChannel(adminPairPresenceChannel);
+    adminPairPresenceChannel = null;
+  }
+
+  if (adminPairPanelDraftTimeout) {
+    clearTimeout(adminPairPanelDraftTimeout);
+    adminPairPanelDraftTimeout = null;
+  }
+}
+
 function setupAdminUI(){
   adminToggleBtn.onclick = () => toggleAdminMode();
 }
@@ -10,15 +37,80 @@ function setAppMode(mode) {
   appEl.classList.toggle("isPreviewMode", mode === "preview");
 }
 
+function removeAdminPreviewExitButton() {
+  document.getElementById("adminPreviewExitBtn")?.remove();
+}
+
+function ensureAdminPreviewExitButton() {
+  removeAdminPreviewExitButton();
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "adminPreviewExitBtn";
+  btn.className = "adminPreviewExitBtn";
+  btn.textContent = "Exit preview";
+
+  btn.addEventListener("click", async () => {
+    await toggleAdminMode();
+  });
+
+  document.body.appendChild(btn);
+}
+
+async function broadcastMessageOverrideChanged(userAId, userBId, messageId = "") {
+  const moderationChannel = sb.channel(`dm:${pairKey(userAId, userBId)}`, {
+    config: {
+      broadcast: { self: false }
+    }
+  });
+
+  await new Promise(resolve => {
+    moderationChannel.subscribe(status => {
+      if (status === "SUBSCRIBED") resolve();
+    });
+  });
+
+  const basePayload = {
+    message_id: messageId,
+    changed_at: new Date().toISOString()
+  };
+
+  await moderationChannel.send({
+    type: "broadcast",
+    event: "message_override_changed",
+    payload: {
+      ...basePayload,
+      sender: userAId,
+      recipient: userBId
+    }
+  });
+
+  await moderationChannel.send({
+    type: "broadcast",
+    event: "message_override_changed",
+    payload: {
+      ...basePayload,
+      sender: userBId,
+      recipient: userAId
+    }
+  });
+
+  setTimeout(() => {
+    sb.removeChannel(moderationChannel);
+  }, 500);
+}
+
 async function enterAdminMode(screen = "users") {
+  removeAdminPreviewExitButton();
+
   setAppMode("admin");
   adminMode = true;
 
   closeAdminOverlay();
 
-await loadAdminProfiles();
+  await loadAdminProfiles();
 
-  renderAdminWorkspace(screen);
+  await renderAdminWorkspace(screen);
 }
 
 async function bindAdminGlobalDayControls(root = document) {
@@ -61,6 +153,315 @@ async function bindAdminGlobalDayControls(root = document) {
       saveBtn.disabled = false;
     }
   });
+}
+
+async function adminClearEditForEveryone(messageId, userAId, userBId) {
+  const now = new Date().toISOString();
+
+  const { data: existing, error: findError } = await sb
+    .from("message_overrides")
+    .select("id, is_hidden")
+    .eq("message_id", messageId)
+    .is("viewer_id", null)
+    .maybeSingle();
+
+  if (findError) {
+    alert(findError.message);
+    return;
+  }
+
+  if (!existing?.id) return;
+
+  let error;
+
+  if (existing.is_hidden) {
+    ({ error } = await sb
+      .from("message_overrides")
+      .update({
+        replacement_text: null,
+        updated_at: now
+      })
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await sb
+      .from("message_overrides")
+      .delete()
+      .eq("id", existing.id));
+  }
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+await refreshAdminPairTranscript(userAId, userBId);
+}
+
+async function adminClearEditForRecipient(messageId, recipientId, userAId, userBId) {
+  const now = new Date().toISOString();
+
+  const { data: existing, error: findError } = await sb
+    .from("message_overrides")
+    .select("id, is_hidden")
+    .eq("message_id", messageId)
+    .eq("viewer_id", recipientId)
+    .maybeSingle();
+
+  if (findError) {
+    alert(findError.message);
+    return;
+  }
+
+  if (!existing?.id) return;
+
+  let error;
+
+  if (existing.is_hidden) {
+    ({ error } = await sb
+      .from("message_overrides")
+      .update({
+        replacement_text: null,
+        updated_at: now
+      })
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await sb
+      .from("message_overrides")
+      .delete()
+      .eq("id", existing.id));
+  }
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await refreshAdminPairTranscript(userAId, userBId);
+  await broadcastMessageOverrideChanged(userAId, userBId, messageId);
+}
+
+async function adminEditMessageForEveryone(messageId, replacementText, userAId, userBId) {
+  const now = new Date().toISOString();
+
+  const { data: existing, error: findError } = await sb
+    .from("message_overrides")
+    .select("id")
+    .eq("message_id", messageId)
+    .is("viewer_id", null)
+    .maybeSingle();
+
+  if (findError) {
+    alert(findError.message);
+    return;
+  }
+
+  let error;
+
+  if (existing?.id) {
+    ({ error } = await sb
+      .from("message_overrides")
+      .update({
+        replacement_text: replacementText,
+        is_hidden: false,
+        updated_at: now
+      })
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await sb
+      .from("message_overrides")
+      .insert({
+        message_id: messageId,
+        viewer_id: null,
+        replacement_text: replacementText,
+        is_hidden: false,
+        created_by: adminActualProfile?.id || me?.id || null,
+        updated_at: now
+      }));
+  }
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+await refreshAdminPairTranscript(userAId, userBId);
+await broadcastMessageOverrideChanged(userAId, userBId, messageId);
+}
+
+async function adminToggleHideMessageForEveryone(messageId, shouldHide, userAId, userBId) {
+  const now = new Date().toISOString();
+
+  const { data: existing, error: findError } = await sb
+    .from("message_overrides")
+    .select("id, replacement_text")
+    .eq("message_id", messageId)
+    .is("viewer_id", null)
+    .maybeSingle();
+
+  if (findError) {
+    alert(findError.message);
+    return;
+  }
+
+  let error;
+
+  if (existing?.id) {
+    ({ error } = await sb
+      .from("message_overrides")
+      .update({
+        is_hidden: !!shouldHide,
+        updated_at: now
+      })
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await sb
+      .from("message_overrides")
+      .insert({
+        message_id: messageId,
+        viewer_id: null,
+        replacement_text: null,
+        is_hidden: !!shouldHide,
+        created_by: adminActualProfile?.id || me?.id || null,
+        updated_at: now
+      }));
+  }
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+await refreshAdminPairTranscript(userAId, userBId);
+await broadcastMessageOverrideChanged(userAId, userBId, messageId);
+}
+
+async function adminToggleHideMessageForRecipient(messageId, recipientId, shouldHide, userAId, userBId) {
+  const now = new Date().toISOString();
+
+  const { data: existing, error: findError } = await sb
+    .from("message_overrides")
+    .select("id, replacement_text")
+    .eq("message_id", messageId)
+    .eq("viewer_id", recipientId)
+    .maybeSingle();
+
+  if (findError) {
+    alert(findError.message);
+    return;
+  }
+
+  let error;
+
+  if (existing?.id) {
+    ({ error } = await sb
+      .from("message_overrides")
+      .update({
+        is_hidden: !!shouldHide,
+        updated_at: now
+      })
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await sb
+      .from("message_overrides")
+      .insert({
+        message_id: messageId,
+        viewer_id: recipientId,
+        replacement_text: null,
+        is_hidden: !!shouldHide,
+        created_by: adminActualProfile?.id || me?.id || null,
+        updated_at: now
+      }));
+  }
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+await refreshAdminPairTranscript(userAId, userBId);
+await broadcastMessageOverrideChanged(userAId, userBId, messageId);
+}
+
+async function adminEditMessageForRecipient(messageId, recipientId, replacementText, userAId, userBId) {
+  const { error } = await sb
+    .from("message_overrides")
+    .upsert(
+      {
+        message_id: messageId,
+        viewer_id: recipientId,
+        replacement_text: replacementText,
+        is_hidden: false,
+        created_by: adminActualProfile?.id || me?.id || null,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "message_id,viewer_id" }
+    );
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+await refreshAdminPairTranscript(userAId, userBId);
+await broadcastMessageOverrideChanged(userAId, userBId, messageId);
+}
+
+async function refreshAdminPairTranscript(userAId, userBId) {
+  const transcriptEl = document.getElementById("adminPairTranscript");
+  if (!transcriptEl) return;
+
+  const wasNearBottom =
+    transcriptEl.scrollHeight - transcriptEl.scrollTop - transcriptEl.clientHeight < 80;
+
+  const messages = await loadAdminPairTranscript(userAId, userBId);
+
+  transcriptEl.innerHTML = messages.length
+    ? messages.map(message => renderAdminTranscriptMessage(message, userAId, userBId)).join("")
+    : `<div class="adminResponsesEmpty">No messages yet.</div>`;
+
+  bindAdminTranscriptModerationActions(document, userAId, userBId);
+
+  if (wasNearBottom) {
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+  }
+}
+
+async function subscribeAdminPairOverrideRealtime(userAId, userBId) {
+  if (adminPairOverridePanelChannel) {
+    await sb.removeChannel(adminPairOverridePanelChannel);
+    adminPairOverridePanelChannel = null;
+  }
+
+  adminPairOverridePanelChannel = sb
+    .channel(`admin-panel-overrides:${pairKey(userAId, userBId)}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "message_overrides" },
+      async payload => {
+        const override = payload.new || payload.old;
+        if (!override?.message_id) return;
+
+        const { data: message, error } = await sb
+          .from("messages")
+          .select("id, sender_id, recipient_id")
+          .eq("id", override.message_id)
+          .maybeSingle();
+
+        if (error || !message) return;
+
+        const inThisPair =
+          (message.sender_id === userAId && message.recipient_id === userBId) ||
+          (message.sender_id === userBId && message.recipient_id === userAId);
+
+        if (!inThisPair) return;
+
+await refreshAdminPairTranscript(userAId, userBId);
+await broadcastMessageOverrideChanged(userAId, userBId, messageId);
+      }
+    )
+    .subscribe(status => {
+      console.log("[admin override realtime]", status);
+    });
 }
 
 async function renderAdminDaysWorkspace(content) {
@@ -1212,6 +1613,8 @@ const dash = getDashboardState(profile, messageCount, runtimeAssignments, messag
 }
 
 async function exitAdminMode() {
+   removeAdminPreviewExitButton();
+
   if (adminActualProfile) {
     me = adminActualProfile;
     adminActualProfile = null;
@@ -1238,6 +1641,8 @@ async function enterPreviewMode(profile) {
   setAppMode("preview");
   adminMode = true;
   adminPreviewingUser = profile;
+
+  ensureAdminPreviewExitButton();
 
   me = profile;
   assignedPartner = await getAssignedPartner(profile.id);
@@ -1273,7 +1678,7 @@ async function toggleAdminMode(){
   await enterAdminMode("users");
 }
 
-function renderAdminWorkspace(screen = "users") {
+async function renderAdminWorkspace(screen = "users") {
   adminScreen = screen;
 
   messagesEl.innerHTML = `
@@ -1284,7 +1689,7 @@ function renderAdminWorkspace(screen = "users") {
           <p>Control centre</p>
         </div>
 
-       ${["users", "days", "tasks", "pairings", "chats", "insights", "templates"].map(item => `
+      ${["users", "days", "tasks", "portrait", "pairings", "chats", "insights", "templates"].map(item => `
           <button
             type="button"
             class="adminNavBtn ${screen === item ? "isActive" : ""}"
@@ -1306,23 +1711,24 @@ function renderAdminWorkspace(screen = "users") {
   messagesEl.querySelector("#exitAdminModeBtn")?.addEventListener("click", exitAdminMode);
 
   messagesEl.querySelectorAll("[data-admin-workspace-screen]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      renderAdminWorkspace(btn.dataset.adminWorkspaceScreen);
+    btn.addEventListener("click", async () => {
+      await renderAdminWorkspace(btn.dataset.adminWorkspaceScreen);
     });
   });
 
-  renderAdminWorkspaceContent(screen);
+  await renderAdminWorkspaceContent(screen);
 }
 
-function renderAdminWorkspaceContent(screen) {
+async function renderAdminWorkspaceContent(screen) {
   const content = document.getElementById("adminWorkspaceContent");
   if (!content) return;
 
-if (screen === "users") return renderAdminUsersWorkspace(content);
-if (screen === "days") return renderAdminDaysWorkspace(content);
+  if (screen === "users") return renderAdminUsersWorkspace(content);
+  if (screen === "days") return renderAdminDaysWorkspace(content);
 if (screen === "tasks") return renderAdminTasksWorkspace(content);
-  if (screen === "pairings") return renderAdminPairingsWorkspace(content);
-  if (screen === "chats") return renderAdminChatsWorkspace(content);
+if (screen === "portrait") return await renderAdminPortraitsWorkspace(content);
+if (screen === "pairings") return renderAdminPairingsWorkspace(content);
+  if (screen === "chats") return await renderAdminChatsWorkspace(content);
   if (screen === "insights") return renderAdminInsightsWorkspace(content);
   if (screen === "templates") return renderAdminTemplatesWorkspace(content);
 }
@@ -1451,31 +1857,14 @@ ${renderAdminScoringControls(profile)}
     });
   });
 
-  content.querySelectorAll("[data-view-responses]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const profile = adminProfiles.find(p => p.id === btn.dataset.viewResponses);
-      if (!profile) return;
+content.querySelectorAll("[data-view-responses]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const profile = adminProfiles.find(p => p.id === btn.dataset.viewResponses);
+    if (!profile) return;
 
-      setAppMode("preview");
-      adminMode = true;
-      adminPreviewingUser = profile;
-
-      chatTitle.textContent = `Responses: ${profile.display_name}`;
-      chatSubtitle.textContent = "Quiz responses";
-
-      await window.dashboardUI.mountWelcomeDashboard({
-        messagesEl,
-        mainEl,
-        sb,
-        me: profile,
-        escapeHtml,
-        adminPreview: true
-      });
-
-      textInput.disabled = true;
-      updateSendButton();
-    });
+    renderAdminResponsesWorkspace(content, profile.id);
   });
+});
 
   content.querySelectorAll("[data-admin-user-tasks]").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -1491,6 +1880,418 @@ content.querySelectorAll("[data-admin-user-insights]").forEach(btn => {
 
 bindAdminScoringControls(content);
 hydrateAdminScoreSummaries(content);
+}
+
+async function renderAdminResponsesWorkspace(content, selectedUserId = "") {
+  const selectedUser =
+    adminProfiles.find(profile => profile.id === selectedUserId) ||
+    adminProfiles[0];
+
+  content.innerHTML = `
+    <section class="adminPanel">
+      <div class="adminPanelHeader">
+        <div>
+          <h3>Quiz responses</h3>
+          <p class="muted">
+            Review submitted and in-progress quiz answers without entering user preview mode.
+          </p>
+        </div>
+
+        <button type="button" class="btn btnGhost" data-back-to-admin-users>
+          Back to users
+        </button>
+      </div>
+
+      <div class="adminFormRow">
+        <select id="adminResponsesUserSelect">
+          ${adminProfiles.filter(Boolean).map(profile => `
+            <option
+              value="${escapeAttr(profile.id)}"
+              ${selectedUser?.id === profile.id ? "selected" : ""}
+            >
+              ${escapeHtml(profile.display_name)}
+            </option>
+          `).join("")}
+        </select>
+      </div>
+
+      <div id="adminResponsesMount" class="adminResponsesMount">
+        Loading responses...
+      </div>
+    </section>
+  `;
+
+  content
+    .querySelector("[data-back-to-admin-users]")
+    ?.addEventListener("click", () => {
+      renderAdminUsersWorkspace(content);
+    });
+
+  const select = content.querySelector("#adminResponsesUserSelect");
+
+  select?.addEventListener("change", () => {
+    renderAdminResponsesWorkspace(content, select.value);
+  });
+
+  const mount = content.querySelector("#adminResponsesMount");
+  if (!mount || !selectedUser) return;
+
+  try {
+    mount.innerHTML = await renderAdminUserResponsesReport(selectedUser);
+  } catch (error) {
+    console.error("Could not render admin responses report", error);
+    mount.innerHTML = `
+      <div class="adminResponsesEmpty">
+        Could not load responses.
+      </div>
+    `;
+  }
+}
+
+function getAdminAnswerSummaryLines(assignment, answers = {}) {
+  const lines = [];
+
+  (assignment.questions || []).forEach(question => {
+    const answer = answers[question.id];
+    if (!answer) return;
+
+    let value = "";
+
+    if (question.type === "multiSelect") {
+      value = (answer.labels || answer.values || []).join(", ");
+    }
+
+    if (question.type === "slider") {
+      const numericValue = Number(answer.value ?? question.config?.defaultValue ?? 50);
+      const displayLabel =
+        answer.interpretedLabel ||
+        getSliderDisplayLabel(question, numericValue);
+
+      value = `${displayLabel}, ${numericValue}%`;
+    }
+
+    if (question.type === "scale7") {
+      value = getScale7Label(answer.value);
+    }
+
+    if (question.type === "singleSelect") {
+      value = answer.label || answer.value || "";
+    }
+
+    if (question.type === "freeText") {
+      value = answer.text || "";
+    }
+
+    if (question.type === "ranking") {
+      value = (answer.orderedLabels || answer.orderedValues || []).join(" → ");
+    }
+
+    if (question.type === "imageChoice") {
+      value = answer.label || answer.value || "";
+    }
+
+    if (question.type === "swipeDeck") {
+      const decisions = Array.isArray(answer.decisions) ? answer.decisions : [];
+      const liked = decisions.filter(item => item.direction === "like").length;
+      const rejected = decisions.filter(item => item.direction === "reject").length;
+
+      value = `${decisions.length} swipes recorded · ${liked} liked · ${rejected} passed`;
+    }
+
+    if (question.type === "fileUpload") {
+      value = answer.status === "skipped"
+        ? "Skipped"
+        : (answer.fileName || "Uploaded file");
+    }
+
+    if (!value) return;
+
+    lines.push({
+      prompt: question.prompt || "Untitled question",
+      value
+    });
+  });
+
+  return lines;
+}
+
+function getAdminAxisLabel(axisKey) {
+  const matrixDefinitions = window.soleMatrixDefinitions?.all || {};
+  const definitions = Array.isArray(matrixDefinitions)
+    ? matrixDefinitions
+    : Object.values(matrixDefinitions);
+
+  for (const matrix of definitions) {
+    const axis = (matrix.axes || []).find(item => item.key === axisKey);
+    if (axis?.label) return axis.label;
+  }
+
+  return String(axisKey || "")
+    .replace(/^connection_values_/, "")
+    .replace(/^connection_attachment_/, "")
+    .replace(/^connection_interpersonal_/, "")
+    .replace(/^attraction_aesthetics_/, "")
+    .replace(/^attraction_chemistry_/, "")
+    .replace(/^attraction_romance_/, "")
+    .replace(/^connection_/, "")
+    .replace(/^attraction_/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function getAdminScoringDeltaLines(assignment, answers = {}) {
+  if (!window.soleScoring?.calculateScoringSignalsForAssignment) {
+    return [];
+  }
+
+  const signals =
+    window.soleScoring.calculateScoringSignalsForAssignment(assignment, answers) || [];
+
+  const byAxis = new Map();
+
+  signals.forEach(signal => {
+    const axisKey = signal.axisKey;
+    if (!axisKey) return;
+
+    const current = byAxis.get(axisKey) || {
+      axisKey,
+      evidence: 0,
+      weightedTotal: 0
+    };
+
+    const evidence = Math.abs(Number(signal.evidence || signal.rawWeight || 0));
+    const signalScore = Number(signal.signalScore);
+
+    if (!Number.isFinite(evidence) || !evidence) return;
+    if (!Number.isFinite(signalScore)) return;
+
+    current.evidence += evidence;
+    current.weightedTotal += signalScore * evidence;
+
+    byAxis.set(axisKey, current);
+  });
+
+  return Array.from(byAxis.values())
+    .map(item => {
+      const averageSignal = item.evidence
+        ? item.weightedTotal / item.evidence
+        : 50;
+
+      // This is not the exact final stored score delta, because final score depends
+      // on existing evidence. It is a readable contribution direction for admins.
+      const directionalDelta = averageSignal - 50;
+
+      return {
+        axisKey: item.axisKey,
+        label: getAdminAxisLabel(item.axisKey),
+        delta: directionalDelta,
+        evidence: item.evidence
+      };
+    })
+    .filter(item => Math.abs(item.delta) >= 0.01)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+}
+
+function renderAdminScoringDeltaList(assignment, answers = {}) {
+  const deltas = getAdminScoringDeltaLines(assignment, answers);
+
+  if (!deltas.length) {
+    return `
+      <div class="adminResponseNoScore">
+        No scoring changes from answered questions.
+      </div>
+    `;
+  }
+
+  return `
+    <div class="adminResponseScoreList">
+      ${deltas.map(item => {
+        const sign = item.delta > 0 ? "+" : "";
+        const value = `${sign}${item.delta.toFixed(1)}`;
+
+        return `
+          <span class="adminResponseScorePill">
+            ${escapeHtml(item.label)}:
+            <strong>${escapeHtml(value)}</strong>
+          </span>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+async function renderAdminUserResponsesReport(profile) {
+  const [assignments, responseState] = await Promise.all([
+    loadRuntimeAssignmentsFromSupabase(sb, profile, {
+      includeLocked: true
+    }),
+
+    loadQuizResponsesFromSupabase(sb, profile, {
+      userId: profile.id
+    })
+  ]);
+
+  saveStoredDashboardResponses(profile, responseState.responses);
+  saveStoredDashboardProgress(profile, responseState.progress);
+
+  const responseCards = [];
+
+  (assignments || []).forEach(assignment => {
+    const savedResponse = responseState.responses?.[assignment.id] || null;
+    const savedProgress = responseState.progress?.[assignment.id] || null;
+
+    const answers = {
+      ...(savedProgress?.answers || {}),
+      ...(savedResponse?.answers || {})
+    };
+
+    if (!Object.keys(answers).length) return;
+
+    const lines = getAdminAnswerSummaryLines(assignment, answers);
+    if (!lines.length) return;
+
+    const statusLabel = savedResponse?.completed
+      ? "Completed"
+      : "In progress";
+
+    const submittedMeta = savedResponse?.submittedAt
+      ? `Submitted ${new Date(savedResponse.submittedAt).toLocaleString()}`
+      : "No final submission yet";
+
+    responseCards.push(`
+      <article class="adminResponseCard">
+        <div class="adminResponseCardHeader">
+          <div>
+            <div class="dashboardEyebrow">
+              ${escapeHtml(statusLabel)}
+            </div>
+            <h4>${escapeHtml(assignment.title || "Untitled quiz")}</h4>
+            ${
+              assignment.description
+                ? `<p>${escapeHtml(assignment.description)}</p>`
+                : ""
+            }
+          </div>
+
+          <div class="adminResponseMeta">
+            ${escapeHtml(submittedMeta)}
+          </div>
+        </div>
+
+        <div class="adminResponseLines">
+          ${lines.map(line => `
+            <div class="adminResponseLine">
+              <span>${escapeHtml(line.prompt)}</span>
+              <strong>${escapeHtml(line.value)}</strong>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="adminResponseScoring">
+          <div class="adminResponseScoringTitle">Scoring contribution</div>
+          ${renderAdminScoringDeltaList(assignment, answers)}
+        </div>
+      </article>
+    `);
+  });
+
+  if (!responseCards.length) {
+    return `
+      <div class="adminResponsesEmpty">
+        No quiz responses or saved progress yet.
+      </div>
+    `;
+  }
+
+  return `
+    <div class="adminResponsesList">
+      ${responseCards.join("")}
+    </div>
+  `;
+}
+
+async function renderAdminPortraitsWorkspace(content, selectedUserId = "") {
+  const selectedUser =
+    adminProfiles.find(profile => profile.id === selectedUserId) ||
+    adminProfiles[0];
+
+  if (!adminProfiles.length) {
+    content.innerHTML = `
+      <section class="adminPanel">
+        <h3>Portraits</h3>
+        <p class="muted">No users found.</p>
+      </section>
+    `;
+    return;
+  }
+
+  content.innerHTML = `
+    <section class="adminPanel">
+      <div class="adminPanelHeader">
+        <div>
+          <h3>Portraits</h3>
+          <p class="muted">
+            Edit the large SoleMate portrait shown in each user's SoleMate screen.
+          </p>
+        </div>
+
+        <div class="adminChatsToolbar">
+          <label class="adminChatsPairSelectLabel">User</label>
+
+          <select id="adminPortraitUserSelect">
+            ${adminProfiles.map(profile => `
+              <option
+                value="${escapeAttr(profile.id)}"
+                ${selectedUser?.id === profile.id ? "selected" : ""}
+              >
+                ${escapeHtml(profile.display_name || profile.username || "Unnamed user")}
+              </option>
+            `).join("")}
+          </select>
+        </div>
+      </div>
+
+      <div class="adminResponsesMount" id="adminPortraitMount">
+        Loading portrait editor...
+      </div>
+    </section>
+  `;
+
+  const select = content.querySelector("#adminPortraitUserSelect");
+  const mountEl = content.querySelector("#adminPortraitMount");
+
+  select?.addEventListener("change", async () => {
+    await renderAdminPortraitsWorkspace(content, select.value);
+  });
+
+  if (!selectedUser || !mountEl) return;
+
+  if (typeof window.dashboardUI?.mountAdminUserPortrait !== "function") {
+    mountEl.innerHTML = `
+      <div class="adminQuizError">
+        Portrait editor function is not available. Check window.dashboardUI export.
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    await window.dashboardUI.mountAdminUserPortrait({
+      mountEl,
+      sb,
+      me,
+      user: selectedUser,
+      escapeHtml,
+      escapeAttr
+    });
+  } catch (error) {
+    console.error("Could not load portrait editor", error);
+    mountEl.innerHTML = `
+      <div class="adminQuizError">
+        ${escapeHtml(error?.message || "Could not load portrait editor.")}
+      </div>
+    `;
+  }
 }
 
 function renderAdminTasksWorkspace(content, selectedUserId = "") {
@@ -1535,6 +2336,775 @@ function renderAdminTasksWorkspace(content, selectedUserId = "") {
       escapeAttr
     });
   }
+}
+
+function getAdminProfileName(userId) {
+  const profile = adminProfiles.find(item => item?.id === userId);
+  return profile?.display_name || "User";
+}
+
+function bindAdminSystemComposerFormatting(root = document) {
+  const textarea = root.querySelector("#adminSystemMessageText");
+  if (!textarea) return;
+
+  function setTextareaSelection(start, end) {
+    textarea.focus();
+    textarea.setSelectionRange(start, end);
+  }
+
+  function wrapAdminSelection(before, after = before) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+
+    const selected = value.slice(start, end);
+    const replacement = `${before}${selected}${after}`;
+
+    textarea.value =
+      value.slice(0, start) +
+      replacement +
+      value.slice(end);
+
+    setTextareaSelection(
+      start + before.length,
+      start + before.length + selected.length
+    );
+  }
+
+  function applyAdminBulletList() {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const lineEnd = value.indexOf("\n", end);
+    const actualLineEnd = lineEnd === -1 ? value.length : lineEnd;
+
+    const block = value.slice(lineStart, actualLineEnd);
+    const lines = block.split("\n");
+
+    const updated = lines
+      .map(line => {
+        if (!line.trim()) return line;
+        return line.startsWith("- ") ? line : `- ${line}`;
+      })
+      .join("\n");
+
+    textarea.value =
+      value.slice(0, lineStart) +
+      updated +
+      value.slice(actualLineEnd);
+
+    setTextareaSelection(lineStart, lineStart + updated.length);
+  }
+
+  root.querySelectorAll("[data-admin-format]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const format = btn.dataset.adminFormat;
+
+      if (format === "bold") wrapAdminSelection("*", "*");
+      if (format === "italic") wrapAdminSelection("_", "_");
+      if (format === "underline") wrapAdminSelection("++", "++");
+      if (format === "bullet") applyAdminBulletList();
+    });
+  });
+}
+
+function getAdminMessageOverrides(message) {
+  return Array.isArray(message.admin_overrides)
+    ? message.admin_overrides
+    : [];
+}
+
+function getAdminGlobalOverride(message) {
+  return getAdminMessageOverrides(message).find(item => item.viewer_id === null) || null;
+}
+
+function getAdminRecipientOverride(message) {
+  return getAdminMessageOverrides(message).find(item => item.viewer_id === message.recipient_id) || null;
+}
+
+function renderAdminOverrideSummary(message) {
+  const overrides = getAdminMessageOverrides(message);
+  if (!overrides.length) return "";
+
+  return `
+    <div class="adminTranscriptOverridePanel">
+      <div class="adminTranscriptOverrideTitle">Moderation view</div>
+
+      ${overrides.map(override => {
+        const label = override.viewer_id
+          ? `For ${getAdminProfileName(override.viewer_id)} only`
+          : "For everyone";
+
+        const parts = [];
+
+        if (override.is_hidden) {
+          parts.push(`<span class="adminOverrideBadge isHidden">Hidden</span>`);
+        }
+
+        if (override.replacement_text) {
+          parts.push(`<span class="adminOverrideBadge isEdited">Edited</span>`);
+        }
+
+        return `
+          <div class="adminTranscriptOverrideRow">
+            <div class="adminTranscriptOverrideMeta">
+              <strong>${escapeHtml(label)}</strong>
+              ${parts.join("")}
+            </div>
+
+            ${
+              override.replacement_text
+                ? `
+                  <div class="adminTranscriptEditedText">
+                    ${formatMessageText(override.replacement_text)}
+                  </div>
+                `
+                : ""
+            }
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderAdminTranscriptMessage(message, userAId, userBId) {
+  const senderName = message.is_system
+    ? "Admin"
+    : getAdminProfileName(message.sender_id);
+
+  const sideClass = message.sender_id === userAId ? "fromA" : "fromB";
+  const systemClass = message.is_system ? " isSystem" : "";
+
+  const globalOverride = getAdminGlobalOverride(message);
+  const recipientOverride = getAdminRecipientOverride(message);
+
+  const globalHidden = !!globalOverride?.is_hidden;
+  const recipientHidden = !!recipientOverride?.is_hidden;
+
+  const globalEdited = !!globalOverride?.replacement_text;
+  const recipientEdited = !!recipientOverride?.replacement_text;
+
+  const recipientName = getAdminProfileName(message.recipient_id);
+  const messageId = escapeAttr(message.id || "");
+  const recipientId = escapeAttr(message.recipient_id || "");
+
+  const globalActions = `
+    <button
+      type="button"
+      data-admin-edit-message="${messageId}"
+    >
+      ${message.is_system ? "Edit system note" : "Edit for everyone"}
+    </button>
+
+    ${
+      globalEdited
+        ? `
+          <button
+            type="button"
+            data-admin-clear-edit-everyone="${messageId}"
+          >
+            ${message.is_system ? "Clear system edit" : "Clear everyone edit"}
+          </button>
+        `
+        : ""
+    }
+
+    <button
+      type="button"
+      data-admin-toggle-hide-everyone="${messageId}"
+      data-admin-currently-hidden="${globalHidden ? "true" : "false"}"
+    >
+      ${
+        globalHidden
+          ? (message.is_system ? "Unhide system note" : "Unhide for everyone")
+          : (message.is_system ? "Hide system note" : "Hide for everyone")
+      }
+    </button>
+  `;
+
+  const recipientActions = message.is_system
+    ? ""
+    : `
+      <button
+        type="button"
+        data-admin-recipient-edit-message="${messageId}"
+        data-admin-recipient-id="${recipientId}"
+      >
+        Edit for ${escapeHtml(recipientName)}
+      </button>
+
+      ${
+        recipientEdited
+          ? `
+            <button
+              type="button"
+              data-admin-clear-edit-recipient="${messageId}"
+              data-admin-recipient-id="${recipientId}"
+            >
+              Clear ${escapeHtml(recipientName)} edit
+            </button>
+          `
+          : ""
+      }
+
+      <button
+        type="button"
+        data-admin-toggle-hide-recipient="${messageId}"
+        data-admin-recipient-id="${recipientId}"
+        data-admin-currently-hidden="${recipientHidden ? "true" : "false"}"
+      >
+        ${
+          recipientHidden
+            ? `Unhide for ${escapeHtml(recipientName)}`
+            : `Hide for ${escapeHtml(recipientName)}`
+        }
+      </button>
+    `;
+
+  return `
+    <article
+      class="adminTranscriptLine ${sideClass}${systemClass}"
+      data-admin-message-id="${messageId}"
+    >
+      <div class="adminTranscriptLineMeta">
+        <strong>${escapeHtml(senderName)}</strong>
+        <span>${escapeHtml(fmtTime(message.created_at))}</span>
+        ${message.is_system ? `<em>System note</em>` : ""}
+      </div>
+
+      <div class="adminTranscriptLineBody">
+        ${formatMessageText(message.text || "")}
+      </div>
+
+      ${renderAdminOverrideSummary(message)}
+
+      <div class="adminTranscriptActions">
+        ${globalActions}
+        ${recipientActions}
+      </div>
+    </article>
+  `;
+}
+
+async function loadAdminPairTranscript(userAId, userBId) {
+  const { data: messages, error } = await sb
+    .from("messages")
+    .select("*")
+    .or(
+      `and(sender_id.eq.${userAId},recipient_id.eq.${userBId}),and(sender_id.eq.${userBId},recipient_id.eq.${userAId})`
+    )
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  const rawMessages = messages || [];
+  const messageIds = rawMessages
+    .map(message => message.id)
+    .filter(Boolean);
+
+  const overrides = await loadMessageOverrides(messageIds);
+
+  return rawMessages.map(message => ({
+    ...message,
+    admin_overrides: overrides.filter(override => override.message_id === message.id)
+  }));
+}
+
+function bindAdminTranscriptModerationActions(root = document, userAId, userBId) {
+  root.querySelectorAll("[data-admin-edit-message]:not([data-bound])").forEach(btn => {
+    btn.dataset.bound = "true";
+
+    btn.addEventListener("click", async () => {
+      const messageId = btn.dataset.adminEditMessage;
+      const currentLine = btn.closest(".adminTranscriptLine");
+      const currentText =
+        currentLine?.querySelector(".adminTranscriptLineBody")?.innerText || "";
+
+    const isSystem = !!btn.closest(".adminTranscriptLine")?.classList.contains("isSystem");
+
+const nextText = prompt(
+  isSystem ? "Edit system note:" : "Edit message text for everyone:",
+  currentText
+);
+      if (nextText === null) return;
+
+btn.disabled = true;
+await adminEditMessageForEveryone(messageId, nextText, userAId, userBId);
+    });
+  });
+
+root.querySelectorAll("[data-admin-toggle-hide-everyone]:not([data-bound])").forEach(btn => {
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", async () => {
+    const messageId = btn.dataset.adminToggleHideEveryone;
+    const currentlyHidden = btn.dataset.adminCurrentlyHidden === "true";
+
+    const confirmed = confirm(
+      currentlyHidden
+        ? "Unhide this message for everyone?"
+        : "Hide this message for everyone?"
+    );
+
+    if (!confirmed) return;
+
+    btn.disabled = true;
+    await adminToggleHideMessageForEveryone(
+      messageId,
+      !currentlyHidden,
+      userAId,
+      userBId
+    );
+  });
+});
+
+root.querySelectorAll("[data-admin-toggle-hide-recipient]:not([data-bound])").forEach(btn => {
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", async () => {
+    const messageId = btn.dataset.adminToggleHideRecipient;
+    const recipientId = btn.dataset.adminRecipientId;
+    const currentlyHidden = btn.dataset.adminCurrentlyHidden === "true";
+
+    const confirmed = confirm(
+      currentlyHidden
+        ? `Unhide this message for ${getAdminProfileName(recipientId)}?`
+        : `Hide this message for ${getAdminProfileName(recipientId)} only?`
+    );
+
+    if (!confirmed) return;
+
+    await adminToggleHideMessageForRecipient(
+      messageId,
+      recipientId,
+      !currentlyHidden,
+      userAId,
+      userBId
+    );
+  });
+});
+
+  root.querySelectorAll("[data-admin-recipient-edit-message]:not([data-bound])").forEach(btn => {
+    btn.dataset.bound = "true";
+
+    btn.addEventListener("click", async () => {
+      const messageId = btn.dataset.adminRecipientEditMessage;
+      const recipientId = btn.dataset.adminRecipientId;
+
+      const currentLine = btn.closest(".adminTranscriptLine");
+      const currentText =
+        currentLine?.querySelector(".adminTranscriptLineBody")?.innerText || "";
+
+      const nextText = prompt(
+        `Edit how ${getAdminProfileName(recipientId)} sees this message:`,
+        currentText
+      );
+
+      if (nextText === null) return;
+
+      await adminEditMessageForRecipient(messageId, recipientId, nextText, userAId, userBId);
+    });
+  });
+
+  root.querySelectorAll("[data-admin-clear-edit-everyone]:not([data-bound])").forEach(btn => {
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", async () => {
+    const messageId = btn.dataset.adminClearEditEveryone;
+
+    const confirmed = confirm("Clear the edited version for everyone?");
+    if (!confirmed) return;
+
+    btn.disabled = true;
+    await adminClearEditForEveryone(messageId, userAId, userBId);
+  });
+});
+
+root.querySelectorAll("[data-admin-clear-edit-recipient]:not([data-bound])").forEach(btn => {
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", async () => {
+    const messageId = btn.dataset.adminClearEditRecipient;
+    const recipientId = btn.dataset.adminRecipientId;
+
+    const confirmed = confirm(`Clear the edited version for ${getAdminProfileName(recipientId)}?`);
+    if (!confirmed) return;
+
+    btn.disabled = true;
+    await adminClearEditForRecipient(messageId, recipientId, userAId, userBId);
+  });
+});
+}
+
+function renderAdminTypingDraft(payload, userAId, userBId) {
+  const draftEl = document.getElementById("adminPairLiveDraft");
+  if (!draftEl) return;
+
+  const text = String(payload?.text || "").trim();
+
+  if (!text) {
+    draftEl.hidden = true;
+    draftEl.innerHTML = "";
+    return;
+  }
+
+  const senderName = getAdminProfileName(payload.sender);
+
+  draftEl.hidden = false;
+  draftEl.innerHTML = `
+    <article class="adminTranscriptLine isDraft">
+      <div class="adminTranscriptLineMeta">
+        <strong>${escapeHtml(senderName)}</strong>
+        <span>typing…</span>
+      </div>
+
+      <div class="adminTranscriptLineBody">
+        ${formatMessageText(payload.text || "")}
+      </div>
+    </article>
+  `;
+
+  if (adminPairPanelDraftTimeout) {
+    clearTimeout(adminPairPanelDraftTimeout);
+  }
+
+  adminPairPanelDraftTimeout = setTimeout(() => {
+    draftEl.hidden = true;
+    draftEl.innerHTML = "";
+  }, 4000);
+
+  draftEl.scrollIntoView({ block: "end" });
+}
+
+async function subscribeAdminPairPanelRealtime(userAId, userBId) {
+  if (adminPairPanelChannel) {
+    await sb.removeChannel(adminPairPanelChannel);
+    adminPairPanelChannel = null;
+  }
+
+  const transcriptEl = document.getElementById("adminPairTranscript");
+  if (!transcriptEl) return;
+
+  const isInPair = payload => {
+    return (
+      (payload.sender === userAId && payload.recipient === userBId) ||
+      (payload.sender === userBId && payload.recipient === userAId)
+    );
+  };
+
+  const isMessageInPair = message => {
+    return (
+      (message.sender_id === userAId && message.recipient_id === userBId) ||
+      (message.sender_id === userBId && message.recipient_id === userAId)
+    );
+  };
+
+  adminPairPanelChannel = sb
+    .channel(`admin-panel-dm:${pairKey(userAId, userBId)}`, {
+      config: {
+        broadcast: { self: false }
+      }
+    })
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages" },
+      payload => {
+        const message = payload.new;
+        if (!isMessageInPair(message)) return;
+
+        const draftEl = document.getElementById("adminPairLiveDraft");
+        if (draftEl) {
+          draftEl.hidden = true;
+          draftEl.innerHTML = "";
+        }
+
+        transcriptEl.insertAdjacentHTML(
+          "beforeend",
+          renderAdminTranscriptMessage(message, userAId, userBId)
+        );
+
+        bindAdminTranscriptModerationActions(document, userAId, userBId);
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      }
+    )
+    .on("broadcast", { event: "typing" }, ({ payload }) => {
+      if (!isInPair(payload)) return;
+
+      const draftEl = document.getElementById("adminPairLiveDraft");
+      if (!draftEl) return;
+
+      draftEl.hidden = false;
+draftEl.innerHTML = `
+  <article class="adminTranscriptLine isDraft">
+    <div class="adminTranscriptLineMeta">
+      <strong>${escapeHtml(getAdminProfileName(payload.sender))}</strong>
+      <span>typing…</span>
+    </div>
+  </article>
+`;
+
+      if (adminPairPanelDraftTimeout) {
+        clearTimeout(adminPairPanelDraftTimeout);
+      }
+
+      adminPairPanelDraftTimeout = setTimeout(() => {
+        draftEl.hidden = true;
+        draftEl.innerHTML = "";
+      }, 4000);
+    })
+    .on("broadcast", { event: "draft_update" }, ({ payload }) => {
+      if (!isInPair(payload)) return;
+      renderAdminTypingDraft(payload, userAId, userBId);
+    })
+    .on("broadcast", { event: "draft_clear" }, ({ payload }) => {
+      if (!isInPair(payload)) return;
+
+      const draftEl = document.getElementById("adminPairLiveDraft");
+      if (!draftEl) return;
+
+      draftEl.hidden = true;
+      draftEl.innerHTML = "";
+    })
+    .subscribe();
+}
+
+async function renderAdminPairChatWorkspace(content, userAId, userBId, options = {}) {
+  const backMode = options.backMode || "pairings";
+  const userAName = getAdminProfileName(userAId);
+  const userBName = getAdminProfileName(userBId);
+
+  content.innerHTML = `
+    <section class="adminPanel adminPairTranscriptPanel">
+      <div class="adminPanelHeader">
+        <div>
+          <h3>Pair transcript</h3>
+          <p class="muted">
+            Live conversation between ${escapeHtml(userAName)} and ${escapeHtml(userBName)}.
+          </p>
+        </div>
+
+        <button type="button" class="btn btnGhost" data-back-to-pairings>
+          ${backMode === "chats" ? "Back to chats" : "Back to pairings"}
+        </button>
+      </div>
+
+      <div class="adminPairTranscriptHeader">
+        <span>${escapeHtml(userAName)}</span>
+        <span>↔</span>
+        <span>${escapeHtml(userBName)}</span>
+      </div>
+
+      <div class="adminPairPresenceStrip" id="adminPairPresenceStrip">
+  <span class="adminPresencePill isOffline" data-admin-presence-user="${escapeAttr(userAId)}">
+    <i></i>
+    ${escapeHtml(userAName)}
+    <strong>Offline</strong>
+  </span>
+
+  <span class="adminPresencePill isOffline" data-admin-presence-user="${escapeAttr(userBId)}">
+    <i></i>
+    ${escapeHtml(userBName)}
+    <strong>Offline</strong>
+  </span>
+</div>
+
+<div id="adminPairTranscript" class="adminPairTranscript">
+  Loading transcript...
+</div>
+
+<div id="adminPairLiveDraft" class="adminPairLiveDraft" hidden></div>
+
+<form class="adminSystemComposer" id="adminSystemComposer">
+  <div>
+    <label for="adminSystemMessageText">Inject system message</label>
+    <p>Sends a visible system note into this pair transcript.</p>
+  </div>
+
+  <div class="adminSystemComposerMain">
+    <div class="adminSystemFormatBar" aria-label="Format system message">
+      <button type="button" class="adminFormatBtn" data-admin-format="bold" aria-label="Bold">
+        <strong>B</strong>
+      </button>
+
+      <button type="button" class="adminFormatBtn" data-admin-format="italic" aria-label="Italic">
+        <em>I</em>
+      </button>
+
+      <button type="button" class="adminFormatBtn" data-admin-format="underline" aria-label="Underline">
+        <u>U</u>
+      </button>
+
+      <button type="button" class="adminFormatBtn" data-admin-format="bullet" aria-label="Bullet list">
+        •
+      </button>
+    </div>
+
+    <textarea
+      id="adminSystemMessageText"
+      rows="2"
+      placeholder="Write a system note..."
+    ></textarea>
+  </div>
+
+  <button type="submit" class="btn">
+    Send system note
+  </button>
+</form>
+    </section>
+  `;
+
+content
+  .querySelector("[data-back-to-pairings]")
+  ?.addEventListener("click", async () => {
+    await cleanupAdminPairTranscriptChannels();
+
+    if (backMode === "chats") {
+     await renderAdminWorkspace("chats");
+    } else {
+      renderAdminPairingsWorkspace(content);
+    }
+  });
+
+    content.querySelector("#adminSystemComposer")?.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const textarea = content.querySelector("#adminSystemMessageText");
+  const text = textarea?.value?.trim();
+
+  if (!text) return;
+
+  const submitBtn = content.querySelector("#adminSystemComposer button[type='submit']");
+  const originalText = submitBtn?.textContent || "Send system note";
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending...";
+  }
+
+  try {
+    const { error } = await sb.from("messages").insert({
+      sender_id: userAId,
+      recipient_id: userBId,
+      text,
+      is_system: true
+    });
+
+    if (error) throw error;
+
+    textarea.value = "";
+  } catch (error) {
+    console.error("Could not inject system message", error);
+    alert(error?.message || "Could not send system message.");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+  }
+});
+
+bindAdminSystemComposerFormatting(content);
+  const transcriptEl = content.querySelector("#adminPairTranscript");
+
+  try {
+    const messages = await loadAdminPairTranscript(userAId, userBId);
+
+    transcriptEl.innerHTML = messages.length
+      ? messages
+          .map(message => renderAdminTranscriptMessage(message, userAId, userBId))
+          .join("")
+      : `<div class="adminResponsesEmpty">No messages yet.</div>`;
+
+      bindAdminTranscriptModerationActions(content, userAId, userBId);
+
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+
+    await subscribeAdminPairPanelRealtime(userAId, userBId);
+    await subscribeAdminPairOverrideRealtime(userAId, userBId);
+    await subscribeAdminPairPresence(userAId, userBId);
+  } catch (error) {
+    console.error("Could not load pair transcript", error);
+    transcriptEl.innerHTML = `
+      <div class="adminResponsesEmpty">
+        Could not load transcript.
+      </div>
+    `;
+  }
+}
+
+function updateAdminPairPresenceUI(userAId, userBId, onlineIds = new Set()) {
+  [userAId, userBId].forEach(userId => {
+    const pill = document.querySelector(
+      `[data-admin-presence-user="${CSS.escape(userId)}"]`
+    );
+
+    if (!pill) return;
+
+    const isOnline = onlineIds.has(userId);
+
+    pill.classList.toggle("isOnline", isOnline);
+    pill.classList.toggle("isOffline", !isOnline);
+
+    const strong = pill.querySelector("strong");
+    if (strong) {
+      strong.textContent = isOnline ? "Online" : "Offline";
+    }
+  });
+}
+
+async function subscribeAdminPairPresence(userAId, userBId) {
+  if (adminPairPresenceChannel) {
+    await sb.removeChannel(adminPairPresenceChannel);
+    adminPairPresenceChannel = null;
+  }
+
+  adminPairPresenceChannel = sb.channel("sole:user-presence", {
+    config: {
+      presence: {
+        key: `admin-${me.id}-${userAId}-${userBId}`
+      }
+    }
+  });
+
+  function syncPresence() {
+    const state = adminPairPresenceChannel.presenceState();
+    const onlineIds = new Set();
+
+    Object.entries(state).forEach(([presenceKey, presences]) => {
+      if (!Array.isArray(presences) || !presences.length) return;
+
+      presences.forEach(presence => {
+        if (presence?.user_id) {
+          onlineIds.add(presence.user_id);
+        } else {
+          onlineIds.add(presenceKey);
+        }
+      });
+    });
+
+    updateAdminPairPresenceUI(userAId, userBId, onlineIds);
+  }
+
+  adminPairPresenceChannel
+    .on("presence", { event: "sync" }, syncPresence)
+    .on("presence", { event: "join" }, syncPresence)
+    .on("presence", { event: "leave" }, syncPresence)
+    .subscribe(async status => {
+      if (status !== "SUBSCRIBED") return;
+
+      // Track admin too, but UI only checks userA/userB.
+      await adminPairPresenceChannel.track({
+        user_id: me.id,
+        display_name: me.display_name || me.username || "Admin",
+        is_admin: true,
+        online_at: new Date().toISOString()
+      });
+
+      syncPresence();
+    });
 }
 
 function renderAdminPairingsWorkspace(content) {
@@ -1680,29 +3250,108 @@ function renderAdminPairingsWorkspace(content) {
     });
   });
 
-  content.querySelectorAll("[data-open-pair-chat]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      viewA = btn.dataset.openPairChat;
-      viewB = btn.dataset.openPairChatB;
+content.querySelectorAll("[data-open-pair-chat]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const userAId = btn.dataset.openPairChat;
+    const userBId = btn.dataset.openPairChatB;
 
-      await loadThread(viewA, viewB, viewA);
-      await subscribeRealtime(viewA, viewB, viewA);
+    if (!userAId || !userBId) return;
 
-      chatTitle.textContent = "Admin chat view";
-      chatSubtitle.textContent = "Live pair thread";
-      textInput.disabled = false;
-      updateSendButton();
-    });
+    await renderAdminPairChatWorkspace(content, userAId, userBId);
   });
+});
 }
 
-function renderAdminChatsWorkspace(content) {
+function getAdminPairedGroups() {
+  return adminPairings
+    .map(pairing => {
+      const userA = adminProfiles.find(profile => profile.id === pairing.user_a);
+      const userB = adminProfiles.find(profile => profile.id === pairing.user_b);
+
+      if (!userA || !userB) return null;
+
+      return {
+        pairing,
+        userA,
+        userB,
+        key: `${userA.id}__${userB.id}`,
+        label: `${userA.display_name} ↔ ${userB.display_name}`
+      };
+    })
+    .filter(Boolean);
+}
+
+async function renderAdminChatsWorkspace(content, selectedPairKey = "") {
+  await cleanupAdminPairTranscriptChannels();
+
+  const pairs = getAdminPairedGroups();
+
+  const selectedPair =
+    pairs.find(pair => pair.key === selectedPairKey) ||
+    pairs[0];
+
+  if (!pairs.length) {
+    content.innerHTML = `
+      <section class="adminPanel">
+        <h3>Chats</h3>
+        <p class="muted">No active pair chats yet.</p>
+      </section>
+    `;
+    return;
+  }
+
   content.innerHTML = `
-    <section class="adminPanel">
-      <h3>Chats</h3>
-      <p class="muted">Open live user threads and inject system messages.</p>
+    <section class="adminPanel adminChatsPickerPanel">
+      <div class="adminPanelHeader">
+        <div>
+          <h3>Chats</h3>
+          <p class="muted">
+            Monitor live pair transcripts, inject system notes, and moderate message appearance.
+          </p>
+        </div>
+
+        <div class="adminChatsToolbar">
+          <label class="adminChatsPairSelectLabel" for="adminChatsPairSelect">
+            Pair
+          </label>
+
+          <select id="adminChatsPairSelect">
+            ${pairs.map(pair => `
+              <option
+                value="${escapeAttr(pair.key)}"
+                ${selectedPair?.key === pair.key ? "selected" : ""}
+              >
+                ${escapeHtml(pair.label)}
+              </option>
+            `).join("")}
+          </select>
+        </div>
+      </div>
+
+      <div id="adminChatsTranscriptMount">
+        Loading chat...
+      </div>
     </section>
   `;
+
+  const select = content.querySelector("#adminChatsPairSelect");
+
+  select?.addEventListener("change", async () => {
+    await renderAdminChatsWorkspace(content, select.value);
+  });
+
+  const mount = content.querySelector("#adminChatsTranscriptMount");
+
+  if (selectedPair && mount) {
+    await renderAdminPairChatWorkspace(
+      mount,
+      selectedPair.userA.id,
+      selectedPair.userB.id,
+      {
+        backMode: "chats"
+      }
+    );
+  }
 }
 
 function renderAdminInsightsWorkspace(content, selectedUserId = "") {
@@ -1750,8 +3399,8 @@ function renderAdminInsightsWorkspace(content, selectedUserId = "") {
 }
 
 async function renderAdminTemplatesWorkspace(content) {
-  chatTitle.textContent = "Admin: Templates";
-  chatSubtitle.textContent = "Quiz templates";
+chatTitle.textContent = "Admin: Templates";
+setHeaderSubtitle("Quiz templates");
 
   content.innerHTML = `
     <section class="adminPanel adminTemplatesPanel">
@@ -1777,65 +3426,66 @@ async function renderAdminTemplatesWorkspace(content) {
 }
 
 async function renderPreviewShell(profile) {
+  clearTimeout(previewDraftClearTimeout);
+  previewDraftClearTimeout = null;
+
+  clearTimeout(typingTimeout);
+  reactingUntil = 0;
+
+  messagesEl.innerHTML = "";
+  messagesEl.appendChild(typingIndicator);
+  hideTypingIndicator();
+  clearLiveDraft?.();
+  removeResponseNeuralRow?.();
+
   const previewPartner = await getAssignedPartner(profile.id);
 
   chatTitle.textContent = `Preview: ${profile.display_name}`;
-  chatSubtitle.textContent = previewPartner
-    ? `Chat with ${previewPartner.display_name}`
-    : "Viewing as user";
+  setHeaderSubtitle(
+    previewPartner
+      ? `Live pair thread with ${previewPartner.display_name}`
+      : "Dashboard preview"
+  );
 
-  messagesEl.innerHTML = `
-    <div class="adminPreviewRibbon">
-      <strong>Viewing as ${escapeHtml(profile.display_name)}</strong>
+  textInput.value = "";
+  textInput.disabled = true;
+  updateSendButton();
 
-      <button type="button" class="btn btnGhost" id="exitPreviewBtn">
-        Exit preview
-      </button>
-    </div>
-  `;
+  if (!previewPartner) {
+    them = null;
+    viewA = null;
+    viewB = null;
 
-  document.getElementById("exitPreviewBtn")?.addEventListener("click", async () => {
-    if (adminActualProfile) {
-      me = adminActualProfile;
-      adminActualProfile = null;
-      assignedPartner = await getAssignedPartner(me.id);
+    if (channel) {
+      await sb.removeChannel(channel);
+      channel = null;
     }
 
-    await enterAdminMode(adminScreen || "users");
-  });
+    await window.dashboardUI.mountWelcomeDashboard({
+      messagesEl,
+      mainEl,
+      sb,
+      me: profile,
+      escapeHtml,
+      adminPreview: true
+    });
 
-  if (previewPartner) {
-    them = previewPartner;
-
-    await loadThread(profile.id, previewPartner.id, profile.id);
-    await subscribeRealtime(profile.id, previewPartner.id, profile.id);
-
-    channel.on("broadcast", { event: "draft_update" }, ({ payload }) => {
-  if (payload.sender !== profile.id) return;
-  mirrorPreviewDraft(payload.text || "");
-});
-
-channel.on("broadcast", { event: "draft_clear" }, ({ payload }) => {
-  if (payload.sender !== profile.id) return;
-  mirrorPreviewDraft("");
-});
-
-    textInput.disabled = true;
-    updateSendButton();
     return;
   }
 
-  await window.dashboardUI.mountWelcomeDashboard({
-    messagesEl,
-    mainEl,
-    sb,
-    me: profile,
-    escapeHtml,
-    adminPreview: true
-  });
+  // The observed pair.
+  viewA = profile.id;
+  viewB = previewPartner.id;
 
-  textInput.disabled = true;
-  updateSendButton();
+  // Keep this for normal thread alignment:
+  // profile appears on the right, partner appears on the left.
+  them = previewPartner;
+
+  await loadThread(viewA, viewB, profile.id);
+
+  await subscribeRealtime(viewA, viewB, profile.id, {
+    adminObserver: true
+  });
 }
 
 function openAdminOverlay(screen = "users") {
@@ -1881,13 +3531,17 @@ async function loadAdminThread(){
   const aName = profs.find(p => p.id === viewA)?.display_name || "A";
   const bName = profs.find(p => p.id === viewB)?.display_name || "B";
 
-  chatTitle.textContent = `ADMIN: ${aName} → ${bName}`;
-  chatSubtitle.textContent = "Read-only";
+chatTitle.textContent = `ADMIN: ${aName} → ${bName}`;
+setHeaderSubtitle("Live pair thread");
 
-  await loadThread(viewA, viewB, /*alignAs*/ viewA);
-  await subscribeRealtime(viewA, viewB, /*alignAs*/ viewA);
-  updateSendButton();
-  textInput.disabled = false;
+await loadThread(viewA, viewB, /*alignAs*/ viewA);
+
+await subscribeRealtime(viewA, viewB, /*alignAs*/ viewA, {
+  adminObserver: true
+});
+
+updateSendButton();
+textInput.disabled = false;
 }
 
 async function loadAdminDashboard(){
@@ -1915,9 +3569,8 @@ async function loadAdminDashboard(){
   viewA = null;
   viewB = null;
 
-  chatTitle.textContent = `ADMIN: ${profile.display_name}`;
-  chatSubtitle.textContent = "Dashboard preview";
-
+chatTitle.textContent = `ADMIN: ${profile.display_name}`;
+setHeaderSubtitle("Dashboard preview");
   if (channel) {
     await sb.removeChannel(channel);
     channel = null;
@@ -2034,7 +3687,7 @@ async function renderAdminPage(screen = "users") {
   chatTitle.textContent =
     `Admin: ${screen[0].toUpperCase() + screen.slice(1)}`;
 
-  chatSubtitle.textContent = "Control centre";
+  setHeaderSubtitle("Control centre");
 
   textInput.disabled = true;
   updateSendButton();
@@ -2207,8 +3860,8 @@ async function enterAdminUserPreview(profile){
 
   await renderSidebar(); // later we can make this render as that user too
 
-  chatTitle.textContent = `Preview: ${profile.display_name}`;
-  chatSubtitle.textContent = "Viewing as user";
+chatTitle.textContent = `Preview: ${profile.display_name}`;
+setHeaderSubtitle("Viewing as user");
 }
 
 function renderAdminTasksScreen(userId = ""){
@@ -2295,10 +3948,11 @@ function renderAdminChatsScreen(){
     if (!viewA || !viewB || viewA === viewB) return alert("Pick two different users.");
 
     await loadThread(viewA, viewB, viewA);
-    await subscribeRealtime(viewA, viewB, viewA);
-
+   await subscribeRealtime(viewA, viewB, viewA, {
+  adminObserver: true
+});
     chatTitle.textContent = "Admin chat view";
-    chatSubtitle.textContent = "Live thread";
+  setHeaderSubtitle("Live thread");
     textInput.disabled = false;
     updateSendButton();
   });
@@ -2314,8 +3968,8 @@ function renderAdminInsightsScreen(){
 }
 
 async function renderAdminTemplatesScreen(){
-  chatTitle.textContent = "Admin";
-  chatSubtitle.textContent = "Quiz templates";
+chatTitle.textContent = "Admin";
+setHeaderSubtitle("Quiz templates");
 
   await window.dashboardUI.mountWelcomeDashboard({
     messagesEl,

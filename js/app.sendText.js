@@ -113,11 +113,19 @@ lastDraftSentAt = 0;
 if (error) {
   alert(error.message);
 } else {
-  await updateConversationStatus();
-
   if (typeof refreshSidebarProgressFromScoring === "function") {
-    await refreshSidebarProgressFromScoring();
+    await refreshSidebarProgressFromScoring({
+      animateFromZero: false
+    });
   }
+
+  try {
+    await updateConversationStatus();
+  } catch (statusError) {
+    console.warn("Could not update conversation status after send", statusError);
+  }
+
+  await updateSidebarDailyTasks?.();
 }
 }
 

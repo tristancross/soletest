@@ -7,6 +7,178 @@
    - Global top buttons provide Messages + Menu on every mobile screen.
 */
 
+/* =========================================================
+   SOLE — DESKTOP SAFETY RESET
+   Ensures mobile view classes / mobile nav never affect desktop.
+   ========================================================= */
+
+@media (min-width: 769px) {
+.mobileSidebarBackdrop, .mobileMenuBtn{
+  display: none;
+}
+
+  html,
+  body {
+    width: auto !important;
+    height: auto !important;
+    overflow: auto !important;
+  }
+
+  .app.soleRedesignApp {
+    display: grid !important;
+    grid-template-columns: 96px minmax(470px, .9fr) minmax(560px, 1.1fr) !important;
+    gap: 0 !important;
+
+    height: calc(100vh - 16px) !important;
+    min-height: 0 !important;
+
+    margin: 8px !important;
+    padding: 0 !important;
+
+    border: 1px solid var(--sole-line) !important;
+    border-radius: 22px !important;
+
+    overflow: hidden !important;
+    transform: none !important;
+    background: var(--bg) !important;
+  }
+
+  .soleRailNav {
+    grid-column: 1 !important;
+
+    position: static !important;
+
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+
+    padding: 28px 14px 22px !important;
+
+    border: 0 !important;
+    border-right: 1px solid var(--sole-line) !important;
+    border-radius: 22px 0 0 22px !important;
+
+    background: rgba(255, 255, 255, .28) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    transform: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+
+    overflow: visible !important;
+    z-index: auto !important;
+  }
+
+  .sidebar.soleDashboardPane {
+    grid-column: 2 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    overflow: hidden !important;
+    background: rgba(255, 238, 222, 0.035) !important;
+  }
+
+  .main {
+    grid-column: 3 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    margin: 20px !important;
+    padding: 0 !important;
+
+    border: 1px solid var(--sole-line) !important;
+    border-radius: 28px !important;
+
+    overflow: hidden !important;
+    background: rgba(255, 255, 255, .85) !important;
+    box-shadow: var(--sole-shadow) !important;
+  }
+
+  .soleRailItems {
+    width: 100% !important;
+    display: grid !important;
+    gap: 14px !important;
+  }
+
+  .soleRailBottom {
+    margin-top: auto !important;
+    display: grid !important;
+    justify-items: center !important;
+    gap: 18px !important;
+    width: 100% !important;
+  }
+
+  .soleRailItem {
+    width: 70px !important;
+    min-height: 70px !important;
+
+    display: grid !important;
+    place-items: center !important;
+    gap: 6px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border-radius: 16px !important;
+
+    text-align: center !important;
+  }
+
+  .soleRailItem i {
+    width: auto !important;
+    height: auto !important;
+    flex: initial !important;
+    font-size: 20px !important;
+  }
+
+  .soleRailItem span {
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+
+  .soleRailUser {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 999px !important;
+  }
+
+  .mobileTopActions,
+  .mobileRailScrim,
+  .mobileDock,
+  .mobileBottomNav {
+    display: none !important;
+  }
+}
+
 @media (max-width: 768px) {
   :root {
     --mobile-page-pad: 14px;

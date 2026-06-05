@@ -229,15 +229,16 @@
     <span class="chatModelVersion" id="chatModelVersion">1.03</span>
   </div>
 </div>
-  <div class="chatModelEyebrow">
-    <span class="chatModelLabel">
-      Conversational Model
-      <i class="fa-regular fa-circle-dot"></i>
-    </span>
-  </div>
+<div class="chatModelEyebrow">
+  <span class="chatModelLabel">
+    Conversational Model
+    <i class="fa-regular fa-circle-dot"></i>
+  </span>
 </div>
-<button class="mobileMenuBtn" id="mobileMenuBtn" aria-label="Open chats">
-  <i class="fa-regular fa-message"></i>
+<div class="chatSubtitle" id="chatSubtitle"></div>
+</div>
+<button class="mobileMenuBtn" id="mobileMenuBtn" aria-label="Open menu" aria-expanded="false">
+  <i class="fa-solid fa-bars"></i>
   <span class="mobileMenuUnreadBadge" id="mobileMenuUnreadBadge" hidden></span>
 </button>
 
@@ -321,9 +322,25 @@
       <i class="fa-solid fa-arrow-up"></i>
     </button>
 
+
+    
+
   </div>
 </footer>
-    </main>
+</main>
+
+<div class="mobileTopActions" aria-label="Mobile quick navigation">
+  <button class="mobileTopActionBtn" id="mobileChatBtn" type="button" aria-label="Open messages">
+    <i class="fa-solid fa-message"></i>
+    <span class="mobileMenuUnreadBadge" id="mobileTopUnreadBadge" hidden></span>
+  </button>
+
+  <button class="mobileTopActionBtn" id="mobileMenuBtnGlobal" type="button" aria-label="Open menu" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+</div>
+
+<div class="mobileRailScrim" id="mobileRailScrim"></div>
   </div>
 
   <!-- Supabase JS (CDN) -->

@@ -30,8 +30,21 @@ if (window.visualViewport) {
     return;
   }
 
-  me = profile;
-  applyMe();
+me = profile;
+applyMe();
+
+await startUserPresence();
+await subscribeSolematePortraitRealtime(me.id);
+await subscribeUserInsightsRealtime(me.id);
+await subscribeUserTasksRealtime(me.id);
+if (typeof subscribeProfileScoringRealtime === "function") {
+  await subscribeProfileScoringRealtime(me.id);
+} else {
+  console.warn("subscribeProfileScoringRealtime is not loaded");
+}
+await updateSolematePortraitNotificationDot?.();
+await updateSolemateTraitNotificationDot?.();
+
 setupSidebarDashboardScreens();
 initAccountTray();
 
@@ -53,10 +66,11 @@ await refreshSidebarProgressFromScoring({
 
 
 await refreshBlockedPairs();
-await renderSidebar();
-setupAdminUI();
 
 assignedPartner = await getAssignedPartner(me.id);
+
+await renderSidebar();
+setupAdminUI();
 
 await updateSidebarDailyTasks();
 await updateInsightNotificationDots();

@@ -1021,7 +1021,8 @@ function initAssignmentInteractions({
   me,
   escapeHtml,
   adminPreview = false,
-  onRefresh = null
+  onRefresh = null,
+  onOptimisticAdvance = null
 }) {
   if (adminPreview) return;
 
@@ -1741,10 +1742,18 @@ rerenderSwipeDeck();
 
   syncSubmitState();
 
-  submitBtn.addEventListener("click", async () => {
-   if (!canAdvanceQuestion(currentQuestion, answers[currentQuestion.id])) return;
+submitBtn.addEventListener("click", async () => {
+  if (!canAdvanceQuestion(currentQuestion, answers[currentQuestion.id])) return;
 
-    await playAssignmentAdvanceTransition(cardEl);
+  if (!isFinalStep && onOptimisticAdvance) {
+    onOptimisticAdvance({
+      currentStep,
+      nextStep: currentStep + 1,
+      answers
+    });
+  }
+
+  await playAssignmentAdvanceTransition(cardEl);
 
     if (!isFinalStep) {
       const nextStep = currentStep + 1;

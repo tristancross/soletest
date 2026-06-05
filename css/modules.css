@@ -1103,7 +1103,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   grid-template-columns:minmax(0, 1fr) 124px;
   gap:32px;
   align-items:stretch;
-  padding-top:0;
+  padding-top:2px;
 }
 
 .moduleHeroCopy{
@@ -1445,7 +1445,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   background:linear-gradient(135deg, #ff9a80, #ff6654);
   color:#fff;
   border-color:rgba(255,118,95,.22);
-  box-shadow:0 12px 28px rgba(255,101,84,.18);
+  /* box-shadow:0 12px 28px rgba(255,101,84,.18); */
 }
 
 .moduleCalibrationTaskCard{

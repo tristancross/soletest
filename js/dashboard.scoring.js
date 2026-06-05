@@ -322,6 +322,7 @@ async function applyAssignmentScoringToUserMatrix(sb, me, assignment, answers = 
 window.soleScoring = {
   baselineScore: MATRIX_BASELINE_SCORE,
   baselineEvidence: MATRIX_BASELINE_EVIDENCE,
+    calculateScoringSignalsForAssignment,
   scale7ToSignalScore,
   calculateScoringSignalsForAssignment,
   mergeMatrixScore,

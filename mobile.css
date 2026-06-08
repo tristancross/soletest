@@ -26,7 +26,8 @@
 
   .app.soleRedesignApp {
     display: grid !important;
-    grid-template-columns: 96px minmax(470px, .9fr) minmax(560px, 1.1fr) !important;
+    /* grid-template-columns: 96px minmax(470px, .9fr) minmax(560px, 1.1fr) !important; */
+    grid-template-columns: 96px 1fr 700px !important;
     gap: 0 !important;
 
     height: calc(100vh - 16px) !important;
@@ -870,7 +871,7 @@
   .insightCard {
     width: 100% !important;
     border-radius: 22px !important;
-    padding: 16px !important;
+    padding: 20px !important;
   }
 
   .adminQuizFieldRow,
@@ -884,6 +885,66 @@
     flex-direction: column !important;
     align-items: flex-start !important;
   }
+
+  .quizScaleRow{
+  grid-template-columns: 1fr;
+    grid-template-areas:
+    'scale scale'
+    'disagree agree';
+   ;
+}
+
+.quizLabel{
+  font-size:  1.1875rem;
+}
+.quizScale7 { grid-area: scale; justify-content: space-between; }
+.disagree { grid-area: disagree; }
+.agree { grid-area: agree; }
+
+  .composerInner {
+    align-items: center !important;
+  }
+
+  .input {
+    display: block !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    max-height: 120px !important;
+
+    padding: 7px 10px !important;
+    margin: 0 !important;
+
+    line-height: 24px !important;
+    overflow-y: hidden !important;
+    align-self: center !important;
+  }
+
+  .input::placeholder {
+    line-height: 24px !important;
+  }
+
+  .micBtn,
+  .sendBtnIcon {
+    align-self: center !important;
+  }
+
+  .formatBar {
+    bottom: calc(100% + 8px) !important;
+  }
+
+
+}
+
+
+
+/* SMALLER SCREENS */
+@media (max-width: 1200px) {
+  .sidebarTop {
+    padding: 20px 10px 5px;
+  }
+.sidebarNavPane {
+    padding: 0 10px 6px;
+}
 }
 
 /* Matrix gets a slightly wider breakpoint because it breaks earlier */

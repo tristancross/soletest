@@ -76,7 +76,7 @@ if (question.type === "scale7") {
       <div class="quizScaleShell">
 <div class="quizScaleRow">
 
-  <div class="quizScaleEdgeLabel">
+  <div class="quizScaleEdgeLabel disagree">
     ${escapeHtml(minLabel)}
   </div>
 
@@ -98,7 +98,7 @@ if (question.type === "scale7") {
           }).join("")}
         </div>
 
-          <div class="quizScaleEdgeLabel">
+          <div class="quizScaleEdgeLabel agree">
     ${escapeHtml(maxLabel)}
   </div>
 

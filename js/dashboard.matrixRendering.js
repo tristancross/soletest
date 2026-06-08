@@ -343,9 +343,7 @@ ${
           <p>${escapeHtml(matrix.description || "")}</p>
         </div>
 
-        <div class="soleMatrixConfidence">
-          ${Math.round(Number(confidence) || 0)}% calibrated
-        </div>
+
       </div>
 
       <div class="soleMatrixChartWrap">

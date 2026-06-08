@@ -581,3 +581,4 @@ body:has(.app.soleRedesignApp[data-active-module="solemate"]){
   border-color:var(--module-accent);
   color:#fff;
 }
+

@@ -1,0 +1,436 @@
+/* =========================================================
+   DESKTOP SIDEBAR DRAWER MODE
+   Closed: [rail][chat] centred.
+   Open:   [rail][sidebar][chat], with main gutter restored.
+   Load after mobile.css.
+   ========================================================= */
+
+/* Keep the page/background full viewport height even when app is compact */
+html,
+body {
+  min-height: 100vh !important;
+  height: 100% !important;
+}
+
+body {
+  overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .app.soleRedesignApp {
+    --sole-rail-w: 96px;
+    --sole-chat-w: 650px;
+    --sole-main-gutter: 20px;
+
+    /*
+      This is the visible chat/rail height in collapsed mode.
+      In expanded mode, app gets 40px taller and main uses 20px top/bottom margin.
+    */
+    --sole-card-h: calc(100vh - 56px);
+
+    /*
+      IMPORTANT:
+      Use a real calculated width rather than 1fr.
+      Animating 0px -> 1fr can jitter badly.
+    */
+    --sole-sidebar-w: calc(
+      100vw - 16px - var(--sole-rail-w) - var(--sole-chat-w) - var(--sole-main-gutter)
+    );
+
+    box-sizing: border-box !important;
+
+    /*
+      OPEN / EXPANDED STATE
+      Rail and sidebar are full height.
+      Main gets its gutter via margin.
+    */
+    grid-template-columns:
+      var(--sole-rail-w)
+      var(--sole-sidebar-w)
+      var(--sole-chat-w) !important;
+
+    width: calc(100vw - 16px) !important;
+    height: calc(var(--sole-card-h) + (var(--sole-main-gutter) * 2)) !important;
+
+    margin: 8px !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    transition:
+      width 560ms cubic-bezier(.2, .8, .2, 1),
+      height 560ms cubic-bezier(.2, .8, .2, 1),
+      margin 560ms cubic-bezier(.2, .8, .2, 1),
+      grid-template-columns 560ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 280ms ease,
+      background 280ms ease,
+      border-color 280ms ease,
+      border-radius 280ms ease;
+  }
+
+  .app.soleRedesignApp .soleRailNav,
+  .app.soleRedesignApp .sidebar.soleDashboardPane,
+  .app.soleRedesignApp .main {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: paint;
+
+    transition:
+      margin 560ms cubic-bezier(.2, .8, .2, 1),
+      transform 560ms cubic-bezier(.2, .8, .2, 1),
+      opacity 240ms ease,
+      border-radius 420ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 420ms cubic-bezier(.2, .8, .2, 1),
+      background 280ms ease;
+  }
+
+  .app.soleRedesignApp .soleRailNav {
+    grid-column: 1 !important;
+    width: auto !important;
+    height: 100% !important;
+    margin: 0 !important;
+    z-index: 4;
+  }
+
+  .app.soleRedesignApp .sidebar.soleDashboardPane {
+    grid-column: 2 !important;
+    width: auto !important;
+    height: 100% !important;
+    margin: 0 !important;
+    z-index: 1;
+
+    opacity: 1;
+    transform: translateX(0) translateZ(0);
+    pointer-events: auto;
+    overflow: hidden !important;
+  }
+
+  .app.soleRedesignApp .main {
+    grid-column: 3 !important;
+    width: auto !important;
+
+    /*
+      OPEN STATE:
+      restore the gutter around main.
+      Rail/sidebar remain full-height because this is only on main.
+    */
+    height: auto !important;
+    margin: var(--sole-main-gutter) 0 var(--sole-main-gutter) 0 !important;
+
+    z-index: 3;
+  }
+
+  .app.soleRedesignApp .soleRailMenuBtn i {
+    transition: transform 360ms cubic-bezier(.2, .8, .2, 1);
+  }
+
+  /* CLOSED / CHAT FOCUS STATE ------------------------------------------ */
+
+  .app.soleRedesignApp.isChatFocus {
+    /*
+      Closed state:
+      app is exactly rail + chat.
+      No gutter shell.
+    */
+    grid-template-columns:
+      var(--sole-rail-w)
+      0px
+      var(--sole-chat-w) !important;
+
+    width: calc(var(--sole-rail-w) + var(--sole-chat-w)) !important;
+    height: var(--sole-card-h) !important;
+
+    margin-top: calc((100vh - var(--sole-card-h)) / 2) !important;
+    margin-bottom: auto !important;
+    margin-left: calc((100vw - (var(--sole-rail-w) + var(--sole-chat-w))) / 2) !important;
+    margin-right: auto !important;
+
+    padding: 0 !important;
+
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .soleRailNav {
+    height: 100% !important;
+    margin: 0 !important;
+        margin-right: -2px !important;
+    border-radius: 22px 0 0 22px !important;
+    border-right: 1px solid var(--sole-line) !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .main {
+    /*
+      CLOSED STATE:
+      no margin, so the rail hugs the chat.
+      Height remains equal to the open-state visible main height.
+    */
+    height: 100% !important;
+    margin: 0 !important;
+
+    border-radius: 0 22px 22px 0 !important;
+    border-left: 0 !important;
+                border-top: 0 !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .sidebar.soleDashboardPane {
+    /*
+      Sidebar is the hidden drawer between rail and chat.
+      The column is zero-width, and the content is tucked slightly right.
+    */
+    opacity: 1;
+    transform: translateX(32px) translateZ(0);
+    pointer-events: none;
+    overflow: hidden !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .sidebar.soleDashboardPane > * {
+    opacity: 0;
+    transform: translateX(18px) translateZ(0);
+
+    transition:
+      opacity 160ms ease,
+      transform 480ms cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .app.soleRedesignApp:not(.isChatFocus) .sidebar.soleDashboardPane > * {
+    opacity: 1;
+    transform: translateX(0) translateZ(0);
+
+    transition:
+      opacity 240ms ease 140ms,
+      transform 560ms cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .app.soleRedesignApp.isChatFocus .soleRailMenuBtn i {
+    transform: rotate(90deg);
+  }
+
+  .app.soleRedesignApp.isChatFocus .header {
+    border-radius: 0 22px 0 0 !important;
+    /* border-top: 0px !important; */
+  }
+
+  .app.soleRedesignApp.isChatFocus .composer {
+    border-radius: 0 0 22px 0 !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app.soleRedesignApp,
+    .app.soleRedesignApp .soleRailNav,
+    .app.soleRedesignApp .sidebar.soleDashboardPane,
+    .app.soleRedesignApp .main,
+    .app.soleRedesignApp .sidebar.soleDashboardPane > *,
+    .app.soleRedesignApp .soleRailMenuBtn i {
+      transition: none !important;
+    }
+  }
+}
+
+
+@media (max-width: 1400px) {
+      .app.soleRedesignApp {
+    --sole-chat-w: 500px;
+      }
+}
+@media (max-width: 1200px) {
+      .app.soleRedesignApp {
+    --sole-chat-w: 450px;
+      }
+}
+@media (max-width: 1100px) {
+      .app.soleRedesignApp {
+    --sole-chat-w: 400px;
+      }
+}
+/* =========================================================
+   FINAL POLISH: keep collapsed view top-aligned + preserve rail colour
+   ========================================================= */
+
+html {
+  min-height: 100% !important;
+}
+
+body {
+  min-height: 100dvh !important;
+  height: 100dvh !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Desktop only */
+@media (min-width: 769px) {
+  .app.soleRedesignApp.isChatFocus {
+    /*
+      Do not vertically centre the compact app.
+      Keep it pinned to the same top rhythm as the expanded state.
+    */
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .soleRailNav {
+    /*
+      In collapsed mode the outer app shell becomes transparent,
+      so the rail needs its own stronger surface.
+    */
+    background:
+      radial-gradient(circle at 50% 8%, rgba(255,255,255,.72), transparent 34%),
+      linear-gradient(
+        180deg,
+        rgba(255,255,255,.58),
+        rgba(250,244,237,.42)
+      ) !important;
+
+    box-shadow:
+      inset -1px 0 0 rgba(50,36,28,.08),
+      inset 1px 0 0 rgba(255,255,255,.72),
+      0 20px 58px rgba(76,49,31,.08) !important;
+  }
+}
+
+/* =========================================================
+   DESKTOP RAIL MENU ICON: hamburger collapsed / X expanded
+   ========================================================= */
+
+@media (min-width: 769px) {
+  .soleRailMenuBtn {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .soleRailMenuBtn i {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .soleRailMenuBtn::before,
+  .soleRailMenuBtn::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+
+    background: currentColor;
+
+    transform-origin: center;
+    transition:
+      transform 320ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 240ms ease,
+      opacity 200ms ease,
+      width 240ms ease;
+  }
+
+  /*
+    Collapsed/focused state:
+    three-line hamburger.
+    ::before creates top + middle using box-shadow.
+    ::after creates bottom.
+  */
+  .app.soleRedesignApp.isChatFocus .soleRailMenuBtn::before {
+    transform: translate(-50%, -7px) rotate(0deg);
+    box-shadow: 0 7px 0 currentColor;
+  }
+
+  .app.soleRedesignApp.isChatFocus .soleRailMenuBtn::after {
+    transform: translate(-50%, 7px) rotate(0deg);
+  }
+
+  /*
+    Expanded state:
+    X icon.
+  */
+  .app.soleRedesignApp:not(.isChatFocus) .soleRailMenuBtn::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+    box-shadow: 0 0 0 transparent;
+  }
+
+  .app.soleRedesignApp:not(.isChatFocus) .soleRailMenuBtn::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+}
+
+/* =========================================================
+   COLLAPSED RAIL: hide active state until drawer is open
+   ========================================================= */
+
+@media (min-width: 769px) {
+  .soleRailItem {
+    transition:
+      background 260ms ease,
+      border-color 260ms ease,
+      box-shadow 260ms ease,
+      color 220ms ease,
+      transform 220ms ease,
+      opacity 220ms ease;
+  }
+
+  /*
+    When collapsed/focused, visually remove the active-card treatment.
+    The class can stay in the DOM, but it looks neutral.
+  */
+  .app.soleRedesignApp.isChatFocus .soleRailItem.isActive {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: inherit !important;
+  }
+
+  /*
+    Optional: keep a tiny bit of feedback on hover even while collapsed.
+  */
+  .app.soleRedesignApp.isChatFocus .soleRailItem:hover {
+    background: rgba(255,255,255,.32) !important;
+    border-color: rgba(50,36,28,.06) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.62),
+      0 10px 24px rgba(76,49,31,.06) !important;
+  }
+
+  /*
+    When expanded, let the active item fade back in.
+    This is mostly here to make sure the transition has a target.
+  */
+  .app.soleRedesignApp:not(.isChatFocus) .soleRailItem.isActive {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 769px) {
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive,
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive,
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: rgba(25, 24, 23, .72) !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive i,
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive span {
+    color: rgba(25, 24, 23, .72) !important;
+  }
+
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive:hover i,
+  .app.soleRedesignApp.isChatFocus .soleRailNav .soleRailItem.isActive:hover span {
+    color: rgba(25, 24, 23, .86) !important;
+  }
+}

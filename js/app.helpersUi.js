@@ -381,6 +381,14 @@ if (confidenceEl) confidenceEl.textContent = formatHudPercent(confidenceValue);
   if (candidateEl) candidateEl.textContent = formattedCandidates;
   if (candidateCountEl) candidateCountEl.textContent = formattedCandidates;
 
+  window.signalLayersUI?.update?.({
+  attraction: attractionValue,
+  connection: connectionValue,
+  confidence: confidenceValue,
+  candidates: candidateValue,
+  startingCandidates: candidateStart
+});
+
   requestAnimationFrame(fitAllProgressDialValues);
 }
 

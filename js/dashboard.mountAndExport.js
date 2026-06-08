@@ -1273,15 +1273,22 @@ function renderSolematePortrait() {
     connection, and conversational signals.
   `;
 
-  return `
-    <section
-     class="solematePortraitPanel ${portrait && !portrait.viewed_at ? "isUnread isNewlyUnlocked" : ""}"
-      data-solemate-portrait="${escapeAttr(portrait?.id || "")}"
-    >
-      ${portrait && !portrait.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
+return `
+  <section
+    class="solematePortraitPanel ${portrait && !portrait.viewed_at ? "isUnread isNewlyUnlocked" : ""}"
+    data-solemate-portrait="${escapeAttr(portrait?.id || "")}"
+  >
+    ${portrait && !portrait.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
 
-      <div class="solematePortraitKicker">${escapeHtml(eyebrow)}</div>
-      <h3>${escapeHtml(title)}</h3>
+    <div class="solematePortraitInner">
+
+      <div class="solematePortraitKicker">
+        ${escapeHtml(eyebrow)}
+      </div>
+
+      <h3>
+        ${escapeHtml(title)}
+      </h3>
 
       <div class="solematePortraitBody">
         ${bodyHtml}
@@ -1290,8 +1297,10 @@ function renderSolematePortrait() {
       <div class="solematePortraitNote">
         ${escapeHtml(note.trim())}
       </div>
-    </section>
-  `;
+
+    </div>
+  </section>
+`;
 }
 
 function renderSolemateTraits() {

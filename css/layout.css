@@ -654,7 +654,7 @@
 }
 
 .sidebarNavPane{
-  padding:0 40px 6px;
+  padding:0 40px 20px;
   gap:14px;
   flex:1 1 auto;
   min-height:0;
@@ -668,6 +668,9 @@
   -ms-overflow-style: none;
 }
 
+
+
+
 /* Chrome, Safari, Opera */
 .sidebarNavPane::-webkit-scrollbar {
   display: none;
@@ -678,7 +681,24 @@
   border-bottom:0;
 }
 
+@media (max-width: 1700px) {
+  .sidebarNavPane {
+padding: 0 15px 20px;
+  }
 
+  .sidebarTop {
+    padding: 20px 15px 5px;
+  }
+}
+@media (max-width: 1500px) {
+  .sidebarNavPane {
+padding: 0 10px 20px;
+  }
+
+  .sidebarTop {
+    padding: 20px 10px 5px;
+  }
+}
 
 .main{
   grid-column:3;

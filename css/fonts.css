@@ -77,12 +77,13 @@ select, .row p{
 .soleDailyHero button, .soleTileButton{
         font-variation-settings: "slnt" 0, "wdth" 100, "wght" 400;
 }
-h4, .sidebarTaskTitle, .sidebarTasksHeader, .soleRailItem{
+h4, .sidebarTaskTitle, .sidebarTasksHeader, .soleRailItem, .signalLayerBtn span, 
+.signalOrbCenter strong{
     font-family:var(--font-body);
     font-variation-settings: "slnt" 0, "wdth" 100, "wght" 400;
 }
 
-.sidebarTasksHeader, .sectionTitle, .moduleHeroProgressLabel, .progressStatLabel, .progressStat span{
+.signalLayerBtn strong, .sidebarTasksHeader, .signalLayersEyebrow, .sectionTitle, .moduleHeroProgressLabel, .progressStatLabel, .progressStat span{
     /* font-variation-settings: "slnt" 0, "wdth" 100, "wght" 400; */
     font-size: 16px;
         font-family: var(--font-heading);
@@ -99,6 +100,10 @@ h4, .sidebarTaskTitle, .sidebarTasksHeader, .soleRailItem{
     font-variation-settings: "slnt" 0, "wdth" 100, "wght" 400;
 }
 
+.signalLayerBtn strong{
+font-weight: 200;
+ letter-spacing: 0em;
+}
 
 
 .quizLabel{

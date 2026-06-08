@@ -223,6 +223,7 @@ function enhanceDashboard(){
   enhanceGreeting(sidebarPane);
   insertDailyHero(sidebarPane);
   insertModuleTiles(sidebarPane);
+  insertSignalLayers(sidebarPane);
 }
 
 function getRailActionForModuleScreen(screen){
@@ -327,12 +328,25 @@ async function openModule(screen){
   }
 }
 
-  async function handleRailClick(target){
-    const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
-    if (!action) return;
+async function handleRailClick(target){
+  const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
+  if (!action) return;
 
-   setActiveRailItem(action);
+  /*
+    Desktop drawer behaviour:
+    if the app is collapsed and the user clicks a rail destination,
+    open the drawer first, then continue to the relevant view.
+  */
+  if (
+    isDesktopLayout?.() &&
+    action !== "account" &&
+    qs(".app.soleRedesignApp")?.classList.contains("isChatFocus")
+  ) {
+    setDesktopChatFocus(false);
+    localStorage.setItem("sole_desktop_chat_focus", "0");
+  }
 
+  setActiveRailItem(action);
 if (action === "home") {
   const sidebarPaneEl = getSidebarPane();
   const appEl = qs(".app.soleRedesignApp");
@@ -401,6 +415,62 @@ if (action === "settings" || action === "account") {
 }
   }
 
+    function isDesktopLayout(){
+    return window.matchMedia("(min-width: 769px)").matches;
+  }
+
+  function setDesktopChatFocus(isFocused){
+    const appEl = qs(".app.soleRedesignApp");
+    const toggleBtn = qs(".soleRailMenuBtn");
+
+    if (!appEl) return;
+
+    appEl.classList.toggle("isChatFocus", !!isFocused);
+
+    if (toggleBtn) {
+      toggleBtn.setAttribute("aria-expanded", String(!isFocused));
+      toggleBtn.setAttribute(
+        "aria-label",
+        isFocused ? "Show dashboard" : "Focus chat"
+      );
+    }
+  }
+
+  function bindDesktopChatFocusToggle(){
+    const appEl = qs(".app.soleRedesignApp");
+    const toggleBtn = qs(".soleRailMenuBtn");
+
+    if (!appEl || !toggleBtn) return;
+
+    const storedFocus = localStorage.getItem("sole_desktop_chat_focus") === "1";
+
+    if (isDesktopLayout()) {
+      setDesktopChatFocus(storedFocus);
+    }
+
+    toggleBtn.addEventListener("click", event => {
+      if (!isDesktopLayout()) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const nextFocused = !appEl.classList.contains("isChatFocus");
+
+      setDesktopChatFocus(nextFocused);
+      localStorage.setItem("sole_desktop_chat_focus", nextFocused ? "1" : "0");
+    });
+
+    window.addEventListener("resize", () => {
+      if (!isDesktopLayout()) {
+        appEl.classList.remove("isChatFocus");
+        return;
+      }
+
+      const shouldFocus = localStorage.getItem("sole_desktop_chat_focus") === "1";
+      setDesktopChatFocus(shouldFocus);
+    });
+  }
+
   function bindRail(){
     document.addEventListener("click", event => {
       const target = event.target.closest("[data-sole-rail]");
@@ -408,6 +478,406 @@ if (action === "settings" || action === "account") {
       handleRailClick(target);
     });
   }
+
+  function insertSignalLayers(sidebarPane) {
+  if (!sidebarPane) return;
+
+  const tasksPane = qs(".sidebarTasksPane", sidebarPane);
+  if (!tasksPane) return;
+
+  if (qs(".signalLayersCard", sidebarPane)) return;
+
+  let statusRow = qs(".soleDashboardStatusRow", sidebarPane);
+
+  if (!statusRow) {
+    statusRow = document.createElement("section");
+    statusRow.className = "soleDashboardStatusRow";
+    tasksPane.insertAdjacentElement("beforebegin", statusRow);
+    statusRow.appendChild(tasksPane);
+  }
+
+  const signalCard = document.createElement("section");
+  signalCard.className = "signalLayersCard";
+  signalCard.setAttribute("aria-label", "Signal layers");
+
+  signalCard.innerHTML = `
+    <div class="signalLayersHeader">
+      <div>
+        <div class="signalLayersEyebrow">Sole Progress</div>
+      </div>
+
+<button
+  class="signalLayersInfo"
+  type="button"
+  aria-label="About signal layers"
+  data-signal-tooltip-title="Sole Progress"
+  data-signal-tooltip-body="Each layer sharpens as Sole learns from your answers and conversation."
+>
+  i
+</button>
+    </div>
+
+    <div class="signalLayersBody">
+      <div class="signalOrb" data-active-layer="confidence">
+        <svg class="signalRings" viewBox="0 0 140 140" aria-hidden="true">
+<circle class="signalRingTrack" cx="70" cy="70" r="61" stroke-width="5"></circle>
+<circle
+  class="signalRingFill"
+  data-layer="candidates"
+  data-signal-tooltip-title="Candidates"
+  data-signal-tooltip-body="Sole is refining the candidate field, towards the highest quality matches."
+  cx="70"
+  cy="70"
+  r="61"
+  stroke-width="5"
+></circle>
+
+<circle class="signalRingTrack" cx="70" cy="70" r="49" stroke-width="5"></circle>
+<circle
+  class="signalRingFill"
+  data-layer="confidence"
+  data-signal-tooltip-title="Confidence"
+  data-signal-tooltip-body="Sole’s certainty in the current matchmaking model, based on your answers, behavior, and available conversational signals."
+  cx="70"
+  cy="70"
+  r="49"
+  stroke-width="5"
+></circle>
+
+<circle class="signalRingTrack" cx="70" cy="70" r="37" stroke-width="5"></circle>
+<circle
+  class="signalRingFill"
+  data-layer="connection"
+  data-signal-tooltip-title="Connection"
+  data-signal-tooltip-body="Sole is modelling how you bond, communicate, and build momentum with someone over time."
+  cx="70"
+  cy="70"
+  r="37"
+  stroke-width="5"
+></circle>
+
+<circle class="signalRingTrack" cx="70" cy="70" r="25" stroke-width="5"></circle>
+<circle
+  class="signalRingFill"
+  data-layer="attraction"
+  data-signal-tooltip-title="Attraction"
+  data-signal-tooltip-body="Sole is modelling the patterns, preferences, and signals that shape what draws you in."
+  cx="70"
+  cy="70"
+  r="25"
+  stroke-width="5"
+></circle>
+        </svg>
+
+        <div class="signalOrbCenter">
+          <strong data-signal-center-value>0%</strong>
+          <span data-signal-center-label>Confidence</span>
+        </div>
+      </div>
+
+      </div>
+      <div class="signalLayerList">
+<button
+  class="signalLayerBtn"
+  type="button"
+  data-signal-layer="attraction"
+  data-signal-tooltip-title="Attraction"
+  data-signal-tooltip-body="Sole is modelling the patterns, preferences, and signals that shape what draws you in."
+  style="--signal-layer-color:#ff4f73"
+>
+          <i class="signalLayerDot"></i>
+          <span>Attraction</span>
+          <strong data-signal-value="attraction">0%</strong>
+        </button>
+
+<button
+  class="signalLayerBtn"
+  type="button"
+  data-signal-layer="connection"
+  data-signal-tooltip-title="Connection"
+  data-signal-tooltip-body="Sole is modelling how you bond, communicate, and build momentum with someone over time."
+  style="--signal-layer-color:#20aa91"
+>
+          <i class="signalLayerDot"></i>
+          <span>Connection</span>
+          <strong data-signal-value="connection">0%</strong>
+        </button>
+
+<button
+  class="signalLayerBtn isActive"
+  type="button"
+  data-signal-layer="confidence"
+  data-signal-tooltip-title="Confidence"
+  data-signal-tooltip-body="Sole's confidence in its current matchmaking model, based on your answers, behavior, and available conversational signals."
+  style="--signal-layer-color:#2dcfd0"
+>
+          <i class="signalLayerDot"></i>
+          <span>Confidence</span>
+          <strong data-signal-value="confidence">0%</strong>
+        </button>
+
+<button
+  class="signalLayerBtn"
+  type="button"
+  data-signal-layer="candidates"
+  data-signal-tooltip-title="Candidates"
+  data-signal-tooltip-body="Sole is refining the candidate field, towards the highest quality matches."
+  style="--signal-layer-color:#d7a928"
+>
+          <i class="signalLayerDot"></i>
+          <span>Candidates</span>
+          <strong data-signal-value="candidates">102,437</strong>
+        </button>
+      </div>
+
+
+  `;
+
+  statusRow.insertAdjacentElement("afterbegin", signalCard);
+
+  // bindSignalLayers(signalCard);
+  syncSignalLayersFromHud();
+}
+
+// function bindSignalLayers(root) {
+//   if (!root) return;
+
+//   root.querySelectorAll("[data-signal-layer]").forEach(btn => {
+//     btn.addEventListener("click", () => {
+//       setSignalLayerActive(btn.dataset.signalLayer);
+//     });
+//   });
+// }
+
+function setSignalLayerActive(layer) {
+  const card = qs(".signalLayersCard");
+  if (!card || !layer) return;
+
+  const orb = qs(".signalOrb", card);
+  const centerValue = qs("[data-signal-center-value]", card);
+  const centerLabel = qs("[data-signal-center-label]", card);
+  const valueEl = qs(`[data-signal-value="${layer}"]`, card);
+  const labelEl = qs(`[data-signal-layer="${layer}"] span`, card);
+
+  if (orb) {
+    orb.dataset.activeLayer = layer;
+  }
+
+  if (centerValue && valueEl) {
+    centerValue.textContent = valueEl.textContent.trim();
+  }
+
+  if (centerLabel && labelEl) {
+    centerLabel.textContent = labelEl.textContent.trim();
+  }
+
+  card.querySelectorAll("[data-signal-layer]").forEach(btn => {
+    btn.classList.toggle("isActive", btn.dataset.signalLayer === layer);
+  });
+}
+
+document.addEventListener("click", event => {
+  const trigger = event.target.closest("[data-signal-layer], .signalRingFill[data-layer]");
+  if (!trigger) return;
+
+  const card = trigger.closest(".signalLayersCard");
+  if (!card) return;
+
+  const layer = trigger.dataset.signalLayer || trigger.dataset.layer;
+  if (!layer) return;
+
+  setSignalLayerActive(layer);
+});
+
+document.addEventListener("pointerover", event => {
+  const ring = event.target.closest(".signalRingFill[data-layer]");
+  if (!ring) return;
+
+  const card = ring.closest(".signalLayersCard");
+  if (!card) return;
+
+  const layer = ring.dataset.layer;
+  const btn = card.querySelector(`[data-signal-layer="${layer}"]`);
+
+  if (btn) {
+    btn.classList.add("isRingHovered");
+  }
+});
+
+document.addEventListener("pointerout", event => {
+  const ring = event.target.closest(".signalRingFill[data-layer]");
+  if (!ring) return;
+
+  const card = ring.closest(".signalLayersCard");
+  if (!card) return;
+
+  const layer = ring.dataset.layer;
+  const btn = card.querySelector(`[data-signal-layer="${layer}"]`);
+
+  if (btn) {
+    btn.classList.remove("isRingHovered");
+  }
+});
+
+function initSignalLayerTooltips() {
+  if (window.__signalLayerTooltipsReady) return;
+  window.__signalLayerTooltipsReady = true;
+
+  let tooltip = document.querySelector("[data-global-signal-tooltip]");
+
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.className = "signalTooltip";
+    tooltip.setAttribute("data-global-signal-tooltip", "");
+    tooltip.hidden = true;
+
+    tooltip.innerHTML = `
+      <strong data-signal-tooltip-title></strong>
+      <span data-signal-tooltip-body></span>
+    `;
+
+    document.body.appendChild(tooltip);
+  }
+
+  const titleEl = tooltip.querySelector("[data-signal-tooltip-title]");
+  const bodyEl = tooltip.querySelector("[data-signal-tooltip-body]");
+
+  function showTooltip(trigger, event) {
+    if (!trigger || !tooltip) return;
+
+    if (titleEl) titleEl.textContent = trigger.dataset.signalTooltipTitle || "";
+    if (bodyEl) bodyEl.textContent = trigger.dataset.signalTooltipBody || "";
+
+    tooltip.hidden = false;
+    tooltip.classList.add("isVisible");
+
+    moveTooltip(event);
+  }
+
+  function moveTooltip(event) {
+    if (!tooltip || tooltip.hidden) return;
+
+    const offset = 14;
+    const rect = tooltip.getBoundingClientRect();
+
+    let left = event.clientX + offset;
+    let top = event.clientY + offset;
+
+    if (left + rect.width > window.innerWidth - 12) {
+      left = event.clientX - rect.width - offset;
+    }
+
+    if (top + rect.height > window.innerHeight - 12) {
+      top = event.clientY - rect.height - offset;
+    }
+
+    tooltip.style.left = `${Math.max(12, left)}px`;
+    tooltip.style.top = `${Math.max(12, top)}px`;
+  }
+
+  function hideTooltip() {
+    if (!tooltip) return;
+
+    tooltip.hidden = true;
+    tooltip.classList.remove("isVisible");
+  }
+
+  document.addEventListener("pointermove", event => {
+    const trigger = event.target.closest("[data-signal-tooltip-title]");
+    if (!trigger) {
+      hideTooltip();
+      return;
+    }
+
+    showTooltip(trigger, event);
+  });
+
+  document.addEventListener("pointerleave", hideTooltip);
+  document.addEventListener("scroll", hideTooltip, true);
+}
+
+function getNumberFromText(text) {
+  return Number(String(text || "").replace(/[^\d.]/g, "")) || 0;
+}
+
+function setSignalRing(layer, percent, color) {
+  const ring = qs(`.signalRingFill[data-layer="${layer}"]`);
+  if (!ring) return;
+
+  const radius = Number(ring.getAttribute("r")) || 1;
+  const circumference = 2 * Math.PI * radius;
+  const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+
+  const dash = circumference * (safePercent / 100);
+  const gap = circumference - dash;
+
+  ring.style.setProperty("--signal-dash", dash);
+  ring.style.setProperty("--signal-gap", gap);
+  ring.style.setProperty("--signal-ring-color", color);
+}
+
+function updateSignalLayers({
+  attraction = 0,
+  connection = 0,
+  confidence = 0,
+  candidates = 102437,
+  startingCandidates = 102437
+} = {}) {
+  const card = qs(".signalLayersCard");
+  if (!card) return;
+
+  const attractionValue = Math.max(0, Math.min(100, Number(attraction) || 0));
+  const connectionValue = Math.max(0, Math.min(100, Number(connection) || 0));
+  const confidenceValue = Math.max(0, Math.min(100, Number(confidence) || 0));
+
+  const candidateValue = Math.max(1, Number(candidates) || 1);
+  const candidateStart = Math.max(1, Number(startingCandidates) || candidateValue);
+
+  const candidatePercent =
+    candidateStart <= 1
+      ? 100
+      : ((candidateStart - Math.min(candidateStart, candidateValue)) / (candidateStart - 1)) * 100;
+
+  const values = {
+    attraction: `${formatHudPercent ? formatHudPercent(attractionValue) : `${attractionValue.toFixed(2)}%`}`,
+    connection: `${formatHudPercent ? formatHudPercent(connectionValue) : `${connectionValue.toFixed(2)}%`}`,
+    confidence: `${formatHudPercent ? formatHudPercent(confidenceValue) : `${confidenceValue.toFixed(2)}%`}`,
+    candidates: candidateValue.toLocaleString()
+  };
+
+  Object.entries(values).forEach(([layer, value]) => {
+    const el = qs(`[data-signal-value="${layer}"]`, card);
+    if (el) el.textContent = value;
+  });
+
+  setSignalRing("attraction", attractionValue, "#ff4f73");
+  setSignalRing("connection", connectionValue, "#20aa91");
+  setSignalRing("confidence", confidenceValue, "#2dcfd0");
+  setSignalRing("candidates", candidatePercent, "#d7a928");
+
+  const activeLayer = qs(".signalOrb", card)?.dataset.activeLayer || "confidence";
+  setSignalLayerActive(activeLayer);
+}
+
+function syncSignalLayersFromHud() {
+  const attraction = getNumberFromText(qs("#attractionProgressValue")?.textContent);
+  const connection = getNumberFromText(qs("#connectionProgressValue")?.textContent);
+  const confidence = getNumberFromText(qs("#confidenceProgressValue")?.textContent);
+  const candidates = getNumberFromText(qs("#candidatePoolValue")?.textContent) || 102437;
+
+  updateSignalLayers({
+    attraction,
+    connection,
+    confidence,
+    candidates,
+    startingCandidates: 102437
+  });
+}
+
+window.signalLayersUI = {
+  update: updateSignalLayers,
+  sync: syncSignalLayersFromHud
+};
 
   function observeSidebar(){
     const pane = qs(".sidebarNavPane");
@@ -429,13 +899,16 @@ if (action === "settings" || action === "account") {
   window.soleRedesignRefreshGreeting = enhanceGreeting;
 window.soleRedesignEnhanceDashboard = enhanceDashboard;
 
-  function init(){
-    bindRail();
-    observeSidebar();
-    enhanceDashboard();
-    setTimeout(enhanceDashboard, 500);
-    setTimeout(enhanceDashboard, 1500);
-  }
+function init(){
+  bindDesktopChatFocusToggle();
+  bindRail();
+  observeSidebar();
+  initSignalLayerTooltips();
+
+  enhanceDashboard();
+  setTimeout(enhanceDashboard, 500);
+  setTimeout(enhanceDashboard, 1500);
+}
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

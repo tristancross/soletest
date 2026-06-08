@@ -4,7 +4,6 @@
   font-size:12px;
   text-transform:uppercase;
   letter-spacing:.12em;
-  margin-top:8px
 }
 
 
@@ -365,7 +364,6 @@
 .sidebarTaskCard{
   width:100%;
   display:grid;
-  gap: 2px 10px;
   align-items:center;
   padding:11px;
   border:1px solid var(--border);
@@ -379,7 +377,7 @@
   border-radius:12px;
   background:transparent;
   grid-template-columns:28px 1fr auto;
-    gap: 2px 10px;
+    gap: 1px 5px;
   padding:8px 6px;
   align-items:center;
 }
@@ -583,6 +581,7 @@
     inset 0 1px 0 rgba(255,255,255,.78);
 
   backdrop-filter:blur(22px); */
+  padding-bottom: 14px;
 }
 
 
@@ -810,22 +809,22 @@
 
 /* Individual HUD colour identities */
 .progressStat[data-progress-card="attraction"]{
-  --metric-color:#ffb347;
+  --metric-color: #ff4f73;
   --metric-soft:rgba(255,179,71,.16);
 }
 
 .progressStat[data-progress-card="connection"]{
-  --metric-color:#ff725b;
+  --metric-color:#20aa91;
   --metric-soft:rgba(255,114,91,.15);
 }
 
 .progressStat[data-progress-card="confidence"]{
-  --metric-color:#f06f8f;
+  --metric-color:#2dcfd0;
   --metric-soft:rgba(240,111,143,.14);
 }
 
 .progressStat[data-progress-card="candidates"]{
-  --metric-color:#2dcfd0;
+  --metric-color:#d7a928;
   --metric-soft:rgba(45,207,208,.13);
 }
 
@@ -883,7 +882,7 @@
 }
 
 .soleDailyHero p{
-  margin:0 0 18px;
+  margin:0 0 0px;
   color:var(--sole-soft-ink);
   font-size:14px;
   line-height:1.45;
@@ -947,14 +946,14 @@
   display:flex;
   align-items:center;
   gap:7px;
-  font-size:15px;
+  font-size:18px;
   font-weight:700;
   line-height:1.1;
 }
 
 .soleModuleTile h4 i{
   color:var(--sole-coral);
-  font-size:12px;
+  font-size:18px;
 }
 
 .soleModuleTile p{
@@ -1086,7 +1085,7 @@
   width:290px;
   height:40px;
 
-  margin-top:20px;
+  /* margin-top:20px; */
 
   padding:0 10px 0 16px;
 
@@ -1244,3 +1243,1312 @@
 }
 
 
+/* =========================================================
+   SIGNAL LAYERS PANEL
+   New model-status component; intended to replace old HUD later.
+   ========================================================= */
+
+.sidebarProgressPanel {
+  display: none;
+}
+
+.soleDashboardStatusRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.signalLayersCard {
+  position: relative;
+  min-width: 0;
+  min-height: 214px;
+
+  border: 1px solid var(--sole-line);
+  border-radius: 22px;
+
+  padding: 14px;
+
+  /* background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,.86), transparent 34%),
+    radial-gradient(circle at 70% 70%, rgba(255,118,95,.08), transparent 46%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,247,241,.44));
+
+  box-shadow:
+    0 18px 42px rgba(76,49,31,.07),
+    inset 0 1px 0 rgba(255,255,255,.86); */
+
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.signalLayersCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  /* background:
+    radial-gradient(circle at 20% 0%, rgba(255,255,255,.72), transparent 34%),
+    radial-gradient(circle at 88% 88%, rgba(45,207,208,.08), transparent 44%); */
+  z-index: -1;
+}
+
+.signalLayersHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.signalLayersEyebrow {
+  margin-bottom: 5px;
+  color: var(--sole-soft-ink);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.signalLayersHeader h4 {
+  margin: 0;
+  color: var(--sole-ink);
+  font-size: 18px;
+  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: -.02em;
+   padding: 10px 18px 10px !important;
+}
+
+.signalLayersInfo {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(25,24,23,.10);
+  background: rgba(255,255,255,.46);
+  color: rgba(25,24,23,.42);
+
+  display: grid;
+  place-items: center;
+
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1;
+}
+
+.signalLayersBody {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+}
+
+.signalOrb {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.signalOrb::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  z-index: -1;
+  border-radius: 999px;
+
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,.92), rgba(255,248,242,.42) 48%, transparent 72%);
+
+  box-shadow:
+    0 18px 42px rgba(76,49,31,.055),
+    inset 0 1px 0 rgba(255,255,255,.84);
+}
+
+.signalRings {
+  width: 220px;
+  height: 220px;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.signalRingTrack,
+.signalRingFill {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.signalRingTrack {
+  stroke: rgba(25,24,23,.075);
+}
+
+.signalRingFill {
+  stroke: var(--signal-ring-color);
+  stroke-dasharray: var(--signal-dash, 0) var(--signal-gap, 999);
+  opacity: .38;
+
+  cursor: pointer;
+  pointer-events: stroke;
+
+  filter:
+    drop-shadow(0 0 3px color-mix(in srgb, var(--signal-ring-color) 28%, transparent))
+    drop-shadow(0 0 9px color-mix(in srgb, var(--signal-ring-color) 18%, transparent));
+
+  transition:
+    opacity 180ms ease,
+    stroke-width 180ms ease,
+    filter 180ms ease,
+    stroke-dasharray 800ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.signalRingFill:hover {
+  opacity: .9;
+
+  filter:
+    drop-shadow(0 0 5px color-mix(in srgb, var(--signal-ring-color) 46%, transparent))
+    drop-shadow(0 0 14px color-mix(in srgb, var(--signal-ring-color) 30%, transparent));
+}
+
+.signalOrb[data-active-layer="attraction"] .signalRingFill[data-layer="attraction"],
+.signalOrb[data-active-layer="connection"] .signalRingFill[data-layer="connection"],
+.signalOrb[data-active-layer="confidence"] .signalRingFill[data-layer="confidence"],
+.signalOrb[data-active-layer="candidates"] .signalRingFill[data-layer="candidates"] {
+  opacity: 1;
+  stroke-width: 7;
+
+  filter:
+    drop-shadow(0 0 5px color-mix(in srgb, var(--signal-ring-color) 52%, transparent))
+    drop-shadow(0 0 16px color-mix(in srgb, var(--signal-ring-color) 34%, transparent));
+}
+
+.signalOrbCenter {
+  position: absolute;
+  inset: 39px;
+
+  display: grid;
+  place-content: center;
+  text-align: center;
+
+  border-radius: 999px;
+}
+
+.signalOrbCenter strong {
+  display: block;
+
+  color: rgba(25,24,23,.82);
+
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 720;
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.signalOrbCenter span {
+  display: none;
+}
+
+.signalLayerList {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  grid-template-columns: 1fr 1fr;
+}
+
+.signalLayerBtn {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+
+  border: 1px solid transparent;
+  border-radius: 14px;
+
+  padding: 8px 9px;
+
+  background: transparent;
+  color: var(--sole-ink);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.signalLayerBtn:hover,
+.signalLayerBtn.isActive {
+  background: rgba(255,255,255,.58);
+  border-color: rgba(255,255,255,.72);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.84),
+    0 10px 24px rgba(76,49,31,.045);
+}
+
+.signalLayerBtn.isActive {
+  transform: translateX(2px);
+}
+
+.signalLayerDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--signal-layer-color);
+  box-shadow: 0 0 12px rgba(255,118,95,.18);
+}
+
+.signalLayerBtn span {
+  min-width: 0;
+
+  color: rgba(25,24,23,.52);
+
+  /* font-size: 9px; */
+  line-height: 1;
+  /* text-transform: uppercase; */
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signalLayerBtn strong {
+  color: rgba(25,24,23,.78);
+
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.signalLayersNote {
+  margin: 12px 2px 0;
+
+  color: rgba(25,24,23,.44);
+
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* Let the existing tasks pane behave nicely inside the new row */
+.soleDashboardStatusRow .sidebarTasksPane {
+  min-width: 0;
+}
+
+.soleDashboardStatusRow .sidebarTasksHeader {
+  min-height: 44px;
+}
+
+.soleDashboardStatusRow .sidebarTaskList {
+  min-height: calc(100% - 44px);
+}
+
+/* =========================================================
+   STATUS + TASK PANELS — POLISHED GLASS PASS
+   ========================================================= */
+
+.signalLayersCard,
+.sidebarTasksPane {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 28px;
+
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.95), transparent 34%),
+    radial-gradient(circle at 86% 18%, rgba(255,205,142,.20), transparent 32%),
+    radial-gradient(circle at 90% 88%, rgba(45,207,208,.11), transparent 42%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,247,241,.44));
+
+  box-shadow:
+    0 24px 70px rgba(76,49,31,.09),
+    inset 0 1px 0 rgba(255,255,255,.92),
+    inset 0 -1px 0 rgba(255,118,95,.06);
+
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+}
+
+.signalLayersCard::before,
+.sidebarTasksPane::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      115deg,
+      rgba(255,255,255,.78) 0%,
+      rgba(255,255,255,.20) 28%,
+      rgba(255,255,255,0) 48%,
+      rgba(255,118,95,.07) 100%
+    );
+}
+
+.signalLayersCard::after,
+.sidebarTasksPane::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 1px;
+  height: 1px;
+  z-index: 2;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.95),
+    transparent
+  );
+
+  opacity: .82;
+  pointer-events: none;
+}
+
+/* Give each panel a subtly different identity */
+.signalLayersCard {
+  background:
+   radial-gradient(circle at 12% 10%, rgba(255,255,255,.94), transparent 34%),
+    radial-gradient(circle at 82% 28%, rgba(255,118,95,.085), transparent 38%),
+    radial-gradient(circle at 92% 92%, rgba(255,214,111,.10), transparent 42%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,249,244,.48));
+}
+
+.sidebarTasksPane  {
+  border-radius: 28px;
+
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.94), transparent 34%),
+    radial-gradient(circle at 82% 28%, rgba(255,118,95,.085), transparent 38%),
+    radial-gradient(circle at 92% 92%, rgba(255,214,111,.10), transparent 42%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,249,244,.48));
+}
+
+/* Important: stop the internal tasks header/list from making a separate card */
+.sidebarTasksHeader,
+.sidebarTaskList {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sidebarTasksHeader {
+  padding: 16px 18px 8px !important;
+  border-radius: 0 !important;
+}
+
+.sidebarTaskList {
+  padding: 4px 10px 16px !important;
+  border-radius: 0 !important;
+}
+
+/* Slightly more premium task rows */
+.sidebarTaskCard {
+  min-height: 42px;
+  padding: 7px 8px !important;
+  border-radius: 16px !important;
+
+  transition:
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.sidebarTaskCard:hover {
+  background: rgba(255,255,255,.48) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72),
+    0 10px 24px rgba(76,49,31,.045);
+  transform: translateY(-1px);
+}
+
+.sidebarTaskCard.isComplete {
+  opacity: .64;
+}
+
+.sidebarTaskCard.isComplete::after {
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255,255,255,.95), rgba(255,255,255,.28)),
+    rgba(101,212,131,.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.8),
+    0 8px 18px rgba(101,212,131,.12);
+}
+
+/* Signal panel: make selected row feel glassy */
+.signalLayerBtn.isActive {
+  background:
+    radial-gradient(circle at 12% 20%, rgba(255,255,255,.88), transparent 94%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,250,246,.96)) !important;
+
+  border-color: rgba(255,255,255,.82) !important;
+
+  box-shadow:
+    0 12px 28px rgba(76,49,31,.06),
+    inset 0 1px 0 rgba(255,255,255,.88),
+    inset 0 -1px 0 rgba(255,118,95,.05) !important;
+}
+
+/* Make the dial area feel more jewel-like */
+.signalOrb::before {
+  background:
+    radial-gradient(circle at 44% 35%, rgba(255,255,255,.96), rgba(255,248,242,.46) 48%, transparent 72%);
+  box-shadow:
+    0 22px 48px rgba(76,49,31,.07),
+    0 0 40px rgba(45,207,208,.045),
+    inset 0 1px 0 rgba(255,255,255,.9) !important;
+}
+
+/* Responsive Signal Layers sizing */
+.signalLayersCard {
+  --signal-orb-size: clamp(132px, 15vw, 220px);
+}
+
+.signalLayersBody {
+  grid-template-columns: var(--signal-orb-size) minmax(0, 1fr);
+}
+
+.signalOrb,
+.signalRings {
+  width: var(--signal-orb-size);
+  height: var(--signal-orb-size);
+}
+
+.signalOrbCenter {
+  inset: calc(var(--signal-orb-size) * 0.28);
+}
+
+.signalOrbCenter strong {
+  font-size: clamp(13px, calc(var(--signal-orb-size) * 0.105), 18px);
+}
+
+
+/* Better status/task pairing inside the row */
+.soleDashboardStatusRow {
+  align-items: stretch;
+}
+
+.soleDashboardStatusRow > * {
+  min-height: 250px;
+}
+
+/* @media (max-width: 1700px) {
+  .soleDashboardStatusRow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .soleDashboardStatusRow > * {
+    min-height: auto !important;
+  }
+
+  .signalLayersBody {
+    grid-template-columns: var(--signal-orb-size, 180px) minmax(0, 1fr) !important;
+  }
+} */
+
+/* Mobile: stack it */
+@media (max-width: 768px) {
+  .soleDashboardStatusRow {
+    grid-template-columns: 1fr;
+  }
+
+  .signalLayersCard {
+    min-height: auto;
+  }
+
+  .signalLayersBody {
+    grid-template-columns: 126px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .signalLayersBody {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .signalOrb,
+  .signalRings {
+    width: 112px;
+    height: 112px;
+  }
+
+  .signalOrbCenter {
+    inset: 35px;
+  }
+
+  .signalOrbCenter strong {
+    font-size: 15px;
+  }
+
+  .signalLayerBtn {
+    padding: 8px;
+  }
+
+  .signalLayerBtn span {
+    /* font-size: 8px; */
+  }
+
+  .signalLayerBtn strong {
+    font-size: 11px;
+  }
+}
+
+/* =========================================================
+   DESKTOP HOME DASHBOARD HEIGHT-FILL LAYOUT
+   Only applies when sidebarNavPane contains the home dashboard.
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .sidebarNavPane:has(.soleDailyHero) {
+    display: grid;
+    grid-template-rows:
+      auto
+      minmax(170px, 0.85fr)
+      minmax(150px, 0.7fr)
+      minmax(260px, 1.25fr);
+    gap: 14px;
+    overflow: hidden;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleDashboardGreeting,
+  .sidebarNavPane:has(.soleDailyHero) .soleDailyHero,
+  .sidebarNavPane:has(.soleDailyHero) .soleModuleTiles,
+  .sidebarNavPane:has(.soleDailyHero) .soleDashboardStatusRow {
+    min-height: 0;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleDailyHero,
+  .sidebarNavPane:has(.soleDailyHero) .soleModuleTile {
+    height: 100%;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleModuleTiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleDashboardStatusRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .signalLayersCard,
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTasksPane {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTasksPane {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTaskList {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+
+/* Responsive Signal Layers sizing */
+.signalLayersCard {
+  --signal-orb-size: clamp(118px, 10vw, 220px);
+}
+
+.signalLayersBody {
+  grid-template-columns: var(--signal-orb-size) minmax(0, 1fr) !important;
+}
+
+.signalOrb,
+.signalRings {
+  width: var(--signal-orb-size);
+  height: var(--signal-orb-size);
+}
+
+.signalOrbCenter {
+  inset: calc(var(--signal-orb-size) * 0.28);
+}
+
+.signalOrbCenter strong {
+  font-size: clamp(13px, calc(var(--signal-orb-size) * 0.105), 18px);
+}
+
+/* When stacked, let the signal card breathe horizontally */
+@media (min-width: 900px) and (max-width: 1700px) {
+  .signalLayersCard {
+    --signal-orb-size: clamp(120px, 9vw, 160px);
+  }
+}
+
+/* =========================================================
+   SIGNAL LAYERS — REFINEMENT PASS
+   ========================================================= */
+
+.signalLayersCard {
+  --signal-orb-size: clamp(112px, 10vw, 200px);
+    --signal-label-size: clamp(12px, 0.75vw, 15px);
+    --signal-value-size: clamp(12px, 0.75vw, 15px);
+      display: grid;
+    grid-template-columns: 1fr;
+    align-content: space-between;
+}
+
+.signalLayersBody {
+  grid-template-columns: 1fr !important;
+  justify-items: center;
+  width: 100%;
+}
+
+.signalOrb,
+.signalRings {
+  width: var(--signal-orb-size) !important;
+  height: var(--signal-orb-size) !important;
+}
+
+/* Option A: hide centre number completely */
+.signalOrbCenter {
+  display: grid !important;
+  inset: calc(var(--signal-orb-size) * .34) !important;
+}
+
+.signalOrbCenter strong {
+  font-size: var(--signal-value-size);
+}
+
+.signalOrbCenter span {
+  display: none !important;
+}
+/* Tighter ring feel now centre number is gone */
+.signalRingTrack,
+.signalRingFill {
+  stroke-width: 6 !important;
+}
+
+.signalOrb[data-active-layer="attraction"] .signalRingFill[data-layer="attraction"],
+.signalOrb[data-active-layer="connection"] .signalRingFill[data-layer="connection"],
+.signalOrb[data-active-layer="confidence"] .signalRingFill[data-layer="confidence"],
+.signalOrb[data-active-layer="candidates"] .signalRingFill[data-layer="candidates"] {
+  stroke-width: 8 !important;
+  opacity: 1 !important;
+
+  filter:
+    drop-shadow(0 0 5px color-mix(in srgb, var(--signal-ring-color) 52%, transparent))
+    drop-shadow(0 0 16px color-mix(in srgb, var(--signal-ring-color) 34%, transparent)) !important;
+}
+
+.signalLayerBtn.isRingHovered {
+  background: rgba(255,255,255,.42);
+  border-color: rgba(255,255,255,.58);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72),
+    0 8px 20px rgba(76,49,31,.035);
+}
+
+/* Label is primary, value is secondary */
+.signalLayerBtn {
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  padding: 5px 10px;
+}
+
+.signalLayerBtn span {
+  font-size: var(--signal-label-size) !important;
+  /* letter-spacing: clamp(.08em, .7vw, .14em) !important; */
+  color: rgba(25,24,23,.58) !important;
+}
+
+.signalLayerBtn strong {
+  font-size: var(--signal-value-size) !important;
+  opacity: .76;
+  /* font-weight: 600 !important; */
+}
+@media (max-width: 1450px) {
+  .signalLayerList {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* If cramped, fade values back rather than crushing labels */
+@media (max-width: 1450px) {
+  .signalLayersCard {
+    --signal-orb-size: clamp(104px, 8vw, 148px);
+  }
+
+  .signalLayerBtn strong {
+    opacity: .5;
+    /* font-size: 10px !important; */
+  }
+}
+
+
+/* =========================================================
+   MEDIUM WIDTH HOME DASHBOARD — NATURAL SCROLL LAYOUT
+   Still only applies to home, not module pages.
+   ========================================================= */
+
+@media (min-width: 769px) and (max-width: 1300px) {
+  .sidebarNavPane:has(.soleDailyHero) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+
+    grid-template-rows: none !important;
+    align-content: stretch !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    min-height: 0 !important;
+    height: 100% !important;
+
+    padding-bottom: 18px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleDashboardGreeting,
+  .sidebarNavPane:has(.soleDailyHero) .soleDailyHero,
+  .sidebarNavPane:has(.soleDailyHero) .soleModuleTiles,
+  .sidebarNavPane:has(.soleDailyHero) .soleDashboardStatusRow,
+  .sidebarNavPane:has(.soleDailyHero) .signalLayersCard,
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTasksPane {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleDailyHero {
+    min-height: 170px !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleModuleTiles {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleModuleTile {
+    height: auto !important;
+    min-height: 160px !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .soleDashboardStatusRow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .signalLayersCard,
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTasksPane {
+    min-height: 250px !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTasksPane {
+    max-height: none !important;
+  }
+
+  .sidebarNavPane:has(.soleDailyHero) .sidebarTaskList {
+    flex: 0 0 auto !important;
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+
+  .signalLayersCard{
+       grid-template-areas:
+    'progressHead progressHead'
+    'progressDial progressLabels';
+    grid-template-columns: 1fr 1fr;
+  }
+
+
+.quizLabel{
+  font-size:  1.1875rem;
+}
+.signalLayersHeader { grid-area: progressHead; }
+.signalLayersBody { grid-area: progressDial; }
+.signalLayerList { grid-area: progressLabels; }
+}
+
+@media (max-width: 1300px) {
+    .signalLayersCard{
+    --signal-orb-size: clamp(180px, 8vw, 200px);
+    }
+}
+/* =========================================================
+   MODULE PAGES — FIXED HERO, SCROLLING CALIBRATION LIST
+   Prevent scrollIntoView from moving the whole sidebarNavPane.
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .sidebarNavPane:has(.moduleHero) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+
+    height: 100% !important;
+    min-height: 0 !important;
+
+    overflow: clip !important;
+    padding-bottom: 0 !important;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleHero {
+    flex: 0 0 auto !important;
+    position: relative;
+    z-index: 20;
+    margin-bottom: 8px;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleHeroMain {
+    position: sticky;
+    top: 0;
+    z-index: 21;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleSubviewContent {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    overflow: hidden !important;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationList,
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationPath {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    padding-right: 8px;
+    padding-bottom: 18px;
+
+    scroll-padding-top: 14px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(25,24,23,.22) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationList::-webkit-scrollbar,
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationPath::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationList::-webkit-scrollbar-track,
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationPath::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationList::-webkit-scrollbar-thumb,
+  .sidebarNavPane:has(.moduleHero) .moduleCalibrationPath::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    background-color: rgba(25,24,23,.18);
+  }
+
+  .sidebarNavPane:has(.moduleHero) .insightsPanel,
+  .sidebarNavPane:has(.moduleHero) .solematePortraitPanel,
+  .sidebarNavPane:has(.moduleHero) .solemateTraitsPanel,
+  .sidebarNavPane:has(.moduleHero) .moduleProfilePanel {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 8px;
+    padding-bottom: 18px;
+  }
+}
+/* =========================================================
+   SIGNAL LAYERS — GLOBAL TOOLTIP
+   Appended to body, so it does not get clipped by cards.
+   ========================================================= */
+
+.signalLayersNote {
+  display: none !important;
+}
+
+.signalTooltip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9999;
+
+  width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
+
+  display: grid;
+  gap: 4px;
+
+  padding: 9px 11px;
+
+  border: 1px solid rgba(50,36,28,.09);
+  border-radius: 14px;
+
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,.92), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.90), rgba(255,248,242,.78));
+
+  color: var(--sole-ink);
+
+  box-shadow:
+    0 16px 38px rgba(76,49,31,.14),
+    inset 0 1px 0 rgba(255,255,255,.86);
+
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+
+  pointer-events: none;
+
+  opacity: 0;
+  transform: translateY(4px) scale(.98);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.signalTooltip[hidden] {
+  display: none !important;
+}
+
+.signalTooltip.isVisible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.signalTooltip strong {
+  display: block;
+
+  color: rgba(25,24,23,.78);
+
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 720;
+}
+
+.signalTooltip span {
+  display: block;
+
+  color: rgba(25,24,23,.54);
+
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+/* =========================================================
+   DAILY TASKS — POLISHED TASK LIST PASS
+   ========================================================= */
+
+.sidebarTasksPane {
+  --task-green: #65d483;
+  --task-coral: #ff725b;
+
+  display: grid;
+  height: 100%;
+  align-content: space-between;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebarTasksHeader {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  padding: 10px 18px 10px !important;
+}
+
+.sidebarTasksHeader .sectionTitle {
+  color: rgba(25, 24, 23, .48);
+}
+
+.sidebarTasksCount {
+  flex: 0 0 auto;
+
+  border: 1px solid rgba(50, 36, 28, .07) !important;
+  border-radius: 999px !important;
+  padding: 5px 9px !important;
+
+  background: rgba(255, 255, 255, .42) !important;
+  color: rgba(25, 24, 23, .48) !important;
+
+  font-size: 10px !important;
+  line-height: 1 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.sidebarTaskList {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  display: grid !important;
+  align-content: start;
+  gap: 0px;
+
+  padding: 4px 14px 16px !important;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25,24,23,.22) transparent;
+}
+
+.sidebarTaskList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebarTaskList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebarTaskList::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(25,24,23,.18);
+}
+
+.sidebarTaskCard {
+  position: relative;
+  isolation: isolate;
+
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) auto !important;
+  gap: 8px 10px !important;
+  align-items: center !important;
+
+  min-height: 52px !important;
+  padding: 8px 10px !important;
+
+  border: 1px solid transparent !important;
+  border-radius: 18px !important;
+
+  background: transparent !important;
+  color: var(--sole-ink);
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.sidebarTaskCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  border-radius: inherit;
+
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.72), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.46), rgba(255,247,241,.18));
+
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.sidebarTaskCard:hover::before {
+  opacity: 1;
+}
+
+.sidebarTaskCard:hover {
+  border-color: rgba(255,255,255,.60) !important;
+  box-shadow:
+    0 10px 26px rgba(76,49,31,.045),
+    inset 0 1px 0 rgba(255,255,255,.72);
+  transform: translateY(-1px);
+}
+
+.sidebarTaskIcon {
+  width: 22px !important;
+  height: 22px !important;
+
+  border-radius: 999px !important;
+  border: 1px solid rgba(25,24,23,.20) !important;
+
+  background: rgba(255,255,255,.30) !important;
+  color: transparent !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.76);
+}
+
+.sidebarTaskIcon i {
+  font-size: 11px;
+}
+
+.sidebarTaskText {
+  min-width: 0;
+}
+
+.sidebarTaskTitle {
+  color: rgba(25,24,23,.78) !important;
+
+  font-size: 13px !important;
+  line-height: 1.18 !important;
+  font-weight: 620 !important;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarTaskDesc {
+  margin-top: 3px !important;
+
+  color: rgba(25,24,23,.42) !important;
+
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarTaskAction {
+  min-width: 66px !important;
+  height: 28px !important;
+  padding: 0 10px !important;
+
+  border: 1px solid rgba(255,114,91,.82) !important;
+  border-radius: 999px !important;
+
+  background: rgba(255,255,255,.52) !important;
+  color: var(--sole-coral) !important;
+
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 700 !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.78);
+}
+
+.sidebarTaskAction:hover {
+  background: rgba(255,114,91,.08) !important;
+}
+
+/* Completed state */
+.sidebarTaskCard.isComplete {
+  opacity: .58 !important;
+}
+
+.sidebarTaskCard.isComplete:hover {
+  opacity: .72 !important;
+}
+
+.sidebarTaskCard.isComplete .sidebarTaskTitle {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(25,24,23,.42);
+}
+
+.sidebarTaskCard.isComplete .sidebarTaskIcon {
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255,255,255,.88), rgba(255,255,255,.12)),
+    var(--task-green) !important;
+
+  border-color: rgba(101,212,131,.88) !important;
+  color: #fff !important;
+
+  box-shadow:
+    0 0 0 4px rgba(101,212,131,.10),
+    0 8px 18px rgba(101,212,131,.14),
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.sidebarTaskCard.isComplete .sidebarTaskAction,
+.sidebarTaskCard.isComplete .sidebarMiniProgress {
+  display: none !important;
+}
+
+.sidebarTaskCard.isComplete::after {
+  grid-column: 3;
+  justify-self: end;
+
+  content: "✓" !important;
+
+  width: 24px !important;
+  height: 24px !important;
+
+  border-radius: 999px !important;
+  border: 1px solid rgba(101,212,131,.70) !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  color: var(--task-green) !important;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255,255,255,.95), rgba(255,255,255,.28)),
+    rgba(101,212,131,.08) !important;
+
+  font-size: 13px !important;
+  line-height: 1 !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.78),
+    0 8px 18px rgba(101,212,131,.10) !important;
+}
+
+/* Progress task special case */
+.sidebarTaskCard[data-task-id="replies"] {
+  grid-template-rows: auto auto;
+}
+
+.sidebarTaskCard[data-task-id="replies"] .sidebarMiniProgress {
+  grid-column: 2 / 4 !important;
+  grid-row: 2 !important;
+
+  height: 5px !important;
+  margin-top: 3px !important;
+  border-radius: 999px !important;
+
+  background: rgba(25,24,23,.07) !important;
+}
+
+.sidebarTaskCard[data-task-id="replies"] .sidebarMiniProgress div {
+  background: linear-gradient(90deg, var(--sole-coral), var(--sole-yellow)) !important;
+}

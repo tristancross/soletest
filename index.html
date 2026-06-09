@@ -19,11 +19,13 @@
   <link rel="stylesheet" href="./css/mobile.css" />
   <link rel="stylesheet" href="./css/slide.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link id="soleDynamicFavicon" rel="icon" type="image/svg+xml" href="">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://use.typekit.net/kmm4srq.css">
 </head>
 <body>
@@ -124,11 +126,14 @@
 <div class="soleBrand soleBrandRings" id="brandHome">
   <span class="soleBrandLetter soleBrandLetterS">Sole</span>
 
-  <span class="soleLogoIcon soleLogoIcon01" aria-hidden="true">
-    <span class="sole01Halo"></span>
-    <span class="sole01Core"></span>
+<span class="soleLogoIcon soleLogoSignal" aria-hidden="true">
 
-  </span>
+  <span class="soleLogoSignalRing ringCandidates"></span>
+  <span class="soleLogoSignalRing ringConfidence"></span>
+  <span class="soleLogoSignalRing ringConnection"></span>
+  <span class="soleLogoSignalRing ringAttraction"></span>
+
+</span>
 </div>
   </div>
 
@@ -331,13 +336,51 @@
 </main>
 
 <div class="mobileTopActions" aria-label="Mobile quick navigation">
-  <button class="mobileTopActionBtn" id="mobileChatBtn" type="button" aria-label="Open messages">
+  <button
+    class="mobileTopBrand"
+    id="mobileTopBrand"
+    type="button"
+    aria-label="Go home"
+    data-sole-rail="home"
+  >
+    <span class="soleBrandLetter">Sole</span>
+<span class="soleLogoIcon soleLogoSignal" aria-hidden="true">
+
+  <span class="soleLogoSignalRing ringCandidates"></span>
+  <span class="soleLogoSignalRing ringConfidence"></span>
+  <span class="soleLogoSignalRing ringConnection"></span>
+  <span class="soleLogoSignalRing ringAttraction"></span>
+
+</span>
+  </button>
+
+  <button
+    class="mobileTopActionBtn"
+    id="mobileMenuBtnGlobal"
+    type="button"
+    aria-label="Open menu"
+    aria-expanded="false"
+  >
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <button
+    class="mobileTopActionBtn"
+    id="mobileChatBtn"
+    type="button"
+    aria-label="Open messages"
+  >
     <i class="fa-solid fa-message"></i>
     <span class="mobileMenuUnreadBadge" id="mobileTopUnreadBadge" hidden></span>
   </button>
 
-  <button class="mobileTopActionBtn" id="mobileMenuBtnGlobal" type="button" aria-label="Open menu" aria-expanded="false">
-    <i class="fa-solid fa-bars"></i>
+  <button
+    class="mobileTopActionBtn"
+    id="mobileModelInfoBtn"
+    type="button"
+    aria-label="Conversation information"
+  >
+    <i class="fa-solid fa-ellipsis"></i>
   </button>
 </div>
 
@@ -362,6 +405,7 @@
   <script src="js/dashboard.adminBuilder.js"></script>
   <script src="js/dashboard.mountAndExport.js"></script>
 
+  <script src="js/app.favicon.js"></script>
   <script src="js/app.config.js"></script>
   <script src="js/app.state.js"></script>
   <script src="js/app.dom.js"></script>

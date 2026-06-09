@@ -771,7 +771,14 @@ padding: 0 10px 20px;
 .soleBrand{
   display:flex;
   align-items:center;
-  gap:4px;
+  gap:6px;
+}
+.mobileTopBrand{
+  gap:6px;
+
+}
+.soleBrand:hover{
+cursor: pointer;
 }
 
 .soleBrandLetter{
@@ -871,3 +878,91 @@ padding: 0 10px 20px;
 }
 
 
+/* ==========================================
+   SOLE SIGNAL LOGO
+========================================== */
+
+/* ==========================================
+   SOLE SIGNAL LOGO
+   HTML:
+   <span class="soleLogoIcon soleLogoSignal" aria-hidden="true">
+     <span class="soleLogoSignalRing ringCandidates"></span>
+     <span class="soleLogoSignalRing ringConfidence"></span>
+     <span class="soleLogoSignalRing ringConnection"></span>
+     <span class="soleLogoSignalRing ringAttraction"></span>
+   </span>
+========================================== */
+
+.soleLogoSignal{
+  --logo-size:32px;
+  --ring-stroke:1px;
+  --ring-step:3px;
+
+  position:relative;
+  width:var(--logo-size);
+  height:var(--logo-size);
+  flex:0 0 var(--logo-size);
+  border-radius:999px;
+}
+
+.soleLogoSignalRing{
+  position:absolute;
+  border-radius:999px;
+  border:var(--ring-stroke) solid #ffc805;
+  box-shadow:none;
+  animation:soleLogoColourWash 12s ease-in-out infinite;
+}
+
+/* Outermost */
+.ringCandidates{
+  inset:0;
+  animation-delay:.9s;
+}
+
+/* Third ring */
+.ringConfidence{
+  inset:var(--ring-step);
+  animation-delay:.6s;
+}
+
+/* Second ring */
+.ringConnection{
+  inset:calc(var(--ring-step) * 2);
+  animation-delay:.3s;
+}
+
+/* Innermost */
+.ringAttraction{
+  inset:calc(var(--ring-step) * 3);
+  animation-delay:0s;
+}
+
+@keyframes soleLogoColourWash{
+  0%,18%{
+    border-color:#ffc805; /* gold */
+  }
+
+  25%,43%{
+    border-color:#316cb2; /* blue */
+  }
+
+  50%,68%{
+    border-color:#03a99f; /* teal */
+  }
+
+  75%,93%{
+    border-color:#de0029; /* red */
+  }
+
+  100%{
+    border-color:#ffc805; /* gold */
+  }
+}
+
+@media (max-width:768px){
+  .mobileTopBrand .soleLogoSignal{
+    --logo-size:22px;
+    --ring-stroke:1px;
+    --ring-step:2px;
+  }
+}

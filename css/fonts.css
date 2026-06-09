@@ -1,8 +1,10 @@
 :root{
-
+/* 
   --font-body:
-"config-variable", sans-serif;
-
+"config-variable", sans-serif; */
+  --font-body:
+    "Manrope",
+    sans-serif;
   --font-heading:
     "Neue Haas Grotesk Display",
     sans-serif;
@@ -14,6 +16,9 @@
   --font-data:
     "Config Mono VF",
     monospace;
+  --font-manrope:
+    "Manrope",
+    sans-serif;
 }
 
 
@@ -45,15 +50,16 @@ p{
 }
 
 h1,h2,h3, .soleBrandLetter, .sectionTitle, .chatTitle, .soleDailyHero h3 {
-  font-family:var(--font-body);
+  font-family:var(--font-manrope);
   /* font-family:var(--font-data); */
   font-weight:100;
 font-variation-settings: "slnt" 0, "wdth" 100, "wght" 300;
-  
 }
 
+
+
 .soleBrandLetter, .chatTitle {
-font-variation-settings: "slnt" 0, "wdth" 100, "wght" 400;
+font-variation-settings: "slnt" 0, "wdth" 100, "wght" 600;
 }
 
 body, button, select {

@@ -332,11 +332,22 @@ async function handleRailClick(target){
   const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
   if (!action) return;
 
-  /*
-    Desktop drawer behaviour:
-    if the app is collapsed and the user clicks a rail destination,
-    open the drawer first, then continue to the relevant view.
-  */
+  const historyAction =
+    action === "calibration" || action === "chemistry"
+      ? "connection"
+      : action === "insights"
+        ? "solemate"
+        : action;
+
+  if (
+    ["home", "attraction", "connection", "solemate"].includes(historyAction) &&
+    !window.soleAppHistoryIsApplying?.()
+  ) {
+    window.soleAppHistoryPush?.({
+      kind: "rail",
+      action: historyAction
+    });
+  }
   if (
     isDesktopLayout?.() &&
     action !== "account" &&

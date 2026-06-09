@@ -337,35 +337,7 @@ function getSoleRouteFromHash() {
   return null;
 }
 
-function getSoleRouteFromClickTarget(target) {
-  const railTarget = target.closest("[data-sole-rail]");
 
-  if (railTarget) {
-    const action = normaliseSoleRailAction(railTarget.dataset.soleRail);
-    if (!action) return null;
-
-    return {
-      kind: "rail",
-      action
-    };
-  }
-
-  const dashboardTarget = target.closest("[data-dashboard-screen]");
-
-  if (dashboardTarget) {
-    const screen = dashboardTarget.dataset.dashboardScreen;
-    const action = normaliseSoleRailAction(screen);
-
-    if (!action) return null;
-
-    return {
-      kind: "rail",
-      action
-    };
-  }
-
-  return null;
-}
 
 function writeSoleHistory(route, options = {}) {
   if (isApplyingSoleHistoryState) return;
@@ -392,6 +364,14 @@ function writeSoleHistory(route, options = {}) {
     history.pushState(state, "", url);
   }
 }
+
+window.soleAppHistoryPush = function(route, options = {}) {
+  writeSoleHistory(route, options);
+};
+
+window.soleAppHistoryIsApplying = function() {
+  return !!isApplyingSoleHistoryState;
+};
 
 async function applySoleHistoryRoute(route) {
   const key = getSoleHistoryKey(route);
@@ -441,18 +421,7 @@ function initSoleAppHistory() {
     applySoleHistoryRoute(route);
   });
 
-document.addEventListener(
-  "click",
-  event => {
-    if (isApplyingSoleHistoryState) return;
 
-    const route = getSoleRouteFromClickTarget(event.target);
-    if (!route) return;
-
-    writeSoleHistory(route);
-  },
-  true
-);
 }
 
 function setMobileView(view, options = {}) {

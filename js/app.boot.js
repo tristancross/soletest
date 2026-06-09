@@ -179,6 +179,13 @@ function bindSidebarModuleButtons() {
             ? "connection"
             : screen;
 
+        if (!window.soleAppHistoryIsApplying?.()) {
+          window.soleAppHistoryPush?.({
+            kind: "rail",
+            action: railAction
+          });
+        }
+
         document.querySelectorAll(".soleRailItem").forEach(btn => {
           btn.classList.toggle("isActive", btn.dataset.soleRail === railAction);
         });

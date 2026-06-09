@@ -92,7 +92,7 @@ async function subscribeSolematePortraitRealtime(userId) {
       }
     )
     .subscribe(status => {
-      console.log("[solemate portrait realtime]", status);
+      // console.log("[solemate portrait realtime]", status);
     });
 }
 async function subscribeUserInsightsRealtime(userId) {
@@ -133,7 +133,7 @@ await updateSolemateNotificationDots?.();
 }
     )
     .subscribe(status => {
-      console.log("[user_insights realtime]", status);
+      // console.log("[user_insights realtime]", status);
     });
 }
 
@@ -156,7 +156,7 @@ async function subscribeUserTasksRealtime(userId) {
         filter: `user_id=eq.${userId}`
       },
       async payload => {
-        console.log("[user_tasks realtime]", payload.eventType, payload.new || payload.old);
+        // console.log("[user_tasks realtime]", payload.eventType, payload.new || payload.old);
 
         await updateSidebarDailyTasks?.();
 
@@ -185,7 +185,7 @@ async function subscribeUserTasksRealtime(userId) {
       }
     )
     .subscribe(status => {
-      console.log("[user_tasks realtime]", status);
+      // console.log("[user_tasks realtime]", status);
     });
 }
 
@@ -208,7 +208,7 @@ async function subscribeProfileScoringRealtime(userId) {
         filter: `id=eq.${userId}`
       },
       async payload => {
-        console.log("[profile scoring realtime] profile updated", payload.new);
+        // console.log("[profile scoring realtime] profile updated", payload.new);
 
         if (payload?.new) {
           me = {
@@ -254,7 +254,7 @@ async function subscribeProfileScoringRealtime(userId) {
       }
     )
     .subscribe(status => {
-      console.log("[profile scoring realtime]", status);
+      // console.log("[profile scoring realtime]", status);
     });
 }
 
@@ -772,7 +772,7 @@ async function subscribeMessageOverrideRealtime(aId, bId, alignAsSenderId) {
       }
     )
     .subscribe(status => {
-      console.log("[message_overrides realtime]", status);
+      // console.log("[message_overrides realtime]", status);
     });
 }
 

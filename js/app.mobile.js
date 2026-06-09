@@ -299,13 +299,146 @@ function updateNoChatState() {
 }
 
 
-function setMobileView(view) {
+let isApplyingSoleHistoryState = false;
+
+function normaliseSoleRailAction(action) {
+  if (action === "calibration" || action === "chemistry") return "connection";
+  if (action === "insights") return "solemate";
+
+  if (
+    action === "home" ||
+    action === "attraction" ||
+    action === "connection" ||
+    action === "solemate"
+  ) {
+    return action;
+  }
+
+  return null;
+}
+
+function getSoleHistoryKey(route) {
+  if (route?.kind === "mobile" && route.view === "messages") return "messages";
+  return normaliseSoleRailAction(route?.action) || "home";
+}
+
+function getSoleRouteFromHash() {
+  const hash = String(window.location.hash || "").replace("#", "").trim();
+
+  if (hash === "messages") {
+    return { kind: "mobile", view: "messages" };
+  }
+
+  const action = normaliseSoleRailAction(hash);
+  if (action) {
+    return { kind: "rail", action };
+  }
+
+  return null;
+}
+
+
+
+function writeSoleHistory(route, options = {}) {
+  if (isApplyingSoleHistoryState) return;
+
+  const key = getSoleHistoryKey(route);
+  const currentKey = history.state?.soleHistoryKey;
+
+  if (currentKey === key && !options.replace && !options.force) return;
+
+  const state = {
+    ...(history.state || {}),
+    soleAppHistory: true,
+    soleHistoryKey: key,
+    soleRoute: route
+  };
+
+  const url = options.keepUrl
+    ? window.location.href
+    : `#${key}`;
+
+  if (options.replace) {
+    history.replaceState(state, "", url);
+  } else {
+    history.pushState(state, "", url);
+  }
+}
+
+window.soleAppHistoryPush = function(route, options = {}) {
+  writeSoleHistory(route, options);
+};
+
+window.soleAppHistoryIsApplying = function() {
+  return !!isApplyingSoleHistoryState;
+};
+
+async function applySoleHistoryRoute(route) {
+  const key = getSoleHistoryKey(route);
+
+  isApplyingSoleHistoryState = true;
+
+  try {
+    closeMobileRailMenu();
+
+    if (key === "messages") {
+      if (isMobileLayout()) {
+        setMobileView("messages", { writeHistory: false });
+      } else {
+        await window.soleRedesignNavigate?.("home");
+      }
+
+      return;
+    }
+
+    if (isMobileLayout()) {
+      setMobileView("home", { writeHistory: false });
+    }
+
+    await window.soleRedesignNavigate?.(key);
+  } finally {
+    isApplyingSoleHistoryState = false;
+  }
+}
+
+function initSoleAppHistory() {
+  if (window.__soleAppHistoryReady) return;
+  window.__soleAppHistoryReady = true;
+
+  const initialRoute = getSoleRouteFromHash() || { kind: "rail", action: "home" };
+
+  writeSoleHistory(initialRoute, {
+    replace: true,
+    keepUrl: true
+  });
+
+  window.addEventListener("popstate", event => {
+    const route =
+      event.state?.soleRoute ||
+      getSoleRouteFromHash() ||
+      { kind: "rail", action: "home" };
+
+    applySoleHistoryRoute(route);
+  });
+
+
+}
+
+function setMobileView(view, options = {}) {
   if (!isMobileLayout()) return;
 
-  const isMessages = view === "messages";
+  const nextView = view === "messages" ? "messages" : "home";
+  const isMessages = nextView === "messages";
 
   document.body.classList.toggle("mobileViewMessages", isMessages);
   document.body.classList.toggle("mobileViewHome", !isMessages);
+
+  if (isMessages && options.writeHistory !== false) {
+    writeSoleHistory({
+      kind: "mobile",
+      view: "messages"
+    });
+  }
 
   if (isMessages && them) {
     requestAnimationFrame(() => {
@@ -363,40 +496,56 @@ function initMobileTopNavigation() {
     if (event.key === "Escape") closeMobileRailMenu();
   });
 
-  document.addEventListener("click", event => {
-    const railTarget = event.target.closest("[data-sole-rail]");
-    if (!railTarget) return;
+document.addEventListener("click", event => {
+  const railTarget = event.target.closest("[data-sole-rail]");
+  if (!railTarget) return;
 
+  if (isMobileLayout()) {
     const action = railTarget.dataset.soleRail;
 
     if (action === "home") {
-      setMobileView("home");
+      setMobileView("home", { writeHistory: false });
     } else if (action !== "account" && action !== "settings") {
-      setMobileView("home");
+      setMobileView("home", { writeHistory: false });
     }
-
-    closeMobileRailMenu();
-  });
-
-  window.addEventListener("resize", () => {
-    if (!isMobileLayout()) {
-      closeMobileRailMenu();
-      document.body.classList.remove("mobileViewHome", "mobileViewMessages", "mobileMenuOpen");
-      appEl.classList.remove("mobileSidebarOpen");
-      return;
-    }
-
-    if (
-      !document.body.classList.contains("mobileViewHome") &&
-      !document.body.classList.contains("mobileViewMessages")
-    ) {
-      setMobileView("home");
-    }
-  });
-
-  if (isMobileLayout()) {
-    setMobileView("home");
   }
+
+  closeMobileRailMenu();
+});
+
+window.addEventListener("resize", () => {
+  if (!isMobileLayout()) {
+    closeMobileRailMenu();
+    document.body.classList.remove("mobileViewHome", "mobileViewMessages", "mobileMenuOpen");
+    appEl.classList.remove("mobileSidebarOpen");
+    return;
+  }
+
+  if (
+    !document.body.classList.contains("mobileViewHome") &&
+    !document.body.classList.contains("mobileViewMessages")
+  ) {
+    const route = history.state?.soleRoute || getSoleRouteFromHash();
+
+    if (route?.kind === "mobile" && route.view === "messages") {
+      setMobileView("messages", { writeHistory: false });
+    } else {
+      setMobileView("home", { writeHistory: false });
+    }
+  }
+});
+
+initSoleAppHistory();
+
+if (isMobileLayout()) {
+  const initialRoute = history.state?.soleRoute || getSoleRouteFromHash();
+
+  if (initialRoute?.kind === "mobile" && initialRoute.view === "messages") {
+    setMobileView("messages", { writeHistory: false });
+  } else {
+    setMobileView("home", { writeHistory: false });
+  }
+}
 }
 
 initMobileTopNavigation();

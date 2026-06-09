@@ -75,6 +75,10 @@ select, .row p{
   /* font-family: "Inter", serif; */
 }
 
+#mobileTopUnreadBadge,
+.mobileMenuUnreadBadge{
+font-family:var(--font-body);
+}
 
 .soleDailyHero button, .soleTileButton, .soleModuleExplore, .sidebarTaskAction, .moduleSubviewTab, .progressStat strong {
     font-family:var(--font-body);
@@ -98,7 +102,7 @@ h4, .sidebarTaskTitle, .sidebarTasksHeader, .soleRailItem, .signalLayerBtn span,
     letter-spacing: .16em;
     text-transform: uppercase;
 }
-.soleMatrixAxisLabel text, .solemateAxisLabel  {
+.soleMatrixAxisLabel text, .solemateAxisLabel, .moduleQuizMetricValue  {
     /* letter-spacing: .08em;
     font-size: 12px;
     font-weight: 600; */

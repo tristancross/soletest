@@ -566,6 +566,89 @@ function isAssignmentLockedForUser(assignment, user) {
   return getAssignmentDayIndex(assignment) > getCurrentExperimentDayForUser(user);
 }
 
+function renderModuleQuizMetricDock({
+  moduleProgress = 0,
+  moduleDisplayProgress = 0,
+  screen = "",
+  formatSmartPercent = value => `${Math.round(value)}%`
+} = {}) {
+  const clampPercent = value => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 0;
+    return Math.max(0, Math.min(100, num));
+  };
+
+  const circumference = 2 * Math.PI * 18;
+
+  const ring = value => {
+    const pct = clampPercent(value);
+    const dash = (pct / 100) * circumference;
+    const gap = circumference - dash;
+
+    return `${dash} ${gap}`;
+  };
+
+  /*
+    For now, these use the current module progress as the active signal,
+    with neutral placeholder values for the wider model dimensions.
+
+    Later, we can wire these directly to dash.connection, dash.attraction,
+    dash.confidence and remainingCandidates if you want them live-live.
+  */
+  const activeKind = screen === "chemistry" || screen === "connection"
+    ? "connection"
+    : screen === "attraction"
+      ? "attraction"
+      : "confidence";
+
+  const metrics = [
+    {
+      key: "attraction",
+      label: "Attraction",
+      value: activeKind === "attraction" ? moduleDisplayProgress : 0,
+      display: activeKind === "attraction" ? formatSmartPercent(moduleDisplayProgress, 2) : "—"
+    },
+    {
+      key: "connection",
+      label: "Connection",
+      value: activeKind === "connection" ? moduleDisplayProgress : 0,
+      display: activeKind === "connection" ? formatSmartPercent(moduleDisplayProgress, 2) : "—"
+    },
+    {
+      key: "confidence",
+      label: "Confidence",
+      value: moduleDisplayProgress,
+      display: formatSmartPercent(moduleDisplayProgress, 2)
+    },
+    {
+      key: "candidates",
+      label: "Candidates",
+      value: moduleProgress,
+      display: "Refining"
+    }
+  ];
+
+  return metrics.map(metric => `
+    <article class="moduleQuizMetricPill" data-quiz-metric="${metric.key}">
+      <svg viewBox="0 0 44 44" aria-hidden="true">
+        <circle class="moduleQuizMetricTrack" cx="22" cy="22" r="18"></circle>
+        <circle
+          class="moduleQuizMetricFill"
+          cx="22"
+          cy="22"
+          r="18"
+          style="stroke-dasharray:${ring(metric.value)}"
+        ></circle>
+      </svg>
+
+      <div class="moduleQuizMetricText">
+        <span>${metric.label}</span>
+        <strong>${metric.display}</strong>
+      </div>
+    </article>
+  `).join("");
+}
+
 async function mountSidebarDashboardScreen({
   screen,
   sidebarPaneEl,
@@ -1535,7 +1618,7 @@ ${item.copy}`)}"
 
         <div class="solemateCandidateCore">
           <strong>${soleFormatCandidates(refinement.remainingCandidates)}</strong>
-          <span>Candidates remaining</span>
+          <span>SoleMate pool</span>
         </div>
       </div>
 
@@ -1707,6 +1790,99 @@ const quizDisplayProgress =
     ? window.soleQuizInlineProgressCache[quizProgressCacheKey]
     : activeQuizProgress?.progressPercent || 0;
 
+function renderActiveQuizMetricDock() {
+  const startingCandidates =
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  const remainingCandidates = Math.max(
+    1,
+    Math.round(Number(liveDashboardState.remainingCandidates) || startingCandidates)
+  );
+
+  const candidateRefinement = startingCandidates
+    ? Math.max(0, Math.min(100, ((startingCandidates - remainingCandidates) / startingCandidates) * 100))
+    : 0;
+
+  const clampMetric = value => Math.max(0, Math.min(100, Number(value || 0)));
+
+  const metrics = [
+    {
+      key: "attraction",
+      label: "Attraction",
+      value: clampMetric(liveDashboardState.attraction),
+      display: formatSmartPercent(liveDashboardState.attraction || 0, 2)
+    },
+    {
+      key: "connection",
+      label: "Connection",
+      value: clampMetric(liveDashboardState.connection),
+      display: formatSmartPercent(liveDashboardState.connection || 0, 2)
+    },
+    {
+      key: "confidence",
+      label: "Confidence",
+      value: clampMetric(liveDashboardState.confidence),
+      display: formatSmartPercent(liveDashboardState.confidence || 0, 2)
+    },
+    {
+      key: "candidates",
+      label: "Candidates",
+      value: candidateRefinement,
+      display: remainingCandidates.toLocaleString()
+    }
+  ];
+
+  const circumference = 2 * Math.PI * 18;
+
+  window.soleQuizMetricDockEntrySeen = window.soleQuizMetricDockEntrySeen || {};
+
+const dockEntryKey = [
+  me?.id || "anonymous",
+  screen || "module",
+  activeQuizAssignment?.id || "quiz"
+].join(":");
+
+const shouldAnimateDockEntry = !window.soleQuizMetricDockEntrySeen[dockEntryKey];
+
+window.soleQuizMetricDockEntrySeen[dockEntryKey] = true;
+
+return `
+  <div class="moduleQuizMetricDock${shouldAnimateDockEntry ? " isEntering" : ""}" aria-label="Sole model status">
+      ${metrics.map(metric => {
+        const dash = (metric.value / 100) * circumference;
+        const gap = circumference - dash;
+
+        return `
+          <article
+            class="moduleQuizMetricPill"
+            data-quiz-metric="${metric.key}"
+            data-metric-value="${escapeAttr(String(metric.display))}"
+            data-metric-percent="${escapeAttr(String(metric.value))}"
+          >
+            <div class="moduleQuizMetricDial">
+              <svg viewBox="0 0 44 44" aria-hidden="true">
+                <circle class="moduleQuizMetricTrack" cx="22" cy="22" r="18"></circle>
+                <circle
+                  class="moduleQuizMetricFill"
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  style="stroke-dasharray:${dash} ${gap}"
+                ></circle>
+              </svg>
+
+              <strong class="moduleQuizMetricValue">${metric.display}</strong>
+            </div>
+
+            <div class="moduleQuizMetricText">
+              <span>${metric.label}</span>
+            </div>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
 const subviewHtml = await renderSubviewContent();
 
 sidebarPaneEl.innerHTML = `
@@ -1803,36 +1979,44 @@ ${
 }
 </div>
 
-<div class="moduleHeroProgressCard" aria-label="${escapeAttr(moduleMeta.eyebrow)} progress">
-  <button class="sidebarInfoBtn moduleHeroInfoBtn" type="button" data-sidebar-info title="About this module">
-    <i class="fa-solid fa-info"></i>
-  </button>
+${
+  activeQuizAssignment
+    ? ``
+    : `
+      <div class="moduleHeroProgressCard" aria-label="${escapeAttr(moduleMeta.eyebrow)} progress">
+        <button class="sidebarInfoBtn moduleHeroInfoBtn" type="button" data-sidebar-info title="About this module">
+          <i class="fa-solid fa-info"></i>
+        </button>
 
-  <div class="moduleMiniRing" data-module-progress="${moduleProgress}">
-    <svg viewBox="0 0 120 120" aria-hidden="true">
-      <circle class="moduleRingTrack" cx="60" cy="60" r="46"></circle>
-<circle
-  class="moduleRingFill"
-  cx="60"
-  cy="60"
-  r="46"
-  style="stroke-dasharray:${((moduleDisplayProgress / 100) * (2 * Math.PI * 46))} ${(2 * Math.PI * 46) - ((moduleDisplayProgress / 100) * (2 * Math.PI * 46))}"
-/>
-    </svg>
+        <div class="moduleMiniRing" data-module-progress="${moduleProgress}">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="moduleRingTrack" cx="60" cy="60" r="46"></circle>
+            <circle
+              class="moduleRingFill"
+              cx="60"
+              cy="60"
+              r="46"
+              style="stroke-dasharray:${((moduleDisplayProgress / 100) * (2 * Math.PI * 46))} ${(2 * Math.PI * 46) - ((moduleDisplayProgress / 100) * (2 * Math.PI * 46))}"
+            />
+          </svg>
 
-<div class="moduleMiniRingInner">
-  <strong data-module-progress-value>${formatSmartPercent(moduleDisplayProgress, 2)}</strong>
-</div>
-  </div>
+          <div class="moduleMiniRingInner">
+            <strong data-module-progress-value>${formatSmartPercent(moduleDisplayProgress, 2)}</strong>
+          </div>
+        </div>
 
-  <div class="moduleHeroProgressLabel">calibrated</div>
-</div>
+        <div class="moduleHeroProgressLabel">calibrated</div>
+      </div>
+    `
+}
   </div>
 </div>
 
 <div class="moduleSubviewContent" id="moduleSubviewContent">
   ${subviewHtml}
 </div>
+
+${activeQuizAssignment ? renderActiveQuizMetricDock() : ""}
 
 `;
 
@@ -2024,6 +2208,16 @@ bindMatrixSwitcher();
 bindSolemateTooltips();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
 
+const quizMetricDock = sidebarPaneEl.querySelector(".moduleQuizMetricDock.isEntering");
+
+if (quizMetricDock) {
+  requestAnimationFrame(() => {
+    window.setTimeout(() => {
+      quizMetricDock.classList.remove("isEntering");
+    }, 520);
+  });
+}
+
 await updateInsightNotificationDots?.();
 await updateSolemateTraitNotificationDot?.();
 await updateSolematePortraitNotificationDot?.();
@@ -2100,6 +2294,15 @@ bindMatrixSwitcher();
 bindSolemateTooltips();
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
 
+const quizMetricDock = sidebarPaneEl.querySelector(".moduleQuizMetricDock.isEntering");
+
+if (quizMetricDock) {
+  requestAnimationFrame(() => {
+    window.setTimeout(() => {
+      quizMetricDock.classList.remove("isEntering");
+    }, 520);
+  });
+}
 
 await updateInsightNotificationDots?.();
 await updateSolemateTraitNotificationDot?.();

@@ -1518,3 +1518,95 @@
 .adminPresencePill.isOffline{
   opacity:.68;
 }
+
+/* =========================================================
+   ADMIN FULL WIDTH OVERRIDES
+   Loaded last. Escapes admin from normal app / drawer layout.
+   ========================================================= */
+
+body:has(.app.isAdminMode) {
+  overflow: hidden !important;
+}
+
+body:has(.app.isAdminMode) .app.soleRedesignApp,
+body:has(.app.isAdminMode) .app.isAdminMode {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+
+  display: block !important;
+  grid-template-columns: none !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+.app.isAdminMode .soleRailNav,
+.app.isAdminMode .sidebar,
+.app.isAdminMode .header,
+.app.isAdminMode .composer,
+.app.isAdminMode .mobileTopActions,
+.app.isAdminMode .mobileRailScrim,
+.app.isAdminMode .mobileSidebarBackdrop {
+  display: none !important;
+}
+
+.app.isAdminMode .main {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+
+  display: block !important;
+  grid-column: auto !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  overflow: hidden !important;
+}
+
+.app.isAdminMode .messages {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  display: block !important;
+  overflow: hidden !important;
+}
+
+.app.isAdminMode .adminWorkspaceShell {
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  display: grid !important;
+  grid-template-columns: 280px minmax(0, 1fr) !important;
+
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.app.isAdminMode .adminWorkspaceContent {
+  min-width: 0 !important;
+  height: 100vh !important;
+  overflow: auto !important;
+}

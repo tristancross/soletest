@@ -471,6 +471,7 @@
   background: var(--bg);
   border-radius:22px;
   overflow:hidden;
+
 }
 
 .soleRailNav,
@@ -580,7 +581,7 @@
   position:absolute;
   left:calc(100% + 14px);
   bottom:0;
-  z-index:80;
+  z-index:2080;
 
   width:190px;
   padding:8px;
@@ -882,20 +883,9 @@ cursor: pointer;
    SOLE SIGNAL LOGO
 ========================================== */
 
-/* ==========================================
-   SOLE SIGNAL LOGO
-   HTML:
-   <span class="soleLogoIcon soleLogoSignal" aria-hidden="true">
-     <span class="soleLogoSignalRing ringCandidates"></span>
-     <span class="soleLogoSignalRing ringConfidence"></span>
-     <span class="soleLogoSignalRing ringConnection"></span>
-     <span class="soleLogoSignalRing ringAttraction"></span>
-   </span>
-========================================== */
-
 .soleLogoSignal{
   --logo-size:32px;
-  --ring-stroke:1px;
+  --ring-stroke:2.5px;
   --ring-step:3px;
 
   position:relative;
@@ -943,15 +933,15 @@ cursor: pointer;
   }
 
   25%,43%{
-    border-color:#316cb2; /* blue */
+    border-color:#2dcfd0; /* blue */
   }
 
   50%,68%{
-    border-color:#03a99f; /* teal */
+    border-color:#20aa91; /* teal */
   }
 
   75%,93%{
-    border-color:#de0029; /* red */
+    border-color:#ff4f73; /* red */
   }
 
   100%{
@@ -962,7 +952,60 @@ cursor: pointer;
 @media (max-width:768px){
   .mobileTopBrand .soleLogoSignal{
     --logo-size:22px;
-    --ring-stroke:1px;
+    --ring-stroke:1.5px;
     --ring-step:2px;
+  }
+}
+
+/* Portalled rail account menu.
+   JS moves #soleRailAccountMenu to <body> so it can escape .app overflow clipping. */
+
+.soleRailAccountMenuPortalled {
+  position: fixed !important;
+  z-index: 999999 !important;
+
+  width: 200px;
+  padding: 8px;
+
+  border: 1px solid var(--sole-line);
+  border-radius: 18px;
+
+  background: rgba(255,255,255,.92);
+
+  box-shadow:
+    0 22px 54px rgba(76,49,31,.16),
+    inset 0 1px 0 rgba(255,255,255,.85);
+
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translateY(6px) scale(.98);
+  transform-origin: bottom left;
+
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms ease;
+}
+
+.soleRailAccountMenuPortalled.isOpen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+
+  transform: translateY(0) scale(1);
+}
+
+.soleRailAccountMenuPortalled[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .soleRailAccountMenuPortalled {
+    max-width: calc(100vw - 24px);
   }
 }

@@ -582,3 +582,58 @@ body:has(.app.soleRedesignApp[data-active-module="solemate"]){
   color:#fff;
 }
 
+/* =========================================================
+   SOLEMATE MODEL GLOBAL COLOURS
+   Confidence = teal/blue. Candidate refinement = gold.
+   ========================================================= */
+
+:root {
+  --sole-confidence-blue: #2dcfd0;
+  --sole-confidence-blue-soft: rgba(45, 207, 208, .18);
+
+  --sole-candidate-gold: #d7a928;
+  --sole-candidate-gold-soft: rgba(215, 169, 40, .18);
+}
+
+.solemateConfidenceStroke {
+  stroke: var(--sole-confidence-blue) !important;
+  filter:
+    drop-shadow(0 0 8px rgba(45,207,208,.20))
+    drop-shadow(0 0 16px rgba(45,207,208,.10)) !important;
+}
+
+.solemateConfidenceNode {
+  fill: var(--sole-confidence-blue) !important;
+  stroke: rgba(255,255,255,.88) !important;
+  filter:
+    drop-shadow(0 0 8px rgba(45,207,208,.28))
+    drop-shadow(0 6px 14px rgba(76,49,31,.06)) !important;
+}
+
+.solemateRefinementNode {
+  fill: #fffaf0 !important;
+  stroke: color-mix(in srgb, var(--sole-candidate-gold) 58%, transparent) !important;
+  filter:
+    drop-shadow(0 0 8px rgba(255,255,255,.86))
+    drop-shadow(0 0 18px rgba(215,169,40,.24))
+    drop-shadow(0 8px 18px rgba(76,49,31,.08)) !important;
+}
+
+.solemateKeyDot.confidence {
+  background: var(--sole-confidence-blue) !important;
+  box-shadow:
+    0 0 0 4px var(--sole-confidence-blue-soft),
+    0 0 16px rgba(45,207,208,.26) !important;
+}
+
+.solemateKeyDot.refinement {
+  background: #fffaf0 !important;
+  border-color: color-mix(in srgb, var(--sole-candidate-gold) 58%, transparent) !important;
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,.70),
+    0 0 18px rgba(215,169,40,.26) !important;
+}
+
+.solemateAxisLabel span {
+  color: var(--sole-confidence-blue) !important;
+}

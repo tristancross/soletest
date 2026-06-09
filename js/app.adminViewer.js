@@ -2120,6 +2120,126 @@ function renderAdminScoringDeltaList(assignment, answers = {}) {
   `;
 }
 
+function renderAdminFirstSignalCard(profile) {
+  const answersText = String(profile?.onboarding_answers_text || "").trim();
+  const answers = profile?.onboarding_answers || {};
+
+  const hasAnswers =
+    !!answersText ||
+    (answers && typeof answers === "object" && Object.keys(answers).length > 0);
+
+  if (!hasAnswers) {
+    return `
+      <article class="adminResponseCard adminFirstSignalCard">
+        <div class="adminResponseCardHeader">
+          <div>
+            <div class="dashboardEyebrow">First signal</div>
+            <h4>First-time onboarding</h4>
+            <p>This user has not completed the first-time onboarding yet.</p>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  if (answersText) {
+    const lines = answersText
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const colonIndex = line.indexOf(":");
+
+        if (colonIndex === -1) {
+          return {
+            label: "Answer",
+            value: line
+          };
+        }
+
+        return {
+          label: line.slice(0, colonIndex).trim(),
+          value: line.slice(colonIndex + 1).trim()
+        };
+      });
+
+    return `
+      <article class="adminResponseCard adminFirstSignalCard">
+        <div class="adminResponseCardHeader">
+          <div>
+            <div class="dashboardEyebrow">Completed</div>
+            <h4>First-time onboarding</h4>
+            <p>Initial signal captured during account setup.</p>
+          </div>
+
+          <div class="adminResponseMeta">
+            ${
+              profile.onboarding_completed_at
+                ? escapeHtml(`Completed ${new Date(profile.onboarding_completed_at).toLocaleString()}`)
+                : "Completed"
+            }
+          </div>
+        </div>
+
+        <div class="adminResponseLines">
+          ${lines.map(line => `
+            <div class="adminResponseLine">
+              <span>${escapeHtml(line.label)}</span>
+              <strong>${escapeHtml(line.value || "Not answered")}</strong>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `;
+  }
+
+  const qualities = Array.isArray(answers.idealPartnerMustHave)
+    ? answers.idealPartnerMustHave.join(", ")
+    : "";
+
+  const rows = [
+    ["Name", answers.name],
+    ["Date of birth", answers.dateOfBirth],
+    [
+      "Single for",
+      `${Number(answers.singleFor?.years || 0)} years, ${Number(answers.singleFor?.months || 0)} months`
+    ],
+    ["Ever felt love", answers.everFeltLove],
+    ["Ideal partner must have", qualities],
+    ["Who are you looking for", answers.whoAreYouLookingFor],
+    ["Hoping feels different this time", answers.hopingFeelsDifferent]
+  ];
+
+  return `
+    <article class="adminResponseCard adminFirstSignalCard">
+      <div class="adminResponseCardHeader">
+        <div>
+          <div class="dashboardEyebrow">Completed</div>
+          <h4>First-time onboarding</h4>
+          <p>Initial signal captured during account setup.</p>
+        </div>
+
+        <div class="adminResponseMeta">
+          ${
+            profile.onboarding_completed_at
+              ? escapeHtml(`Completed ${new Date(profile.onboarding_completed_at).toLocaleString()}`)
+              : "Completed"
+          }
+        </div>
+      </div>
+
+      <div class="adminResponseLines">
+        ${rows.map(([label, value]) => `
+          <div class="adminResponseLine">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value || "Not answered")}</strong>
+          </div>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
 async function renderAdminUserResponsesReport(profile) {
   const [assignments, responseState] = await Promise.all([
     loadRuntimeAssignmentsFromSupabase(sb, profile, {
@@ -2134,7 +2254,9 @@ async function renderAdminUserResponsesReport(profile) {
   saveStoredDashboardResponses(profile, responseState.responses);
   saveStoredDashboardProgress(profile, responseState.progress);
 
-  const responseCards = [];
+ const responseCards = [
+  renderAdminFirstSignalCard(profile)
+];
 
   (assignments || []).forEach(assignment => {
     const savedResponse = responseState.responses?.[assignment.id] || null;

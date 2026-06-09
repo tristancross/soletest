@@ -2174,7 +2174,7 @@
   }
 
   .sidebarNavPane:has(.moduleHero) .insightsPanel,
-  .sidebarNavPane:has(.moduleHero) .solematePortraitPanel,
+  /* .sidebarNavPane:has(.moduleHero) .solematePortraitPanel, */
   .sidebarNavPane:has(.moduleHero) .solemateTraitsPanel,
   .sidebarNavPane:has(.moduleHero) .moduleProfilePanel {
     flex: 1 1 auto !important;

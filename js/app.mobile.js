@@ -1,20 +1,40 @@
 // ====== MOBILE ======
+const SOLE_MOBILE_BREAKPOINT = 950;
+
 function isMobileLayout() {
-  return window.innerWidth <= 768;
+  return window.matchMedia(`(max-width: ${SOLE_MOBILE_BREAKPOINT}px)`).matches;
 }
 
 function isCurrentChatActuallyVisible() {
-  if (document.visibilityState !== "visible") return false;
+  if (!mainEl || !messagesEl) return false;
 
-  if (adminMode || !them) return false;
-
-  if (isMobileLayout() && appEl.classList.contains("mobileSidebarOpen")) {
+  // If the tab itself is hidden, do not count messages as read.
+  // This fixes the “background tab with messages open” bug.
+  if (!isSoleAppForegrounded()) {
     return false;
   }
 
-  return true;
-}
+  // True mobile mode: only Messages view counts as reading.
+  if (typeof isMobileLayout === "function" && isMobileLayout()) {
+    return document.body.classList.contains("mobileViewMessages");
+  }
 
+  const mainStyle = window.getComputedStyle(mainEl);
+  const messagesStyle = window.getComputedStyle(messagesEl);
+
+  if (
+    mainStyle.display === "none" ||
+    mainStyle.visibility === "hidden" ||
+    messagesStyle.display === "none" ||
+    messagesStyle.visibility === "hidden"
+  ) {
+    return false;
+  }
+
+  const rect = messagesEl.getBoundingClientRect();
+
+  return rect.width > 0 && rect.height > 0;
+}
 async function updateInsightNotificationDots() {
   if (!me?.id || !window.dashboardUI?.loadUserInsightsFromSupabase) return;
 
@@ -255,26 +275,45 @@ dbTasks
   if (countEl) countEl.textContent = `${complete} of ${total} completed`;
 }
 
-async function updateMobileMenuUnreadBadge() {
-  if (!mobileMenuUnreadBadge) return;
+function updateMobileMenuUnreadBadge() {
+  const badges = [
+    document.getElementById("mobileMenuUnreadBadge"),
+    document.getElementById("mobileTopUnreadBadge")
+  ].filter(Boolean);
 
-  const unreadCounts = await getUnreadCounts();
+  if (!badges.length) return;
+
+  const unreadEls = document.querySelectorAll(".unreadBadge:not([hidden])");
 
   let total = 0;
 
-  for (const [senderId, count] of unreadCounts.entries()) {
-    if (them && senderId === them.id) continue;
-    total += count;
-  }
+  unreadEls.forEach(el => {
+    const raw = (el.textContent || "").trim();
 
-  if (total > 0) {
-    mobileMenuUnreadBadge.hidden = false;
-    mobileMenuUnreadBadge.textContent = total > 99 ? "99+" : String(total);
-  } else {
-    mobileMenuUnreadBadge.hidden = true;
-    mobileMenuUnreadBadge.textContent = "";
-  }
+    if (!raw) return;
+
+    if (raw.includes("+")) {
+      total += Number(raw.replace(/\D/g, "")) || 99;
+      return;
+    }
+
+    total += Number(raw.replace(/\D/g, "")) || 0;
+  });
+
+  badges.forEach(badge => {
+    if (total > 0) {
+      badge.hidden = false;
+      badge.textContent = total > 99 ? "99+" : String(total);
+      badge.setAttribute("aria-label", `${total} unread message${total === 1 ? "" : "s"}`);
+    } else {
+      badge.hidden = true;
+      badge.textContent = "";
+      badge.removeAttribute("aria-label");
+    }
+  });
 }
+
+window.updateMobileMenuUnreadBadge = updateMobileMenuUnreadBadge;
 
 function openMobileSidebar() {
   if (!isMobileLayout()) return;
@@ -285,10 +324,9 @@ async function closeMobileSidebar() {
   appEl.classList.remove("mobileSidebarOpen");
 
   if (isCurrentChatActuallyVisible()) {
-    await markThreadAsRead(me.id, them.id);
+    await markCurrentThreadReadIfVisible("closed mobile sidebar");
     await renderSidebar(them?.id);
     await updateConversationStatus();
-    updateMobileMenuUnreadBadge();
   }
 }
 
@@ -424,6 +462,49 @@ function initSoleAppHistory() {
 
 }
 
+function isSoleAppForegrounded() {
+  return document.visibilityState === "visible" && document.hasFocus();
+}
+
+async function markCurrentThreadReadIfVisible(reason = "") {
+  if (!me?.id || !them?.id) return false;
+  if (!isCurrentChatActuallyVisible()) return false;
+
+  try {
+    await markThreadAsRead(me.id, them.id);
+
+    // Force local UI to agree immediately.
+    clearCurrentThreadUnreadUI();
+
+    updateMobileMenuUnreadBadge?.();
+
+    return true;
+  } catch (error) {
+    console.warn("Could not mark current thread as read", reason, error);
+    return false;
+  }
+}
+
+function clearCurrentThreadUnreadUI() {
+  document
+    .querySelectorAll(".unreadBadge, #mobileTopUnreadBadge, #mobileMenuUnreadBadge")
+    .forEach(badge => {
+      badge.hidden = true;
+      badge.textContent = "";
+      badge.removeAttribute("aria-label");
+    });
+
+  if (typeof window.soleUnreadCount === "number") {
+    window.soleUnreadCount = 0;
+  }
+
+  if (window.soleBaseDocumentTitle) {
+    document.title = window.soleBaseDocumentTitle;
+  } else {
+    document.title = document.title.replace(/^\(\d+\)\s*/, "");
+  }
+}
+
 function setMobileView(view, options = {}) {
   if (!isMobileLayout()) return;
 
@@ -440,15 +521,15 @@ function setMobileView(view, options = {}) {
     });
   }
 
-  if (isMessages && them) {
-    requestAnimationFrame(() => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+if (isMessages && them) {
+  requestAnimationFrame(() => {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
 
-    markThreadAsRead(me.id, them.id)
-      .then(() => updateMobileMenuUnreadBadge?.())
-      .catch(error => console.warn("Could not mark mobile thread as read", error));
-  }
+  requestAnimationFrame(() => {
+    markCurrentThreadReadIfVisible("entered mobile messages view");
+  });
+}
 }
 
 function openMobileRailMenu() {
@@ -514,6 +595,14 @@ const scrim = document.getElementById("mobileRailScrim");
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") closeMobileRailMenu();
   });
+
+  ["focus", "visibilitychange", "pageshow"].forEach(eventName => {
+  window.addEventListener(eventName, () => {
+    requestAnimationFrame(() => {
+      markCurrentThreadReadIfVisible(eventName);
+    });
+  });
+});
 
 document.addEventListener("click", event => {
   const railTarget = event.target.closest("[data-sole-rail]");

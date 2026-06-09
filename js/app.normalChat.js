@@ -39,23 +39,29 @@ stopPartnerFactRotation();
   viewA = null;
   viewB = null;
 
-  messagesEl.innerHTML = `
-    <div class="messagesLoadingState">
-      Loading conversation...
-    </div>
-  `;
+messagesEl.innerHTML = `
+  <div class="messagesLoadingState" role="status" aria-live="polite">
+    <span class="messagesLoadingSpinner" aria-hidden="true"></span>
+    <span>Loading conversation</span>
+  </div>
+`;
 
 clearChatSubtitleStatus();
 
 them = nextProfile;
 
-await loadThread(me.id, nextProfile.id, me.id);
+chatTitle.textContent =
+  them.display_name ||
+  them.username ||
+  "Conversational Model";
 
-chatTitle.textContent = them.display_name;
+chatMetaInner?.classList?.add("is-active");
 
 startChatVersionUpdates();
-await startPartnerFactRotation(them.id);
 
+await loadThread(me.id, nextProfile.id, me.id);
+
+await startPartnerFactRotation(them.id);
 await markThreadAsRead(me.id, them.id);
 await renderSidebar(them.id);
 await subscribeRealtime(me.id, them.id, me.id);

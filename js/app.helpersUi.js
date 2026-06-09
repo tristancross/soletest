@@ -170,23 +170,123 @@ function setProgressRing(circleEl, percent, animateFromZero = false) {
 function initAccountTray() {
   const account = document.getElementById("soleRailAccount");
   const trigger = account?.querySelector(".soleRailUser");
+  const menu = document.getElementById("soleRailAccountMenu");
   const logoutBtn = document.getElementById("soleRailLogoutBtn");
 
-  if (!account || !trigger) return;
+  if (!account || !trigger || !menu) return;
+  if (menu.dataset.accountTrayReady === "true") return;
+
+  menu.dataset.accountTrayReady = "true";
+  menu.classList.add("soleRailAccountMenuPortalled");
+  menu.hidden = true;
+
+  // Move the menu outside .app.soleRedesignApp so it cannot be clipped by overflow:hidden.
+  document.body.appendChild(menu);
+
+  function isMobileRail() {
+    return window.matchMedia?.("(max-width: 768px)")?.matches;
+  }
+
+  function positionMenu() {
+    const triggerRect = trigger.getBoundingClientRect();
+    const railRect = account.closest(".soleRailNav")?.getBoundingClientRect();
+
+    if (isMobileRail()) {
+      const width = Math.min(320, window.innerWidth - 24);
+      const left = railRect
+        ? Math.max(12, railRect.left + 12)
+        : 12;
+
+      menu.style.width = `${width}px`;
+      menu.style.left = `${left}px`;
+      menu.style.right = "auto";
+
+      // Open upward from the account button.
+      menu.style.top = "auto";
+      menu.style.bottom = `${Math.max(12, window.innerHeight - triggerRect.top + 10)}px`;
+      return;
+    }
+
+    const width = 200;
+    const gap = 12;
+
+    let left = triggerRect.right + gap;
+
+    // If there is no room to the right, open to the left.
+    if (left + width > window.innerWidth - 12) {
+      left = triggerRect.left - width - gap;
+    }
+
+    menu.style.width = `${width}px`;
+    menu.style.left = `${Math.max(12, left)}px`;
+    menu.style.right = "auto";
+
+    // Align bottom of menu with bottom of avatar button.
+    menu.style.top = "auto";
+    menu.style.bottom = `${Math.max(12, window.innerHeight - triggerRect.bottom)}px`;
+  }
+
+  function openMenu() {
+    account.classList.add("open");
+    menu.hidden = false;
+
+    positionMenu();
+
+    requestAnimationFrame(() => {
+      menu.classList.add("isOpen");
+    });
+
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+  }
+
+  function closeMenu() {
+    account.classList.remove("open");
+    menu.classList.remove("isOpen");
+
+    window.removeEventListener("resize", positionMenu);
+    window.removeEventListener("scroll", positionMenu, true);
+
+    window.setTimeout(() => {
+      if (!menu.classList.contains("isOpen")) {
+        menu.hidden = true;
+      }
+    }, 180);
+  }
+
+  function toggleMenu() {
+    if (menu.classList.contains("isOpen")) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }
 
   trigger.addEventListener("click", e => {
+    e.preventDefault();
     e.stopPropagation();
-    account.classList.toggle("open");
+    toggleMenu();
+  });
+
+  menu.addEventListener("click", e => {
+    e.stopPropagation();
   });
 
   document.addEventListener("click", e => {
-    if (!account.contains(e.target)) {
-      account.classList.remove("open");
-    }
+    if (account.contains(e.target) || menu.contains(e.target)) return;
+    closeMenu();
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeMenu();
   });
 
   logoutBtn?.addEventListener("click", async e => {
+    e.preventDefault();
     e.stopPropagation();
+
+    closeMenu();
+
     await sb.auth.signOut();
     location.reload();
   });
@@ -305,6 +405,160 @@ function formatHudPercent(value, maxDecimals = 2) {
   return `${number.toFixed(maxDecimals)}%`;
 }
 
+const soleMetricTextAnimations = new WeakMap();
+
+function getNumberFromMetricText(text) {
+  const cleaned = String(text || "").replace(/[^\d.-]/g, "");
+  const number = Number(cleaned);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function animateMetricText(el, toNumber, {
+  formatter = value => String(Math.round(value)),
+  duration = 700
+} = {}) {
+  if (!el) return;
+
+  const target = Number(toNumber);
+  if (!Number.isFinite(target)) {
+    el.textContent = formatter(0);
+    return;
+  }
+
+  const prefersReducedMotion =
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  const previousFrame = soleMetricTextAnimations.get(el);
+  if (previousFrame) {
+    cancelAnimationFrame(previousFrame);
+  }
+
+  const fromDataset = Number(el.dataset.metricAnimatedValue);
+  const from = Number.isFinite(fromDataset)
+    ? fromDataset
+    : getNumberFromMetricText(el.textContent);
+
+  if (prefersReducedMotion || Math.abs(from - target) < 0.0001) {
+    el.dataset.metricAnimatedValue = String(target);
+    el.textContent = formatter(target);
+    return;
+  }
+
+  const start = performance.now();
+
+  function tick(now) {
+    const rawProgress = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - rawProgress, 3);
+    const current = from + ((target - from) * eased);
+
+    el.textContent = formatter(current);
+
+    if (rawProgress < 1) {
+      const frame = requestAnimationFrame(tick);
+      soleMetricTextAnimations.set(el, frame);
+    } else {
+      el.dataset.metricAnimatedValue = String(target);
+      el.textContent = formatter(target);
+      soleMetricTextAnimations.delete(el);
+    }
+  }
+
+  const frame = requestAnimationFrame(tick);
+  soleMetricTextAnimations.set(el, frame);
+}
+
+window.soleAnimateMetricText = animateMetricText;
+
+function updateModuleQuizMetricDock({
+  connection = 0,
+  attraction = 0,
+  confidence = 0,
+  candidates = 102437,
+  startingCandidates = 102437,
+  totalCandidates
+} = {}) {
+  const dock = document.querySelector(".moduleQuizMetricDock");
+  if (!dock) return;
+
+  const candidateValue = Math.max(1, Number(candidates) || 1);
+
+  const candidateStart = Math.max(
+    1,
+    Number(startingCandidates ?? totalCandidates ?? candidateValue) || candidateValue
+  );
+
+  const attractionValue = Math.max(0, Math.min(100, Number(attraction) || 0));
+  const connectionValue = Math.max(0, Math.min(100, Number(connection) || 0));
+  const confidenceValue = Math.max(0, Math.min(100, Number(confidence) || 0));
+
+  const candidateRefinement = getCandidateRefinementPercent(
+    candidateValue,
+    candidateStart
+  );
+
+  const metrics = {
+    attraction: {
+      percent: attractionValue,
+      number: attractionValue,
+      formatter: value => formatHudPercent(value, 2)
+    },
+
+    connection: {
+      percent: connectionValue,
+      number: connectionValue,
+      formatter: value => formatHudPercent(value, 2)
+    },
+
+    confidence: {
+      percent: confidenceValue,
+      number: confidenceValue,
+      formatter: value => formatHudPercent(value, 2)
+    },
+
+    candidates: {
+      percent: candidateRefinement,
+      number: candidateValue,
+      formatter: value => Math.max(1, Math.round(value)).toLocaleString()
+    }
+  };
+
+  const circumference = 2 * Math.PI * 18;
+
+  Object.entries(metrics).forEach(([key, metric]) => {
+    const pill = dock.querySelector(`[data-quiz-metric="${key}"]`);
+    if (!pill) return;
+
+    const dash = (metric.percent / 100) * circumference;
+    const gap = circumference - dash;
+    const finalDisplay = metric.formatter(metric.number);
+
+    pill.dataset.metricValue = finalDisplay;
+    pill.dataset.metricPercent = String(metric.percent);
+
+    const fill = pill.querySelector(".moduleQuizMetricFill");
+    if (fill) {
+      fill.style.strokeDasharray = `${dash} ${gap}`;
+    }
+
+    const valueEl = pill.querySelector(".moduleQuizMetricValue");
+    if (valueEl) {
+      animateMetricText(valueEl, metric.number, {
+        formatter: metric.formatter,
+        duration: 720
+      });
+    }
+
+    const legacyStrong = pill.querySelector(".moduleQuizMetricText strong");
+    if (legacyStrong) {
+      animateMetricText(legacyStrong, metric.number, {
+        formatter: metric.formatter,
+        duration: 720
+      });
+    }
+  });
+}
+
+window.updateModuleQuizMetricDock = updateModuleQuizMetricDock;
 function updateSidebarProgress({
   connection = 0,
   chemistry,
@@ -381,7 +635,7 @@ if (confidenceEl) confidenceEl.textContent = formatHudPercent(confidenceValue);
   if (candidateEl) candidateEl.textContent = formattedCandidates;
   if (candidateCountEl) candidateCountEl.textContent = formattedCandidates;
 
-  window.signalLayersUI?.update?.({
+window.signalLayersUI?.update?.({
   attraction: attractionValue,
   connection: connectionValue,
   confidence: confidenceValue,
@@ -389,7 +643,15 @@ if (confidenceEl) confidenceEl.textContent = formatHudPercent(confidenceValue);
   startingCandidates: candidateStart
 });
 
-  requestAnimationFrame(fitAllProgressDialValues);
+updateModuleQuizMetricDock({
+  attraction: attractionValue,
+  connection: connectionValue,
+  confidence: confidenceValue,
+  candidates: candidateValue,
+  startingCandidates: candidateStart
+});
+
+requestAnimationFrame(fitAllProgressDialValues);
 }
 
 let responseState = "idle";

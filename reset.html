@@ -1,18 +1,185 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Reset password</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reset password · Sole</title>
+
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/dashboard.css" />
+  <link rel="stylesheet" href="./css/animations.css" />
+  <link rel="stylesheet" href="./css/chat.css" />
+  <link rel="stylesheet" href="./css/quiz.css" />
+  <link rel="stylesheet" href="./css/modules.css" />
+  <link rel="stylesheet" href="./css/solemate.css" />
+  <link rel="stylesheet" href="./css/insights.css" />
+  <link rel="stylesheet" href="./css/admin.css" />
+  <link rel="stylesheet" href="./css/fonts.css" />
+  <link rel="stylesheet" href="./css/themecolours.css" />
+  <link rel="stylesheet" href="./css/mobile.css" />
+  <link rel="stylesheet" href="./css/slide.css" />
+  <link rel="stylesheet" href="./css/splash.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link id="soleDynamicFavicon" rel="icon" type="image/svg+xml" href="">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://use.typekit.net/kmm4srq.css">
+  <style>
+    body{
+      min-height:100vh;
+      margin:0;
+      background:var(--sole-bg, #faf6f1);
+      display:grid;
+      place-items:center;
+      color:var(--sole-ink, #191817);
+    }
+
+    .resetBrand{
+      position:fixed;
+      top:24px;
+      left:24px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      z-index:10;
+    }
+
+    .resetBrandWord{
+      font-size:26px;
+      font-weight:650;
+      letter-spacing:-.055em;
+    }
+
+    .resetBox{
+      width:min(340px, calc(100vw - 32px));
+      min-height:320px;
+      border:1px solid rgba(50,36,28,.08);
+      border-radius:18px;
+      background:rgba(255,255,255,.72);
+      box-shadow:0 30px 80px rgba(76,49,31,.10);
+      padding:36px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:12px;
+    }
+
+    .resetBox h2{
+      margin:0 0 16px;
+      font-size:28px;
+      font-weight:350;
+      letter-spacing:-.04em;
+      color: var(--sole-ink);
+    }
+
+    .resetBox p{
+      margin:0 0 10px;
+      color:rgba(25,24,23,.56);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .resetBox input{
+      width:100%;
+      box-sizing:border-box;
+      border:1px solid rgba(50,36,28,.12);
+      border-radius:12px;
+      padding:12px 13px;
+      background:rgba(255,255,255,.76);
+      color:var(--sole-ink, #191817);
+      font:inherit;
+    }
+
+    .resetBox input:focus{
+      outline:none;
+      border-color:rgba(255,118,95,.42);
+      box-shadow:0 0 0 3px rgba(255,118,95,.08);
+    }
+
+    .resetBox button{
+      width:100%;
+      min-height:38px;
+      border:1px solid rgba(50,36,28,.10);
+      border-radius:999px;
+      background:rgba(255,255,255,.74);
+      color:var(--sole-ink, #191817);
+      font:inherit;
+      font-size:13px;
+      cursor:pointer;
+    }
+
+    .resetBox button.primary{
+      margin-top:4px;
+      background:linear-gradient(135deg, #ff9a80, #ff6654);
+      color:#fff;
+      border-color:transparent;
+      box-shadow:0 14px 34px rgba(255,101,84,.20);
+    }
+
+    .resetBox button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      box-shadow:none;
+    }
+
+    #status{
+      min-height:18px;
+      margin-top:6px;
+      font-size:12px;
+      color:rgba(25,24,23,.52);
+    }
+
+    #status.isError{
+      color:#c84d3b;
+    }
+
+    #status.isSuccess{
+      color:#168b54;
+    }
+  </style>
 </head>
+
 <body>
 
-  <h2>Reset your password</h2>
+  <div class="resetBrand">
+      <div class="soleBrand soleBrandRings" id="brandHome">
+  <span class="soleBrandLetter soleBrandLetterS">Sole</span>
 
-  <input id="newPassword" type="password" placeholder="New password" />
-  <button id="resetBtn">Update password</button>
-  <p id="status"></p>
+<span class="soleLogoIcon soleLogoSignal" aria-hidden="true">
+
+  <span class="soleLogoSignalRing ringCandidates"></span>
+  <span class="soleLogoSignalRing ringConfidence"></span>
+  <span class="soleLogoSignalRing ringConnection"></span>
+  <span class="soleLogoSignalRing ringAttraction"></span>
+
+</span>
+</div>
+  </div>
+
+  <main class="resetBox">
+    <h2>Reset your password</h2>
+    <p>Choose a new password, then return to log in.</p>
+
+    <input id="newPassword" type="password" placeholder="New password" autocomplete="new-password" />
+
+    <button id="resetBtn" class="primary" type="button" disabled>
+      Update password
+    </button>
+
+    <button id="loginBtn" type="button" hidden>
+      Return to log in
+    </button>
+
+    <p id="status">Checking recovery session...</p>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
     const sb = supabase.createClient(
       "https://kmnutzpbbvrfizwimcpk.supabase.co",
@@ -21,19 +188,32 @@
 
     const newPasswordEl = document.getElementById("newPassword");
     const resetBtn = document.getElementById("resetBtn");
+    const loginBtn = document.getElementById("loginBtn");
     const statusEl = document.getElementById("status");
 
     let recoveryReady = false;
-    resetBtn.disabled = true;
-    statusEl.textContent = "Checking recovery session...";
+
+    function setStatus(message, kind = "") {
+      statusEl.textContent = message;
+      statusEl.classList.toggle("isError", kind === "error");
+      statusEl.classList.toggle("isSuccess", kind === "success");
+    }
+
+    function markReady() {
+      recoveryReady = true;
+      resetBtn.disabled = false;
+      setStatus("Recovery session ready. You can update your password.");
+    }
+
+    function goToLogin() {
+      window.location.href = "./index.html";
+    }
+
+    loginBtn.addEventListener("click", goToLogin);
 
     sb.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event, session);
-
       if (event === "PASSWORD_RECOVERY" || session) {
-        recoveryReady = true;
-        resetBtn.disabled = false;
-        statusEl.textContent = "Recovery session ready. You can update your password.";
+        markReady();
       }
     });
 
@@ -42,43 +222,54 @@
 
       if (error) {
         console.error(error);
-        statusEl.textContent = "Could not read session.";
+        setStatus("Could not read recovery session.", "error");
         return;
       }
 
       if (data.session) {
-        recoveryReady = true;
-        resetBtn.disabled = false;
-        statusEl.textContent = "Recovery session ready. You can update your password.";
+        markReady();
       } else {
-        statusEl.textContent = "No recovery session detected yet.";
+        setStatus("No recovery session detected yet. Open this page from your reset email.", "error");
       }
     })();
 
     resetBtn.onclick = async () => {
       if (!recoveryReady) {
-        alert("Recovery session is still loading. Please wait a moment and try again.");
+        setStatus("Recovery session is still loading. Please wait a moment and try again.", "error");
         return;
       }
 
       const password = newPasswordEl.value.trim();
+
       if (!password) {
-        alert("Enter a new password.");
+        setStatus("Enter a new password.", "error");
         return;
       }
+
+      resetBtn.disabled = true;
+      resetBtn.textContent = "Updating...";
+      setStatus("Updating password...");
 
       const { error } = await sb.auth.updateUser({ password });
 
       if (error) {
-        alert(error.message);
+        resetBtn.disabled = false;
+        resetBtn.textContent = "Update password";
+        setStatus(error.message, "error");
         return;
       }
 
-      alert("Password updated. You can now log in.");
-      statusEl.textContent = "Password updated.";
+setStatus("Password updated. Taking you back to log in...", "success");
+
+await sb.auth.signOut();
+
+newPasswordEl.hidden = true;
+resetBtn.hidden = true;
+loginBtn.hidden = false;
+
+window.setTimeout(goToLogin, 1400);
     };
   </script>
 
 </body>
 </html>
-

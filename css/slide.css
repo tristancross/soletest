@@ -16,7 +16,7 @@ body {
   overflow: hidden;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 951px) {
   .app.soleRedesignApp {
     --sole-rail-w: 96px;
     --sole-chat-w: 650px;
@@ -298,7 +298,7 @@ body {
    DESKTOP RAIL MENU ICON: hamburger collapsed / X expanded
    ========================================================= */
 
-@media (min-width: 769px) {
+@media (min-width: 951px) {
   .soleRailMenuBtn {
     position: relative !important;
     display: grid !important;

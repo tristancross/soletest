@@ -1,0 +1,379 @@
+body.isCheckingFirstTimeUser .app {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.firstTimeUserMount {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+
+  display: block;
+
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,.72), transparent 34%),
+    radial-gradient(circle at 78% 74%, rgba(255,118,95,.08), transparent 42%),
+    var(--sole-bg, #faf6f1);
+
+  opacity: 1;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+.firstTimeUserMount[hidden] {
+  display: none !important;
+}
+
+body.isFirstTimeUserActive {
+  overflow: hidden;
+}
+
+body.isFirstTimeUserActive .app {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.isFirstTimeUserActive #authScreen {
+  display: none !important;
+}
+
+.firstTimeUserScreen {
+  min-height: 100svh;
+  width: 100%;
+
+  display: grid;
+  place-items: center;
+
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+.firstTimeUserCard {
+  position: relative;
+
+  width: min(760px, 100%);
+  max-width: calc(100vw - 32px);
+
+  margin: auto;
+
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 28px;
+
+  padding: clamp(24px, 5vw, 42px);
+
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255,255,255,.96), transparent 34%),
+    radial-gradient(circle at 84% 22%, rgba(255,118,95,.12), transparent 38%),
+    linear-gradient(135deg, rgba(255,255,255,.76), rgba(255,247,241,.50));
+
+  box-shadow:
+    0 28px 80px rgba(76,49,31,.10),
+    inset 0 1px 0 rgba(255,255,255,.92);
+
+  animation: firstTimeFadeUp 420ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes firstTimeFadeUp{
+  from{
+    opacity:0;
+    transform:translateY(12px) scale(.985);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+}
+
+.firstTimeUserProgress,
+.firstTimeUserEyebrow,
+.firstTimeSelectionCount{
+  color:rgba(25,24,23,.46);
+  font-size:10px;
+  line-height:1;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+
+.firstTimeUserEyebrow{
+    display: none;
+}
+
+.firstTimeSelectionCount{
+    margin-top: 10px;
+}
+
+.firstTimeUserProgress{
+  position:absolute;
+  top:24px;
+  right:26px;
+}
+
+.firstTimeUserCard h2{
+  margin:12px 0 18px;
+  color:var(--sole-ink);
+  font-size:clamp(20px, 4vw, 30px);
+  line-height:1.2;
+  font-weight:360;
+  letter-spacing:-.055em;
+}
+
+.firstTimeUserSubcopy{
+  margin:-6px 0 18px;
+  color:rgba(25,24,23,.56);
+  font-size:18px;
+  line-height:1.45;
+}
+
+.firstTimeUserInput,
+.firstTimeUserTextarea,
+.firstTimeDurationInput input{
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid rgba(50,36,28,.10);
+  border-radius:16px;
+  background:rgba(255,255,255,.68);
+  color:var(--sole-ink);
+  font:inherit;
+  padding:13px 14px;
+  outline:none;
+}
+
+.firstTimeUserTextarea{
+  resize:vertical;
+  min-height:130px;
+}
+
+.firstTimeDurationInput{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.firstTimeDurationInput label{
+  display:grid;
+  gap:8px;
+}
+
+.firstTimeDurationInput span{
+  color:rgba(25,24,23,.46);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+
+.firstTimeOptionList,
+.firstTimeChipGrid{
+  display:grid;
+  gap:8px;
+}
+
+.firstTimeChipGrid{
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  overflow-y: auto;
+}
+
+.firstTimeOptionBtn,
+.firstTimeChip,
+.firstTimeUserBtn{
+  border:1px solid rgba(50,36,28,.09);
+  border-radius:999px;
+  background:rgba(255,255,255,.58);
+  color:var(--sole-ink);
+  font:inherit;
+  cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.76);
+}
+
+.firstTimeUserBtnHolder{
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.firstTimeUserBtn{
+    background: black;
+    color: #fff;
+    border-color: transparent;
+    box-shadow: none;
+    width: 100%;
+}
+
+.firstTimeOptionBtn,
+.firstTimeChip{
+  min-height:42px;
+  padding:10px 2px;
+  text-align:center;
+}
+
+.firstTimeChip{
+  border-radius:16px;
+  font-size:12px;
+}
+
+.firstTimeOptionBtn.isSelected,
+.firstTimeChip.isSelected{
+  border-color:rgba(255,118,95,.42);
+  background:rgba(255,118,95,.10);
+  color:var(--sole-coral);
+}
+
+.firstTimeUserBtn{
+  min-height:44px;
+  padding:0 18px;
+  margin-top:18px;
+  font-weight:650;
+}
+
+.firstTimeUserError{
+  margin:10px 0 0;
+  color:#c84d3b;
+  font-size:12px;
+}
+
+.firstTimeBuildOrb{
+  width:140px;
+  height:140px;
+  margin:26px 0 18px;
+  position:relative;
+  border-radius:999px;
+}
+
+.firstTimeBuildOrb span{
+  position:absolute;
+  inset:var(--inset, 8px);
+  border:1px solid rgba(255,118,95,.24);
+  border-radius:999px;
+  animation:firstTimePulse 1.8s ease-in-out infinite;
+}
+
+.firstTimeBuildOrb span:nth-child(1){ --inset:8px; }
+.firstTimeBuildOrb span:nth-child(2){ --inset:24px; animation-delay:.15s; }
+.firstTimeBuildOrb span:nth-child(3){ --inset:40px; animation-delay:.3s; }
+.firstTimeBuildOrb span:nth-child(4){ --inset:56px; animation-delay:.45s; }
+
+@keyframes firstTimePulse{
+  0%,100%{
+    opacity:.28;
+    transform:scale(.97);
+  }
+  50%{
+    opacity:1;
+    transform:scale(1.04);
+  }
+}
+
+.firstTimeBuildLine{
+  color:rgba(25,24,23,.56);
+  font-size:13px;
+}
+
+.firstTimeDobGrid {
+  display: grid;
+  grid-template-columns: 90px 110px 1fr;
+  gap: 12px;
+}
+
+.firstTimeDobGrid label {
+  display: grid;
+  gap: 7px;
+}
+
+.firstTimeDobGrid label span {
+  color: rgba(25,24,23,.46);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.firstTimeDobGrid input {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .firstTimeDobGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .firstTimeDobGrid label:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .firstTimeOptionList,
+.firstTimeChipGrid{
+  display:grid;
+  gap:4px;
+   grid-template-columns:repeat(2, minmax(0, 1fr));
+  overflow-y: auto;
+}
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible .app {
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 520ms cubic-bezier(.16, 1, .3, 1);
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible .firstTimeUserMount {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,.40), transparent 34%),
+    rgba(250,246,241,.58);
+
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible .app {
+  opacity: 1;
+  pointer-events: none;
+  transition:
+    opacity 520ms cubic-bezier(.16, 1, .3, 1),
+    filter 520ms cubic-bezier(.16, 1, .3, 1),
+    transform 520ms cubic-bezier(.16, 1, .3, 1);
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible:not(.isFirstTimeChatShellClear) .app {
+  filter: blur(18px);
+  transform: scale(.992);
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible.isFirstTimeChatShellClear .app {
+  filter: blur(0);
+  transform: scale(1);
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible .firstTimeUserMount {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,.36), transparent 34%),
+    rgba(250,246,241,.42);
+
+  backdrop-filter: blur(6px) saturate(1.05);
+  -webkit-backdrop-filter: blur(6px) saturate(1.05);
+}
+
+body.isFirstTimeUserActive.isFirstTimeChatShellVisible.isFirstTimeChatShellClear .firstTimeUserMount {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,.22), transparent 34%),
+    rgba(250,246,241,.24);
+
+  backdrop-filter: blur(0) saturate(1);
+  -webkit-backdrop-filter: blur(0) saturate(1);
+}
+
+.firstTimeEmptyChatState {
+  min-height: 100%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: rgba(25,24,23,.48);
+  padding: 32px;
+}
+
+.firstTimeEmptyChatState p {
+  margin: 10px 0 0;
+  font-size: 14px;
+}

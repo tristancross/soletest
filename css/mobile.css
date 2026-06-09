@@ -74,7 +74,8 @@
     pointer-events: auto !important;
 
     overflow: visible !important;
-    z-index: auto !important;
+    /* z-index: auto !important; */
+      z-index: 5000;
   }
 
   .sidebar.soleDashboardPane {
@@ -172,12 +173,12 @@
     border-radius: 999px !important;
   }
 
-  .mobileTopActions,
+  /* .mobileTopActions,
   .mobileRailScrim,
   .mobileDock,
   .mobileBottomNav {
     display: none !important;
-  }
+  } */
 }
 
 @media (max-width: 950px) {
@@ -186,7 +187,7 @@
     --mobile-header-h: 70px;
     --mobile-action-size: 42px;
     --mobile-action-gap: 8px;
-    --mobile-safe-top: max(10px, env(safe-area-inset-top));
+    --mobile-safe-top: max(8px, env(safe-area-inset-top));
   }
 
   *,
@@ -874,6 +875,10 @@
     padding: 20px !important;
   }
 
+  .moduleHeroCopy p {
+    margin: 5px 0 10px;
+  }
+
   .adminQuizFieldRow,
   .adminGrid,
   .adminPanelGrid,
@@ -1023,18 +1028,19 @@
   .soleMatrixHeader {
     flex-direction: column !important;
     margin-bottom: 0 !important;
+    padding: 5px 10px;
   }
 
   .soleMatrixChartWrap {
     margin-top: -8px !important;
   }
 
-  .soleMatrixSvg {
+  /* .soleMatrixSvg {
     min-height: 380px !important;
     height: min(112vw, 520px) !important;
     transform: scale(1.1) !important;
     transform-origin: center center !important;
-  }
+  } */
 }
 
 /* Very small phones */
@@ -1084,7 +1090,7 @@
 }
 
 /* Desktop safety */
-@media (min-width: 769px) {
+@media (min-width: 951px) {
   .mobileTopActions,
   .mobileRailScrim,
   .mobileDock,
@@ -1113,7 +1119,7 @@
    Hamburger left, chat title centred, actions right.
    ========================================================= */
 
-@media (max-width: 768px) {
+@media (max-width: 950px) {
   :root {
     --mobile-header-h: 82px;
     --mobile-action-size: 46px;
@@ -1241,7 +1247,7 @@
     letter-spacing: -.045em !important;
     text-align: center !important;
 
-    overflow: hidden !important;
+    /* overflow: hidden !important; */
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
   }
@@ -1375,7 +1381,7 @@
   body.mobileViewMessages .chatMeta {
     position: absolute !important;
     left: 50% !important;
-    top: calc(var(--mobile-safe-top) + 7px) !important;
+    top: calc(var(--mobile-safe-top) + 2px) !important;
     transform: translateX(-50%) !important;
 
     width: min(260px, calc(100vw - 150px)) !important;
@@ -1402,6 +1408,7 @@
   body.mobileViewMessages .chatModelEyebrow {
     display: flex !important;
     justify-content: left !important;
+    width: 100% !important;
   }
 
   body.mobileViewMessages .chatModelLabel {
@@ -1486,7 +1493,7 @@
 
 @media (max-width: 768px) {
   :root {
-    --mobile-header-h: 64px;
+    --mobile-header-h: 66px;
     --mobile-action-size: 44px;
     --mobile-safe-top: max(10px, env(safe-area-inset-top));
   }
@@ -1702,4 +1709,482 @@
   .signalLayerBtn span {
 font-size: 14px !important;
   }
+}
+
+/* =========================================================
+   MOBILE MATRIX FIXES
+   Prevent radar labels being clipped on Attraction/Connection/SoleMate.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .soleMatrixPanel,
+  .solemateModelPanel,
+  .solemateChartPanel {
+    overflow: visible !important;
+  }
+
+  .soleMatrixChartWrap,
+  .solemateChartWrap {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  .soleMatrixSvg {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    min-height: 330px !important;
+    height: min(92vw, 430px) !important;
+
+    transform: none !important;
+    transform-origin: center center !important;
+
+    overflow: visible !important;
+  }
+
+  .soleMatrixAxisLabel,
+  .soleMatrixLabel,
+  .matrixAxisLabel {
+    font-size: clamp(10px, 3vw, 12px) !important;
+    line-height: 1.12 !important;
+  }
+
+  .solemateAxisLabel {
+    width: 92px !important;
+  }
+
+  .solemateAxisLabel strong {
+    font-size: 10px !important;
+    line-height: 1.08 !important;
+  }
+
+  .solemateAxisLabel span {
+    font-size: 10px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .moduleQuizMetricDock {
+    position: fixed !important;
+    left: 14px !important;
+    right: 14px !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    z-index: 9000 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+
+    background: transparent !important;
+    pointer-events: none !important;
+  }
+
+  .moduleQuizMetricPill {
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    gap: 5px !important;
+
+    padding: 8px 5px 7px !important;
+    border-radius: 18px !important;
+
+    pointer-events: auto !important;
+  }
+
+  .moduleQuizMetricPill svg {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .moduleQuizMetricText {
+    justify-items: center !important;
+    text-align: center !important;
+  }
+
+  .moduleQuizMetricText span {
+    max-width: 64px !important;
+    font-size: 7px !important;
+    letter-spacing: .09em !important;
+  }
+
+  .moduleQuizMetricText strong {
+    font-size: 10px !important;
+  }
+
+  .moduleSubviewContent {
+    padding-bottom: 104px !important;
+  }
+}
+
+@media (min-width: 951px) {
+    .moduleQuizMetricPill {
+        grid-template-columns: 1fr !important;
+        justify-items: center !important;
+        gap: 5px !important;
+    }
+
+
+      .moduleQuizMetricDial {
+    width: clamp(60px, 9vw, 80px) !important;
+    height: clamp(60px, 9vw, 80px) !important;
+  }
+
+  .moduleQuizMetricDial svg {
+    width: clamp(60px, 9vw, 80px) !important;
+    height: clamp(60px, 9vw, 80px) !important;
+  }
+  }
+
+@media (max-width: 768px) {
+  .moduleQuizMetricPill {
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    gap: 5px !important;
+  }
+
+  .moduleQuizMetricDial {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .moduleQuizMetricDial svg {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .moduleQuizMetricValue {
+    /* display: none !important; */
+  }
+
+  .moduleQuizMetricText {
+    display: grid !important;
+    justify-items: center !important;
+    text-align: center !important;
+    gap: 3px !important;
+  }
+
+  .moduleQuizMetricText::after {
+    content: attr(data-mobile-value);
+  }
+
+  .moduleQuizMetricText span {
+    max-width: 64px !important;
+    font-size: 7px !important;
+    letter-spacing: .09em !important;
+  }
+
+  /* .moduleQuizMetricPill::after {
+    content: attr(data-metric-value);
+
+    color: rgba(25,24,23,.80);
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+  } */
+}
+
+/* =========================================================
+   TABLET / SMALL DESKTOP CHROME
+   769–950px keeps desktop layout, but gains mobile-style
+   top menu + message controls.
+   ========================================================= */
+
+@media (min-width: 769px) and (max-width: 950px) {
+  :root {
+    --mobile-header-h: 66px;
+    --mobile-action-size: 44px;
+    --mobile-safe-top: max(8px, env(safe-area-inset-top));
+  }
+
+  /* Re-show mobile chrome, overriding desktop safety hide rules */
+  .mobileTopActions {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    height: var(--mobile-header-h) !important;
+    z-index: 10100 !important;
+
+    display: block !important;
+    pointer-events: none !important;
+  }
+
+  .mobileTopActionBtn,
+  .mobileTopBrand {
+    pointer-events: auto !important;
+  }
+
+  .mobileTopActionBtn {
+     width: var(--mobile-action-size) !important;
+    height: var(--mobile-action-size) !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    color: var(--sole-ink) !important;
+  }
+
+  .mobileTopActionBtn i {
+    font-size: 21px !important;
+  }
+
+  #mobileMenuBtnGlobal {
+    left: 14px !important;
+    right: auto !important;
+  }
+
+  #mobileChatBtn,
+  #mobileModelInfoBtn {
+    right: 14px !important;
+    left: auto !important;
+  }
+
+  /* In tablet desktop layout, keep the message button available. */
+  #mobileChatBtn {
+    display: grid !important;
+  }
+
+  #mobileModelInfoBtn {
+    display: none !important;
+  }
+
+  .mobileTopBrand {
+    position: fixed !important;
+    top: calc(var(--mobile-safe-top) + 1px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+
+    height: var(--mobile-action-size) !important;
+    min-width: 104px !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    color: var(--sole-ink) !important;
+    cursor: pointer !important;
+  }
+
+  .mobileTopBrand .soleBrandLetter {
+    font-size: 29px !important;
+    line-height: 1 !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .mobileTopBrand .soleLogoIcon {
+    width: 25px !important;
+    height: 25px !important;
+    flex: 0 0 25px !important;
+    transform: none !important;
+  }
+
+  /* Give the desktop-ish layout a little top breathing room
+     so the fixed chrome doesn't sit on the content. */
+  .sidebarNavPane {
+    padding-top: 64px !important;
+  }
+
+  .main {
+    padding-top: 0 !important;
+  }
+
+  /* Hamburger rail overlay in tablet chrome range */
+  .mobileRailScrim {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10070 !important;
+
+    display: block !important;
+
+    background: rgba(30, 22, 18, 0.12) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+
+    opacity: 0 !important;
+    pointer-events: none !important;
+
+    transition: opacity 220ms ease !important;
+  }
+
+  body.mobileMenuOpen .mobileRailScrim {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .soleRailNav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+
+    width: 100vw !important;
+    height: 100dvh !important;
+
+    z-index: 10080 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+
+    padding: calc(var(--mobile-safe-top) + 68px) 14px 14px !important;
+    gap: 10px !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    background:
+      radial-gradient(circle at 80% 0%, rgba(255, 167, 125, 0.14), transparent 42%),
+      rgba(250, 244, 239, 0.96) !important;
+
+    box-shadow: 0 30px 90px rgba(60, 38, 24, 0.20) !important;
+
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+
+    transform: translateX(calc(-100% - 24px)) scale(.98) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+
+    transition:
+      transform 260ms cubic-bezier(.16, 1, .3, 1),
+      opacity 180ms ease !important;
+
+    overflow-y: auto !important;
+  }
+
+  body.mobileMenuOpen .soleRailNav {
+    transform: translateX(0) scale(1) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .soleRailMenuBtn {
+    display: none !important;
+  }
+
+  .soleRailItems,
+  .soleRailBottom {
+    width: 100% !important;
+    display: grid !important;
+    gap: 8px !important;
+    justify-items: stretch !important;
+    margin: 0 !important;
+    padding-inline: 12px !important;
+  }
+
+  .soleRailBottom {
+    margin-top: auto !important;
+  }
+
+  .soleRailItem {
+    width: 100% !important;
+    min-height: 54px !important;
+
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+
+    padding: 12px 14px !important;
+    margin: 0 !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+    text-align: left !important;
+  }
+
+  .soleRailItem.isActive,
+  .soleRailItem.isActive i,
+  .soleRailItem.isActive span {
+    color: var(--sole-ink) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .soleRailItem i {
+    width: 28px !important;
+    height: 24px !important;
+    flex: 0 0 28px !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    font-size: 19px !important;
+    margin: 0 !important;
+  }
+
+  .soleRailItem span {
+    font-size: 13px !important;
+  }
+
+  .soleRailAccount {
+    width: 100% !important;
+  }
+
+  .soleRailUser {
+    width: 100% !important;
+    height: 48px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Hamburger → X in tablet chrome range too */
+  body.mobileMenuOpen #mobileMenuBtnGlobal i::before {
+    content: "\f00d";
+  }
+
+  body.mobileMenuOpen #mobileMenuBtnGlobal i {
+    transform: rotate(90deg);
+  }
+
+  body.mobileMenuOpen .mobileTopActions,
+  body.mobileMenuOpen .mobileTopBrand,
+  body.mobileMenuOpen #mobileMenuBtnGlobal,
+  body.mobileMenuOpen #mobileChatBtn,
+  body.mobileMenuOpen #mobileModelInfoBtn {
+    z-index: 10110 !important;
+  }
+
+      body.mobileViewHome .sidebarTop .soleBrand {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    .soleRailMenuBtn {
+        display: none !important;
+    }
+
+    body.mobileViewMessages:not(.mobileMenuOpen) .mobileTopBrand {
+        display: none !important;
+    }
+
+        body.mobileViewMessages .header {
+        position: relative !important;
+        display: block !important;
+        height: var(--mobile-header-h) !important;
+        min-height: var(--mobile-header-h) !important;
+        padding: calc(var(--mobile-safe-top) + 5px) 64px 10px !important;
+    }
+
+    .chatSubtitle{
+      display: none;
+    }
 }

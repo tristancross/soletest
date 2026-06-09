@@ -126,6 +126,8 @@ if (error) {
   }
 
   await updateSidebarDailyTasks?.();
+
+  window.firstTimeUser?.maybeShowPostSendOverlay?.();
 }
 }
 

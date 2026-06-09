@@ -69,18 +69,36 @@ await refreshBlockedPairs();
 
 assignedPartner = await getAssignedPartner(me.id);
 
-await renderSidebar();
 setupAdminUI();
 
-await updateSidebarDailyTasks();
-await updateInsightNotificationDots();
-
 if (me.is_admin) {
+  await renderSidebar();
+  await updateSidebarDailyTasks();
+  await updateInsightNotificationDots();
+
   await enterAdminMode("users");
-} else if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
-  await openChat(assignedPartner);
 } else {
-  await renderWelcomePanel();
+  const handledFirstTimeUser = await window.firstTimeUser?.runIfNeeded?.();
+
+  if (handledFirstTimeUser) {
+    return;
+  }
+
+  await renderSidebar();
+  await updateSidebarDailyTasks();
+  await updateInsightNotificationDots();
+
+  if (typeof setChatFocusMode === "function") {
+    setChatFocusMode(true);
+  } else {
+    document.body.classList.add("isChatFocus");
+  }
+
+  if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
+    await openChat(assignedPartner);
+  } else {
+    await renderWelcomePanel();
+  }
 }
 
   await subscribeInboxRealtime();

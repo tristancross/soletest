@@ -13,9 +13,11 @@ async function checkSession() {
 
 (async function init() {
   authScreen.style.display = "grid";
-  await checkSession();
-})(); 
 
+  window.soleSplash?.start?.();
+
+  await checkSession();
+})();
 
 
 function applyMe(){

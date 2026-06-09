@@ -1,8 +1,18 @@
 // ====== LOAD + RENDER THREAD ======
-async function loadThread(aId, bId, alignAsSenderId){
-  messagesEl.innerHTML = "";
+function renderThreadLoadingState() {
+  messagesEl.innerHTML = `
+    <div class="messagesLoadingState" role="status" aria-live="polite">
+      <span class="messagesLoadingSpinner" aria-hidden="true"></span>
+      <span>Loading conversation</span>
+    </div>
+  `;
+
   messagesEl.appendChild(typingIndicator);
   hideTypingIndicator();
+}
+
+async function loadThread(aId, bId, alignAsSenderId){
+  renderThreadLoadingState();
 
   lastRendered = null;
   lastRenderedWrap = null;
@@ -14,7 +24,13 @@ async function loadThread(aId, bId, alignAsSenderId){
     .or(filter)
     .order("created_at", { ascending: true });
 
-  if (error) return alert(error.message);
+  if (error) {
+    messagesEl.innerHTML = "";
+    messagesEl.appendChild(typingIndicator);
+    hideTypingIndicator();
+    alert(error.message);
+    return;
+  }
 
   const rawMessages = msgs || [];
   const overrides = await loadMessageOverrides(
@@ -26,6 +42,12 @@ async function loadThread(aId, bId, alignAsSenderId){
   const resolvedMessages = rawMessages
     .map(message => resolveMessageForViewer(message, overrides, alignAsSenderId))
     .filter(message => !message.hidden_for_viewer);
+
+  // IMPORTANT:
+  // Loading is done. Clear the loading pill before rendering messages.
+  messagesEl.innerHTML = "";
+  messagesEl.appendChild(typingIndicator);
+  hideTypingIndicator();
 
   for (const m of resolvedMessages) {
     await renderMessage(m, alignAsSenderId, false);
@@ -43,6 +65,7 @@ async function loadThread(aId, bId, alignAsSenderId){
     });
   });
 }
+
 async function renderMessage(m, alignAsSenderId, animate = false){
   if (m.hidden_for_viewer) return;
 

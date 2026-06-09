@@ -242,7 +242,7 @@
   background:radial-gradient(circle at 82% 30%, rgba(202,162,74,.08), transparent 34%),
     linear-gradient(135deg, rgba(255,255,255,.70), rgba(248,244,236,.46));
   border-color:var(--sole-line);
-  box-shadow:var(--sole-shadow);
+  box-shadow: none;
   color:var(--sole-ink);
 }
 

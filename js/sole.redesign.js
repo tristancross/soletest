@@ -453,11 +453,17 @@ if (action === "settings" || action === "account") {
 
     if (!appEl || !toggleBtn) return;
 
-    const storedFocus = localStorage.getItem("sole_desktop_chat_focus") === "1";
+const storedFocusRaw = localStorage.getItem("sole_desktop_chat_focus");
 
-    if (isDesktopLayout()) {
-      setDesktopChatFocus(storedFocus);
-    }
+/* Default desktop login/load to chat focus.
+   Still respects the user's later toggle choice once stored. */
+const storedFocus = storedFocusRaw === null
+  ? true
+  : storedFocusRaw === "1";
+
+if (isDesktopLayout()) {
+  setDesktopChatFocus(storedFocus);
+}
 
     toggleBtn.addEventListener("click", event => {
       if (!isDesktopLayout()) return;
@@ -477,8 +483,13 @@ if (action === "settings" || action === "account") {
         return;
       }
 
-      const shouldFocus = localStorage.getItem("sole_desktop_chat_focus") === "1";
-      setDesktopChatFocus(shouldFocus);
+const storedFocusRaw = localStorage.getItem("sole_desktop_chat_focus");
+
+const shouldFocus = storedFocusRaw === null
+  ? true
+  : storedFocusRaw === "1";
+
+setDesktopChatFocus(shouldFocus);
     });
   }
 
@@ -529,14 +540,14 @@ if (action === "settings" || action === "account") {
     </div>
 
     <div class="signalLayersBody">
-      <div class="signalOrb" data-active-layer="confidence">
+      <div class="signalOrb" data-active-layer="candidates">
         <svg class="signalRings" viewBox="0 0 140 140" aria-hidden="true">
 <circle class="signalRingTrack" cx="70" cy="70" r="61" stroke-width="5"></circle>
 <circle
   class="signalRingFill"
   data-layer="candidates"
   data-signal-tooltip-title="Candidates"
-  data-signal-tooltip-body="Sole is refining the candidate field, towards the highest quality matches."
+  data-signal-tooltip-body="Sole is refining the candidate pool, filtering out incompatible candidates and advancing towards the highest quality matches."
   cx="70"
   cy="70"
   r="61"
@@ -580,10 +591,10 @@ if (action === "settings" || action === "account") {
 ></circle>
         </svg>
 
-        <div class="signalOrbCenter">
-          <strong data-signal-center-value>0%</strong>
-          <span data-signal-center-label>Confidence</span>
-        </div>
+<div class="signalOrbCenter">
+  <strong data-signal-center-value>102,437</strong>
+  <span data-signal-center-label>Candidates</span>
+</div>
       </div>
 
       </div>
@@ -615,11 +626,11 @@ if (action === "settings" || action === "account") {
         </button>
 
 <button
-  class="signalLayerBtn isActive"
+  class="signalLayerBtn"
   type="button"
   data-signal-layer="confidence"
   data-signal-tooltip-title="Confidence"
-  data-signal-tooltip-body="Sole's confidence in its current matchmaking model, based on your answers, behavior, and available conversational signals."
+  data-signal-tooltip-body="Sole's current confidence in its predictive matchmaking model, based on your answers, behavior, and available conversational signals."
   style="--signal-layer-color:#2dcfd0"
 >
           <i class="signalLayerDot"></i>
@@ -628,11 +639,11 @@ if (action === "settings" || action === "account") {
         </button>
 
 <button
-  class="signalLayerBtn"
+  class="signalLayerBtn isActive"
   type="button"
   data-signal-layer="candidates"
   data-signal-tooltip-title="Candidates"
-  data-signal-tooltip-body="Sole is refining the candidate field, towards the highest quality matches."
+data-signal-tooltip-body="Sole is refining the candidate pool, filtering out incompatible candidates and advancing towards the highest quality matches."
   style="--signal-layer-color:#d7a928"
 >
           <i class="signalLayerDot"></i>
@@ -644,10 +655,14 @@ if (action === "settings" || action === "account") {
 
   `;
 
-  statusRow.insertAdjacentElement("afterbegin", signalCard);
+statusRow.insertAdjacentElement("afterbegin", signalCard);
 
-  // bindSignalLayers(signalCard);
-  syncSignalLayersFromHud();
+// bindSignalLayers(signalCard);
+syncSignalLayersFromHud();
+
+requestAnimationFrame(() => {
+  setSignalLayerActive("candidates");
+});
 }
 
 // function bindSignalLayers(root) {
@@ -660,7 +675,11 @@ if (action === "settings" || action === "account") {
 //   });
 // }
 
-function setSignalLayerActive(layer) {
+function setSignalLayerActive(layer, {
+  numericValues = null,
+  formatters = null,
+  animateCenter = false
+} = {}) {
   const card = qs(".signalLayersCard");
   if (!card || !layer) return;
 
@@ -674,12 +693,27 @@ function setSignalLayerActive(layer) {
     orb.dataset.activeLayer = layer;
   }
 
-  if (centerValue && valueEl) {
-    centerValue.textContent = valueEl.textContent.trim();
-  }
-
   if (centerLabel && labelEl) {
     centerLabel.textContent = labelEl.textContent.trim();
+  }
+
+  if (centerValue) {
+    const hasAnimatedSource =
+      animateCenter &&
+      numericValues &&
+      formatters &&
+      typeof numericValues[layer] !== "undefined" &&
+      typeof formatters[layer] === "function" &&
+      window.soleAnimateMetricText;
+
+    if (hasAnimatedSource) {
+      window.soleAnimateMetricText(centerValue, numericValues[layer], {
+        formatter: formatters[layer],
+        duration: 720
+      });
+    } else if (valueEl) {
+      centerValue.textContent = valueEl.textContent.trim();
+    }
   }
 
   card.querySelectorAll("[data-signal-layer]").forEach(btn => {
@@ -856,18 +890,49 @@ function updateSignalLayers({
     candidates: candidateValue.toLocaleString()
   };
 
-  Object.entries(values).forEach(([layer, value]) => {
-    const el = qs(`[data-signal-value="${layer}"]`, card);
-    if (el) el.textContent = value;
-  });
+const numericValues = {
+  attraction: attractionValue,
+  connection: connectionValue,
+  confidence: confidenceValue,
+  candidates: candidateValue
+};
+
+const formatters = {
+  attraction: value => formatHudPercent ? formatHudPercent(value) : `${value.toFixed(2)}%`,
+  connection: value => formatHudPercent ? formatHudPercent(value) : `${value.toFixed(2)}%`,
+  confidence: value => formatHudPercent ? formatHudPercent(value) : `${value.toFixed(2)}%`,
+  candidates: value => Math.max(1, Math.round(value)).toLocaleString()
+};
+
+Object.entries(values).forEach(([layer, value]) => {
+  const el = qs(`[data-signal-value="${layer}"]`, card);
+  if (!el) return;
+
+  if (window.soleAnimateMetricText) {
+    window.soleAnimateMetricText(el, numericValues[layer], {
+      formatter: formatters[layer],
+      duration: 720
+    });
+  } else {
+    el.textContent = value;
+  }
+});
 
   setSignalRing("attraction", attractionValue, "#ff4f73");
   setSignalRing("connection", connectionValue, "#20aa91");
   setSignalRing("confidence", confidenceValue, "#2dcfd0");
   setSignalRing("candidates", candidatePercent, "#d7a928");
 
-  const activeLayer = qs(".signalOrb", card)?.dataset.activeLayer || "confidence";
-  setSignalLayerActive(activeLayer);
+const activeLayer =
+  qs(".signalOrb", card)?.dataset.activeLayer ||
+  qs(".signalLayerBtn.isActive", card)?.dataset.signalLayer ||
+  "candidates";
+
+setSignalLayerActive(activeLayer, {
+  numericValues,
+  formatters,
+  animateCenter: true
+});
 }
 
 function syncSignalLayersFromHud() {

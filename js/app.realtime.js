@@ -317,20 +317,19 @@ async function subscribeInboxRealtime() {
             (m.sender_id === me.id && m.recipient_id === them.id)
           );
 
-        // if I'm already looking at this thread, mark this message read immediately
-          if (
-            isCurrentChatActuallyVisible() &&
-            activeThreadOpen &&
-            m.sender_id === them.id
-          ) {
-            const { error } = await sb
-              .from("messages")
-              .update({ read_at: new Date().toISOString() })
-              .eq("id", m.id);
+// If I'm genuinely looking at this exact thread, mark it read.
+// Otherwise leave it unread and refresh the badges/title.
+if (
+  activeThreadOpen &&
+  m.sender_id === them.id &&
+  isCurrentChatActuallyVisible()
+) {
+  await markCurrentThreadReadIfVisible("incoming realtime message");
+} else {
+  await renderSidebar(them?.id);
+  updateMobileMenuUnreadBadge?.();
+}
 
-            if (error) console.warn("inbox mark-as-read failed", error);
-          }
-await renderSidebar(them?.id);
 await updateConversationStatus();
 await updateSidebarDailyTasks();
 await updateInsightNotificationDots();

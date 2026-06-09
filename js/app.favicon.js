@@ -12,10 +12,11 @@
 
   const colours = {
     gold : "#ffc805",
-    blue : "#316cb2",
-    teal : "#03a99f",
-    red  : "#de0029"
+    blue : "#2dcfd0",
+    teal : "#20aa91",
+    red  : "#ff4f73"
   };
+
 
   const sequence = [
     colours.gold,
@@ -39,7 +40,7 @@
           r="15"
           fill="none"
           stroke="${ringColours[3]}"
-          stroke-width="1"/>
+          stroke-width="1.25"/>
 
         <circle
           cx="16"
@@ -47,7 +48,7 @@
           r="12"
           fill="none"
           stroke="${ringColours[2]}"
-          stroke-width="1"/>
+          stroke-width="1.25"/>
 
         <circle
           cx="16"
@@ -55,7 +56,7 @@
           r="9"
           fill="none"
           stroke="${ringColours[1]}"
-          stroke-width="1"/>
+          stroke-width="1.25"/>
 
         <circle
           cx="16"
@@ -63,7 +64,7 @@
           r="6"
           fill="none"
           stroke="${ringColours[0]}"
-          stroke-width="1"/>
+          stroke-width="1.25"/>
 
       </svg>
     `;

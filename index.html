@@ -13,11 +13,13 @@
   <link rel="stylesheet" href="./css/modules.css" />
   <link rel="stylesheet" href="./css/solemate.css" />
   <link rel="stylesheet" href="./css/insights.css" />
-  <link rel="stylesheet" href="./css/admin.css" />
   <link rel="stylesheet" href="./css/fonts.css" />
   <link rel="stylesheet" href="./css/themecolours.css" />
   <link rel="stylesheet" href="./css/mobile.css" />
   <link rel="stylesheet" href="./css/slide.css" />
+  <link rel="stylesheet" href="./css/splash.css" />
+  <link rel="stylesheet" href="./css/firsttime.css" />
+  <link rel="stylesheet" href="./css/admin.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link id="soleDynamicFavicon" rel="icon" type="image/svg+xml" href="">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,9 +30,36 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://use.typekit.net/kmm4srq.css">
 </head>
-<body>
+<body class="isSplashing isCheckingFirstTimeUser">
+<div id="soleSplash" class="soleSplash" aria-hidden="true">
+  <div class="soleSplashLogo">
+    <span class="soleSplashWord">Sole</span>
+
+    <span class="soleLogoIcon soleLogoSignal soleSplashSignal" aria-hidden="true">
+      <span class="soleLogoSignalRing ringCandidates"></span>
+      <span class="soleLogoSignalRing ringConfidence"></span>
+      <span class="soleLogoSignalRing ringConnection"></span>
+      <span class="soleLogoSignalRing ringAttraction"></span>
+    </span>
+  </div>
+</div>
+
+<div id="firstTimeUserMount" class="firstTimeUserMount" hidden></div>
+
 <div id="authScreen" class="authScreen">
   <div class="authBox">
+    <div class="soleBrand soleBrandRings" id="brandHome">
+  <span class="soleBrandLetter soleBrandLetterS">Sole</span>
+
+<span class="soleLogoIcon soleLogoSignal" aria-hidden="true">
+
+  <span class="soleLogoSignalRing ringCandidates"></span>
+  <span class="soleLogoSignalRing ringConfidence"></span>
+  <span class="soleLogoSignalRing ringConnection"></span>
+  <span class="soleLogoSignalRing ringAttraction"></span>
+
+</span>
+</div>
     <h2 id="authTitle">Log in</h2>
 
     <!-- LOGIN FORM -->
@@ -230,16 +259,16 @@
 <header class="header">
 <div class="chatMeta">
 <div class="chatMetaInner is-active" id="chatMetaInner">
+  <div class="chatModelEyebrow">
+    <span class="chatModelLabel">
+      Conversational Model
+      <i class="fa-regular fa-circle-dot"></i>
+    </span>
+  </div>
   <div class="chatTitleHolder">
     <div class="chatTitle" id="chatTitle"></div>
     <span class="chatModelVersion" id="chatModelVersion">1.03</span>
   </div>
-</div>
-<div class="chatModelEyebrow">
-  <span class="chatModelLabel">
-    Conversational Model
-    <i class="fa-regular fa-circle-dot"></i>
-  </span>
 </div>
 <div class="chatSubtitle" id="chatSubtitle"></div>
 </div>
@@ -419,12 +448,14 @@
   <script src="js/app.normalChat.js"></script>
   <script src="js/app.renderThread.js"></script>
   <script src="js/app.realtime.js"></script>
+  <script src="js/firstTimeUser.js"></script>
   <script src="js/app.initChat.js"></script>
   <script src="js/app.sendText.js"></script>
   <script src="js/app.adminViewer.js"></script>
   <script src="js/app.switchUser.js"></script>
   <script src="js/app.adminPairing.js"></script>
   <script src="js/sole.redesign.js"></script>
+  <script src="js/app.splash.js"></script>
   <script src="js/app.boot.js"></script>
 
 </body>

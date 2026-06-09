@@ -426,7 +426,7 @@
 
   .soleDailyHero p {
     max-width: 280px !important;
-    font-size: 13px !important;
+    font-size: 14px !important;
   }
 
   .soleModuleExploreHero {
@@ -445,7 +445,7 @@
   }
 
   .soleModuleTile p {
-    font-size: 12px !important;
+    font-size: 14px !important;
     max-width: 170px !important;
   }
 
@@ -997,6 +997,8 @@
     display: none !important;
   }
 
+
+
 }
 
 
@@ -1102,5 +1104,602 @@
       scroll-behavior: auto !important;
       transition-duration: 0.001ms !important;
     }
+  }
+}
+
+
+/* =========================================================
+   MOBILE MESSAGE-APP HEADER PASS
+   Hamburger left, chat title centred, actions right.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  :root {
+    --mobile-header-h: 82px;
+    --mobile-action-size: 46px;
+    --mobile-safe-top: max(10px, env(safe-area-inset-top));
+  }
+
+  /* The wrapper no longer controls layout directly;
+     each button is independently positioned. */
+  .mobileTopActions {
+    position: fixed !important;
+    inset: 0 auto auto 0 !important;
+    z-index: 10050 !important;
+    pointer-events: none !important;
+    display: block !important;
+  }
+
+  .mobileTopActionBtn {
+    position: fixed !important;
+    top: calc(var(--mobile-safe-top) + 2px) !important;
+
+    width: var(--mobile-action-size) !important;
+    height: var(--mobile-action-size) !important;
+
+    border-radius: 18px !important;
+    pointer-events: auto !important;
+  }
+
+  #mobileMenuBtnGlobal {
+    left: 12px !important;
+    right: auto !important;
+  }
+
+  #mobileChatBtn,
+  #mobileModelInfoBtn {
+    left: auto !important;
+    right: 12px !important;
+  }
+
+  /* On dashboard/home/module screens: left menu, right messages. */
+  #mobileChatBtn {
+    display: grid !important;
+  }
+
+  #mobileModelInfoBtn {
+    display: none !important;
+  }
+
+  /* On messages: left menu, right model/info. No message icon. */
+  body.mobileViewMessages #mobileChatBtn {
+    display: none !important;
+  }
+
+  body.mobileViewMessages #mobileModelInfoBtn {
+    display: grid !important;
+  }
+
+  #mobileModelInfoBtn i {
+    font-size: 19px !important;
+  }
+
+  /* -------------------------------------------------------
+     Chat header: centred, more native-message-app-like
+     ------------------------------------------------------- */
+
+  body.mobileViewMessages .header {
+    min-height: var(--mobile-header-h) !important;
+    height: var(--mobile-header-h) !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    padding:
+      calc(var(--mobile-safe-top) + 4px)
+      68px
+      10px !important;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255,255,255,.84),
+        rgba(255,255,255,.66)
+      ) !important;
+
+    border-bottom: 1px solid rgba(50,36,28,.08) !important;
+
+    box-shadow:
+      0 12px 32px rgba(76,49,31,.055),
+      inset 0 1px 0 rgba(255,255,255,.86) !important;
+
+    backdrop-filter: blur(20px) saturate(1.12) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(1.12) !important;
+  }
+
+  body.mobileViewMessages .chatMeta {
+    width: min(230px, calc(100vw - 150px)) !important;
+    min-width: 0 !important;
+    flex: none !important;
+
+    display: grid !important;
+    justify-items: center !important;
+    align-content: center !important;
+
+    text-align: center !important;
+    overflow: visible !important;
+  }
+
+  body.mobileViewMessages .chatMetaInner {
+    width: 100% !important;
+    align-items: center !important;
+  }
+
+  body.mobileViewMessages .chatTitleHolder {
+    justify-content: center !important;
+    align-items: baseline !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  body.mobileViewMessages .chatTitle {
+    max-width: 100% !important;
+
+    font-size: 30px !important;
+    line-height: .95 !important;
+    letter-spacing: -.045em !important;
+    text-align: center !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Move version/model detail into the future three-dot sheet */
+  body.mobileViewMessages .chatModelVersion,
+  body.mobileViewMessages .chatModelEyebrow {
+    display: none !important;
+  }
+
+  body.mobileViewMessages .chatSubtitle {
+    display: block !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 14px !important;
+
+    margin-top: 4px !important;
+
+    color: rgba(25,24,23,.42) !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Give message content a touch more breathing room beneath taller header. */
+  body.mobileViewMessages .messages {
+    padding-top: 16px !important;
+  }
+
+  /* -------------------------------------------------------
+     Dashboard/header side: centre Sole brand between actions
+     ------------------------------------------------------- */
+
+  body.mobileViewHome .sidebarTop {
+    min-height: calc(var(--mobile-header-h) + 4px) !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding:
+      calc(var(--mobile-safe-top) + 4px)
+      68px
+      10px !important;
+  }
+
+  body.mobileViewHome .soleBrand {
+    margin: 0 auto !important;
+    justify-content: center !important;
+  }
+
+  body.mobileViewHome .soleBrandLetter {
+    font-size: 31px !important;
+  }
+
+  /* -------------------------------------------------------
+     Rail overlay now comes from the left
+     ------------------------------------------------------- */
+
+  .soleRailNav {
+    left: 0 !important;
+    right: auto !important;
+
+    transform: translateX(calc(-100% - 24px)) scale(.98) !important;
+  }
+
+  body.mobileMenuOpen .soleRailNav {
+    transform: translateX(0) scale(1) !important;
+  }
+  
+}
+
+/* =========================================================
+   MOBILE HEADER / MENU CLEANUP
+   Cleaner message-app nav: naked icons, centred title, no active rail pill.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  :root {
+    --mobile-header-h: 78px;
+    --mobile-action-size: 44px;
+    --mobile-safe-top: max(10px, env(safe-area-inset-top));
+  }
+
+  /* Naked mobile top icons */
+  .mobileTopActionBtn {
+    width: var(--mobile-action-size) !important;
+    height: var(--mobile-action-size) !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    color: var(--sole-ink) !important;
+  }
+
+  .mobileTopActionBtn i {
+    font-size: 21px !important;
+  }
+
+  #mobileMenuBtnGlobal {
+    left: 16px !important;
+  }
+
+  #mobileChatBtn,
+  #mobileModelInfoBtn {
+    right: 16px !important;
+  }
+
+  /* True centre chat title, independent of left/right icons */
+  body.mobileViewMessages .header {
+    position: relative !important;
+    display: block !important;
+    height: var(--mobile-header-h) !important;
+    min-height: var(--mobile-header-h) !important;
+
+    padding:
+      calc(var(--mobile-safe-top) + 5px)
+      64px
+      10px !important;
+  }
+
+  body.mobileViewMessages .chatMeta {
+    position: absolute !important;
+    left: 50% !important;
+    top: calc(var(--mobile-safe-top) + 7px) !important;
+    transform: translateX(-50%) !important;
+
+    width: min(260px, calc(100vw - 150px)) !important;
+
+    display: grid !important;
+    justify-items: left !important;
+    text-align: left !important;
+  }
+
+  body.mobileViewMessages .chatTitleHolder {
+    justify-content: left !important;
+    align-items: baseline !important;
+    width: 100% !important;
+  }
+
+  body.mobileViewMessages .chatTitle {
+    font-size: 27px !important;
+    line-height: 1 !important;
+    letter-spacing: -0.045em !important;
+    text-align: center !important;
+  }
+
+  /* Use model label, hide subtitle/version on mobile */
+  body.mobileViewMessages .chatModelEyebrow {
+    display: flex !important;
+    justify-content: left !important;
+  }
+
+  body.mobileViewMessages .chatModelLabel {
+    font-size: 11px !important;
+    color: rgba(25,24,23,.42) !important;
+  }
+
+  body.mobileViewMessages .chatModelVersion,
+  body.mobileViewMessages .chatSubtitle {
+    display: none !important;
+  }
+
+  /* Left slide menu: make room for the floating hamburger */
+  .soleRailNav {
+    padding-top: calc(var(--mobile-safe-top) + 58px) !important;
+  }
+
+  .soleRailItems,
+  .soleRailBottom {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .soleRailItem {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+
+    justify-content: flex-start !important;
+    padding-left: 10px !important;
+  }
+
+  .soleRailItem.isActive {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .soleRailItem.isActive,
+  .soleRailItem.isActive i,
+  .soleRailItem.isActive span {
+    color: var(--sole-ink) !important;
+  }
+
+  .soleRailItem:hover {
+    background: rgba(255,255,255,.28) !important;
+    border-radius: 18px !important;
+  }
+
+  .soleRailItem i {
+    width: 28px !important;
+    text-align: center !important;
+  }
+
+  /* Account pill should remain pill-like */
+  .soleRailUser {
+    background: rgba(255,255,255,.62) !important;
+    border: 1px solid var(--sole-line) !important;
+    border-radius: 18px !important;
+  }
+
+  /* Home/dashboard header: centre Sole, left menu, right messages */
+  body.mobileViewHome .sidebarTop {
+    position: relative !important;
+    justify-content: center !important;
+    padding-left: 64px !important;
+    padding-right: 64px !important;
+  }
+
+  body.mobileViewHome .soleBrand {
+    margin-inline: auto !important;
+  }
+
+  
+}
+
+/* =========================================================
+   MOBILE TOP BRAND / APP CHROME
+   Dedicated fixed mobile brand. Desktop/sidebar brand remains in flow only.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  :root {
+    --mobile-header-h: 64px;
+    --mobile-action-size: 44px;
+    --mobile-safe-top: max(10px, env(safe-area-inset-top));
+  }
+
+  /* Keep the original sidebar brand in the document flow,
+     but make it invisible on mobile so it only reserves space. */
+  body.mobileViewHome .sidebarTop {
+    position: relative !important;
+    z-index: 1 !important;
+
+    height: var(--mobile-header-h) !important;
+    min-height: var(--mobile-header-h) !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+
+    pointer-events: none !important;
+  }
+
+  body.mobileViewHome .sidebarTop .soleBrand {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Add breathing room below the fixed top chrome. */
+  body.mobileViewHome .sidebarNavPane {
+    padding-top: 12px !important;
+  }
+
+  /* Fixed top action layer */
+  .mobileTopActions {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    height: var(--mobile-header-h) !important;
+
+    z-index: 10100 !important;
+
+    display: block !important;
+    pointer-events: none !important;
+  }
+
+  .mobileTopActionBtn,
+  .mobileTopBrand {
+    pointer-events: auto !important;
+  }
+
+  .mobileTopActionBtn {
+    position: fixed !important;
+    top: calc(var(--mobile-safe-top) + 1px) !important;
+
+    width: var(--mobile-action-size) !important;
+    height: var(--mobile-action-size) !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    color: var(--sole-ink) !important;
+
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  #mobileMenuBtnGlobal {
+    left: 14px !important;
+    right: auto !important;
+  }
+
+  #mobileChatBtn,
+  #mobileModelInfoBtn {
+    right: 14px !important;
+    left: auto !important;
+  }
+
+  .mobileTopBrand {
+    position: fixed !important;
+    top: calc(var(--mobile-safe-top) + 1px) !important;
+    left: 50% !important;
+
+    height: var(--mobile-action-size) !important;
+    min-width: 104px !important;
+
+    transform: translateX(-50%) !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    color: var(--sole-ink) !important;
+    cursor: pointer !important;
+  }
+
+  .mobileTopBrand .soleBrandLetter {
+    font-size: 29px !important;
+    line-height: 1 !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .mobileTopBrand .soleLogoIcon {
+    width: 25px !important;
+    height: 25px !important;
+    flex: 0 0 25px !important;
+    transform: none !important;
+  }
+
+  /* Normal messages view: chat title owns centre, so hide brand. */
+  body.mobileViewMessages:not(.mobileMenuOpen) .mobileTopBrand {
+    display: none !important;
+  }
+
+  /* But when the menu is open over messages, show the brand again. */
+  body.mobileViewMessages.mobileMenuOpen .mobileTopBrand {
+    display: inline-flex !important;
+  }
+
+  /* Dashboard/module views: show brand. */
+  body.mobileViewHome .mobileTopBrand {
+    display: inline-flex !important;
+  }
+
+  /* Dashboard/home: right icon is messages. */
+  body.mobileViewHome #mobileChatBtn {
+    display: grid !important;
+  }
+
+  body.mobileViewHome #mobileModelInfoBtn {
+    display: none !important;
+  }
+
+  /* Messages: right icon is model info. */
+  body.mobileViewMessages #mobileChatBtn {
+    display: none !important;
+  }
+
+  body.mobileViewMessages #mobileModelInfoBtn {
+    display: grid !important;
+  }
+
+  /* Menu overlay sits underneath the mobile chrome */
+  .soleRailNav {
+    border-radius: 0 !important;
+    z-index: 10080 !important;
+    padding-top: calc(var(--mobile-safe-top) + 68px) !important;
+  }
+
+  .mobileRailScrim {
+    z-index: 10070 !important;
+  }
+
+  body.mobileMenuOpen .mobileTopActions,
+  body.mobileMenuOpen .mobileTopBrand,
+  body.mobileMenuOpen #mobileMenuBtnGlobal,
+  body.mobileMenuOpen #mobileChatBtn,
+  body.mobileMenuOpen #mobileModelInfoBtn {
+    z-index: 10110 !important;
+  }
+
+  /* Move rail items down enough that hamburger/brand don't sit on top of them. */
+  body.mobileMenuOpen .soleRailItems {
+    padding-top: 2px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* When menu is open from messages, right button becomes chat again */
+  body.mobileViewMessages.mobileMenuOpen #mobileChatBtn {
+    display: grid !important;
+  }
+
+  body.mobileViewMessages.mobileMenuOpen #mobileModelInfoBtn {
+    display: none !important;
+  }
+
+  /* Prevent Sole brand flashing over chat title */
+  body.mobileViewMessages .mobileTopBrand {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 140ms ease;
+  }
+
+  body.mobileViewMessages.mobileMenuOpen .mobileTopBrand {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition-delay: 150ms;
+  }
+
+  /* Hamburger → X */
+  #mobileMenuBtnGlobal i {
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease;
+  }
+
+  body.mobileMenuOpen #mobileMenuBtnGlobal i::before {
+    content: "\f00d"; /* Font Awesome X */
+  }
+
+  body.mobileMenuOpen #mobileMenuBtnGlobal i {
+    transform: rotate(90deg);
+  }
+
+  .signalLayerBtn span {
+font-size: 14px !important;
   }
 }

@@ -1303,7 +1303,7 @@
 
 .signalLayersEyebrow {
   margin-bottom: 5px;
-  color: var(--sole-soft-ink);
+  color: var(--sole-ink);
   font-size: 10px;
   line-height: 1;
   letter-spacing: .16em;
@@ -2291,7 +2291,7 @@
 }
 
 .sidebarTasksHeader .sectionTitle {
-  color: rgba(25, 24, 23, .48);
+  color: var(--sole-ink);
 }
 
 .sidebarTasksCount {

@@ -464,10 +464,12 @@ function closeMobileRailMenu() {
 }
 
 function initMobileTopNavigation() {
-  const chatBtn = document.getElementById("mobileChatBtn");
-  const menuBtn = document.getElementById("mobileMenuBtnGlobal");
-  const oldHeaderMenuBtn = document.getElementById("mobileMenuBtn");
-  const scrim = document.getElementById("mobileRailScrim");
+const chatBtn = document.getElementById("mobileChatBtn");
+const menuBtn = document.getElementById("mobileMenuBtnGlobal");
+const mobileTopBrand = document.getElementById("mobileTopBrand");
+const modelInfoBtn = document.getElementById("mobileModelInfoBtn");
+const oldHeaderMenuBtn = document.getElementById("mobileMenuBtn");
+const scrim = document.getElementById("mobileRailScrim");
 
   chatBtn?.addEventListener("click", () => {
     setMobileView("messages");
@@ -489,6 +491,23 @@ function initMobileTopNavigation() {
       openMobileRailMenu();
     }
   });
+
+  mobileTopBrand?.addEventListener("click", () => {
+  setMobileView("home", { writeHistory: false });
+  closeMobileRailMenu();
+
+  window.soleRedesignNavigate?.("home");
+});
+
+  modelInfoBtn?.addEventListener("click", () => {
+  const name = chatTitle?.textContent?.trim() || "Conversation";
+  const version = chatModelVersion?.textContent?.trim() || "";
+  const status = chatSubtitle?.textContent?.trim() || "";
+
+  alert(
+    `${name}\n\nConversational Model${version ? ` ${version}` : ""}${status ? `\n${status}` : ""}`
+  );
+});
 
   scrim?.addEventListener("click", closeMobileRailMenu);
 

@@ -33,6 +33,8 @@ if (window.visualViewport) {
 me = profile;
 applyMe();
 
+await window.solePush?.registerForSolePush?.();
+
 await startUserPresence();
 await subscribeSolematePortraitRealtime(me.id);
 await subscribeUserInsightsRealtime(me.id);

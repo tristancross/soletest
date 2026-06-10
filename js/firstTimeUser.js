@@ -695,6 +695,19 @@ function getFirstTimePartnerName() {
   );
 }
 
+function forceFirstTimeMobileMessagesView() {
+  if (typeof isMobileLayout === "function" && isMobileLayout()) {
+    if (typeof setMobileView === "function") {
+      setMobileView("messages", { writeHistory: false });
+    } else {
+      document.body.classList.add("mobileViewMessages");
+      document.body.classList.remove("mobileViewHome");
+    }
+
+    closeMobileRailMenu?.();
+  }
+}
+
 function forceFirstTimeChatFocus() {
   const appEl = document.querySelector(".app.soleRedesignApp");
   if (!appEl) return;
@@ -758,10 +771,13 @@ async function markFirstTimeJourneyComplete() {
 
 async function prepareFirstTimeChatShell() {
   forceFirstTimeChatFocus();
+  forceFirstTimeMobileMessagesView();
 
   if (typeof renderSidebar === "function") {
     await renderSidebar();
   }
+
+  forceFirstTimeMobileMessagesView();
 
   if (typeof updateSidebarDailyTasks === "function") {
     await updateSidebarDailyTasks();
@@ -771,7 +787,6 @@ async function prepareFirstTimeChatShell() {
     await updateInsightNotificationDots();
   }
 
-  // Do NOT call openChat here. This intentionally avoids loading the thread.
   them = assignedPartner || null;
 
   chatTitle.textContent = "Sole";
@@ -1181,6 +1196,7 @@ function renderFirstTimeUserStartsBranch() {
 
       await markFirstTimeJourneyComplete();
       hideFirstTimeUserOverlay?.();
+       forceFirstTimeMobileMessagesView();
 
 if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
   await openChat(assignedPartner);
@@ -1217,6 +1233,7 @@ function renderFirstTimePartnerStartedBranch() {
 
       await markFirstTimeJourneyComplete();
       hideFirstTimeUserOverlay?.();
+       forceFirstTimeMobileMessagesView();
 
       if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
         await openChat(assignedPartner);
@@ -1233,6 +1250,7 @@ function renderFirstTimePostSendOverlay(kind) {
 
   showFirstTimeUserOverlay();
   revealFirstTimeChatShellBehindOverlay();
+  forceFirstTimeMobileMessagesView();
   disableFirstTimeComposer("Conversation continuing");
 
   if (kind === "reply") {

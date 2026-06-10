@@ -17,38 +17,45 @@
     }
   }
 
-  async function savePushToken(tokenValue) {
-    if (!window.sb || !window.me?.id || !tokenValue) {
-      console.warn("[Sole push] Cannot save token yet", {
-        hasSb: !!window.sb,
-        userId: window.me?.id || null,
-        hasToken: !!tokenValue
-      });
-      return;
-    }
-
-    const { error } = await window.sb
-      .from("user_push_tokens")
-      .upsert(
-        {
-          user_id: window.me.id,
-          token: tokenValue,
-          platform: getPlatform(),
-          enabled: true,
-          updated_at: new Date().toISOString()
-        },
-        {
-          onConflict: "user_id,token"
-        }
-      );
-
-    if (error) {
-      console.error("[Sole push] Failed to save push token", error);
-      return;
-    }
-
-    console.log("[Sole push] Push token saved");
+ async function savePushToken(tokenValue) {
+  if (!tokenValue) {
+    console.warn("[Sole push] Missing token value");
+    return;
   }
+
+  if (!sb || !me?.id) {
+    console.warn("[Sole push] Cannot save token yet", {
+      hasSb: typeof sb !== "undefined" && !!sb,
+      userId: typeof me !== "undefined" ? me?.id : null,
+      hasToken: !!tokenValue
+    });
+    return;
+  }
+
+  const { data, error } = await sb
+    .from("user_push_tokens")
+    .upsert(
+      {
+        user_id: me.id,
+        token: tokenValue,
+        platform: getPlatform(),
+        enabled: true,
+        updated_at: new Date().toISOString()
+      },
+      {
+        onConflict: "user_id,token"
+      }
+    )
+    .select("*");
+
+  if (error) {
+    console.error("[Sole push] Failed to save push token", error);
+    alert("Push token save failed: " + error.message);
+    return;
+  }
+
+  console.log("[Sole push] Push token saved", data);
+}
 
   async function registerForSolePush() {
     if (hasRegisteredPush) return;

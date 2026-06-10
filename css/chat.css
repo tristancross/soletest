@@ -1432,13 +1432,13 @@ padding-bottom: 25px;
   display:inline-flex;
   align-items:center;
   font-size: 11px;
-  gap:7px;
+  gap:6px;
 }
 
 .chatModelLabel i{
   color:var(--sole-coral);
 color: #d8942d;  
-font-size:11px;
+font-size:10px;
 }
 
 .ai-icon{
@@ -1496,8 +1496,7 @@ height: auto;
   font-family:var(--font-data, monospace);
   font-size:11px;
   min-height:18px;
-  margin-top: 2px;
-  
+    transform:translateY(3px);
 }
 
 .chatTitleHolder {

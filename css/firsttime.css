@@ -67,7 +67,7 @@ body.isFirstTimeUserActive #authScreen {
   background:
     radial-gradient(circle at 14% 10%, rgba(255,255,255,.96), transparent 34%),
     radial-gradient(circle at 84% 22%, rgba(255,118,95,.12), transparent 38%),
-    linear-gradient(135deg, rgba(255,255,255,.76), rgba(255,247,241,.50));
+    linear-gradient(135deg, rgba(255,255,255,1), rgba(255,247,241,1));
 
   box-shadow:
     0 28px 80px rgba(76,49,31,.10),

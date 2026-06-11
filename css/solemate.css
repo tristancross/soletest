@@ -1110,3 +1110,48 @@ margin-bottom: 20px;
     line-height: 1.6;
   }
 }
+
+/* =========================================================
+   SOLEMATE MODEL — SCROLL FIX
+   Let the Model tab scroll on shorter screens.
+   ========================================================= */
+
+.sidebarNavPane:has(.solemateModelPanel) .moduleSubviewContent {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  padding-right: 8px !important;
+  padding-bottom: 32px !important;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25,24,23,.20) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sidebarNavPane:has(.solemateModelPanel) .moduleSubviewContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebarNavPane:has(.solemateModelPanel) .moduleSubviewContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebarNavPane:has(.solemateModelPanel) .moduleSubviewContent::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(25,24,23,.18);
+}
+
+.sidebarNavPane:has(.solemateModelPanel) .solemateModelPanel {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+
+  overflow: visible !important;
+
+  padding-bottom: 42px !important;
+}

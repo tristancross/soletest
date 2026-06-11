@@ -540,15 +540,15 @@ async function subscribeRealtime(aId, bId, alignAsSenderId, options = {}) {
     .on(
       "postgres_changes",
    {
-  event: "INSERT",
-  schema: "public",
-  table: "messages",
-  filter: `recipient_id=eq.${me.id}`
+    event: "INSERT",
+    schema: "public",
+    table: "messages"
 },
       async (payload) => {
         const m = payload.new;
 
         if (!isMessageInThread(m)) return;
+        if (shouldHideMessageForViewer(m, alignAsSenderId)) return;
 
         const key = `${m.sender_id}|${m.recipient_id}|${m.text}`;
         const t = recentSends.get(key);
@@ -794,8 +794,10 @@ textInput.addEventListener("input", () => {
     }
   });
 
-  if (!trimmed) {
+if (!trimmed) {
+  if (lastDraftTextSent !== "") {
     lastDraftTextSent = "";
+    lastDraftSentAt = 0;
 
     channel.send({
       type: "broadcast",
@@ -805,13 +807,15 @@ textInput.addEventListener("input", () => {
         recipient: them.id
       }
     });
-
-    return;
   }
 
+  return;
+}
+
+const textChanged = rawText !== lastDraftTextSent;
 const enoughTimePassed = now - lastDraftSentAt > 90;
 
-if (!enoughTimePassed) return;
+if (!textChanged || !enoughTimePassed) return;
 
   lastDraftSentAt = now;
   lastDraftTextSent = rawText;

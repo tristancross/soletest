@@ -211,12 +211,18 @@ function enhanceDashboard(){
   const sidebarPane = qs(".sidebarNavPane");
   if (!sidebarPane) return;
 
-  const isModuleScreen = !!sidebarPane.querySelector(".moduleHero, .moduleSubviewTabs");
+  const appEl = qs(".app.soleRedesignApp");
+  const activeModule = appEl?.dataset?.activeModule || "";
+
+  const isModuleScreen =
+    !!activeModule ||
+    !!sidebarPane.querySelector(".moduleHero, .moduleSubviewTabs, .betaFeedbackPanel");
 
   if (isModuleScreen) {
     sidebarPane.querySelector(".soleDailyHero")?.remove();
     sidebarPane.querySelector(".soleModuleTiles")?.remove();
     sidebarPane.querySelector(".soleDashboardGreeting")?.remove();
+    sidebarPane.querySelector(".soleDashboardStatusRow")?.remove();
     return;
   }
 
@@ -328,6 +334,110 @@ async function openModule(screen){
   }
 }
 
+function renderBetaFeedbackScreen(sidebarPaneEl) {
+  if (!sidebarPaneEl) return;
+
+  sidebarPaneEl.innerHTML = `
+<section class="betaFeedbackPanel moduleHero">
+      <div class="betaFeedbackHeader">
+        <div class="dashboardEyebrow">Beta feedback</div>
+        <h3>Sole Feedback</h3>
+        <p>
+          Sole is currently in a closed beta test. Use this box for bugs,
+          confusing moments, anything that feels broken, or thoughts about how
+          you’re finding your chat partner.
+        </p>
+      </div>
+
+<div class="betaFeedbackCard" id="betaFeedbackCard">
+  <div class="betaFeedbackForm" id="betaFeedbackForm">
+    <label class="betaFeedbackLabel" for="betaFeedbackText">
+      Your feedback
+    </label>
+
+    <textarea
+      id="betaFeedbackText"
+      class="betaFeedbackTextarea"
+      placeholder="What did you notice?"
+      rows="8"
+    ></textarea>
+
+    <div class="betaFeedbackActions">
+      <p class="betaFeedbackStatus" id="betaFeedbackStatus" aria-live="polite"></p>
+
+      <button type="button" class="soleModuleExplore betaFeedbackSendBtn" id="betaFeedbackSendBtn">
+        <span>Send</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="betaFeedbackThanks" id="betaFeedbackThanks" hidden>
+    <i class="fa-regular fa-circle-check"></i>
+    <strong>Thank you — feedback received!</strong>
+  </div>
+</div>
+    </section>
+  `;
+
+const cardEl = sidebarPaneEl.querySelector("#betaFeedbackCard");
+const formEl = sidebarPaneEl.querySelector("#betaFeedbackForm");
+const thanksEl = sidebarPaneEl.querySelector("#betaFeedbackThanks");
+const textEl = sidebarPaneEl.querySelector("#betaFeedbackText");
+const sendBtn = sidebarPaneEl.querySelector("#betaFeedbackSendBtn");
+const statusEl = sidebarPaneEl.querySelector("#betaFeedbackStatus");
+
+  sendBtn?.addEventListener("click", async () => {
+    const feedbackText = textEl?.value?.trim();
+
+    if (!feedbackText) {
+      statusEl.textContent = "Write a little feedback first.";
+      statusEl.dataset.kind = "error";
+      return;
+    }
+
+    sendBtn.disabled = true;
+    statusEl.textContent = "Sending...";
+    statusEl.dataset.kind = "";
+
+    const appEl = qs(".app.soleRedesignApp");
+    const pageContext = appEl?.dataset?.activeModule || "home";
+
+    const { error } = await sb
+      .from("beta_feedback")
+      .insert({
+        user_id: me.id,
+        feedback_text: feedbackText,
+        page_context: pageContext,
+        user_agent: navigator.userAgent
+      });
+
+    if (error) {
+      console.warn("Could not submit beta feedback", error);
+      statusEl.textContent = "Could not send feedback. Try again in a moment.";
+      statusEl.dataset.kind = "error";
+      sendBtn.disabled = false;
+      return;
+    }
+
+textEl.value = "";
+statusEl.textContent = "";
+statusEl.dataset.kind = "";
+
+cardEl?.classList.add("isSubmitted");
+if (formEl) formEl.hidden = true;
+if (thanksEl) thanksEl.hidden = false;
+
+window.setTimeout(() => {
+  cardEl?.classList.remove("isSubmitted");
+  if (thanksEl) thanksEl.hidden = true;
+  if (formEl) formEl.hidden = false;
+  sendBtn.disabled = false;
+  textEl?.focus?.();
+}, 10000);
+  });
+}
+
 async function handleRailClick(target){
   const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
   if (!action) return;
@@ -339,10 +449,10 @@ async function handleRailClick(target){
         ? "solemate"
         : action;
 
-  if (
-    ["home", "attraction", "connection", "solemate"].includes(historyAction) &&
-    !window.soleAppHistoryIsApplying?.()
-  ) {
+if (
+  ["home", "attraction", "connection", "solemate", "feedback"].includes(historyAction) &&
+  !window.soleAppHistoryIsApplying?.()
+) {
     window.soleAppHistoryPush?.({
       kind: "rail",
       action: historyAction
@@ -419,7 +529,54 @@ if (action === "solemate" || action === "insights") {
   return;
 }
 
-if (action === "settings" || action === "account") {
+if (action === "feedback") {
+  const sidebarPaneEl = getSidebarPane();
+  const appEl = qs(".app.soleRedesignApp");
+
+  if (window.soleModuleTransitioning) return;
+  window.soleModuleTransitioning = true;
+
+  try {
+    clearModuleTransitionClasses(sidebarPaneEl);
+    sidebarPaneEl?.classList.add("isModuleHidden");
+
+    await wait(170);
+
+    setActiveRailItem("feedback");
+
+    if (appEl) {
+      appEl.dataset.activeModule = "feedback";
+      appEl.dataset.transitionModule = "feedback";
+    }
+
+    sidebarPaneEl?.classList.add("isModuleLoading");
+
+    renderBetaFeedbackScreen(sidebarPaneEl);
+
+    await wait(80);
+
+    sidebarPaneEl?.classList.remove("isModuleLoading");
+    sidebarPaneEl?.classList.add("isModuleEntering");
+
+    requestAnimationFrame(() => {
+      sidebarPaneEl?.classList.remove("isModuleHidden");
+    });
+
+    window.setTimeout(() => {
+      sidebarPaneEl?.classList.remove("isModuleEntering");
+    }, 560);
+  } finally {
+    window.soleModuleTransitioning = false;
+
+    if (appEl) {
+      delete appEl.dataset.transitionModule;
+    }
+  }
+
+  return;
+}
+
+if (action === "account") {
   const account = qs("#soleRailAccount");
   account?.classList.toggle("open");
   return;

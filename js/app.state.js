@@ -33,8 +33,9 @@ let partnerFacts = [];
 let partnerFactIndex = 0;
 let partnerFactTimer = null;
 
-let chatVersionTimer = null;
 let chatModelVersionNumber = 1.03;
+let chatModelMessagesSinceBump = 0;
+let chatModelMessagesUntilBump = 3;
 
 const recordingTimerEl = document.getElementById("recordingTimer");
 

@@ -878,53 +878,39 @@ cursor: pointer;
   }
 }
 
-
-/* ==========================================
-   SOLE SIGNAL LOGO
-========================================== */
-
 .soleLogoSignal{
   --logo-size:32px;
-  --ring-stroke:2.5px;
-  --ring-step:3px;
+  --ring-stroke:2px;
 
   position:relative;
   width:var(--logo-size);
   height:var(--logo-size);
   flex:0 0 var(--logo-size);
+  aspect-ratio:1 / 1;
   border-radius:999px;
+  display:inline-block;
 }
 
 .soleLogoSignalRing{
   position:absolute;
   border-radius:999px;
   border:var(--ring-stroke) solid #ffc805;
+  box-sizing:border-box;
   box-shadow:none;
   animation:soleLogoColourWash 12s ease-in-out infinite;
 }
 
-/* Outermost */
-.ringCandidates{
-  inset:0;
-  animation-delay:.9s;
-}
+/* evenly spaced rings, bigger hollow core */
+.ringCandidates{ inset:0%; animation-delay:.9s; }
+.ringConfidence{ inset:10%; animation-delay:.6s; }
+.ringConnection{ inset:20%; animation-delay:.3s; }
+.ringAttraction{ inset:30%; animation-delay:0s; }
 
-/* Third ring */
-.ringConfidence{
-  inset:var(--ring-step);
-  animation-delay:.6s;
-}
-
-/* Second ring */
-.ringConnection{
-  inset:calc(var(--ring-step) * 2);
-  animation-delay:.3s;
-}
-
-/* Innermost */
-.ringAttraction{
-  inset:calc(var(--ring-step) * 3);
-  animation-delay:0s;
+@media (max-width:768px){
+  .mobileTopBrand .soleLogoSignal{
+    --logo-size:25px;
+    --ring-stroke:1.5px;
+  }
 }
 
 @keyframes soleLogoColourWash{
@@ -949,13 +935,7 @@ cursor: pointer;
   }
 }
 
-@media (max-width:768px){
-  .mobileTopBrand .soleLogoSignal{
-    --logo-size:22px;
-    --ring-stroke:1.5px;
-    --ring-step:2px;
-  }
-}
+
 
 /* Portalled rail account menu.
    JS moves #soleRailAccountMenu to <body> so it can escape .app overflow clipping. */

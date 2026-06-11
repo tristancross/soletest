@@ -1610,3 +1610,894 @@ body:has(.app.isAdminMode) .app.isAdminMode {
   height: 100vh !important;
   overflow: auto !important;
 }
+
+.adminQuickAssignOverlay{
+  position:fixed;
+  inset:0;
+  z-index:12000;
+
+  display:grid;
+  place-items:center;
+
+  padding:22px;
+
+  background:rgba(25,24,23,.28);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+.adminQuickAssignPanel{
+  width:min(560px, calc(100vw - 32px));
+  max-height:min(720px, calc(100vh - 44px));
+  overflow:auto;
+
+  border:1px solid var(--sole-line);
+  border-radius:24px;
+
+  padding:20px;
+
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.96), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.94), rgba(255,247,241,.88));
+
+  color:var(--sole-ink);
+
+  box-shadow:
+    0 30px 90px rgba(76,49,31,.20),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+.adminQuickAssignHeader{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+
+  margin-bottom:18px;
+}
+
+.adminQuickAssignHeader h3{
+  margin:0 0 6px;
+  color:var(--sole-ink);
+  font-size:22px;
+  line-height:1.1;
+}
+
+.adminQuickAssignHeader p{
+  margin:0;
+  color:var(--sole-soft-ink);
+  font-size:13px;
+  line-height:1.4;
+}
+
+.adminQuickAssignUserPicker{
+  max-height:260px;
+  overflow:auto;
+
+  padding:10px;
+
+  border:1px solid var(--sole-line);
+  border-radius:16px;
+
+  background:rgba(255,255,255,.36);
+}
+
+.adminQuickAssignActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+
+  margin-top:18px;
+}
+
+.adminQuickEditOverlay{
+  position:fixed;
+  inset:0;
+  z-index:12000;
+
+  display:grid;
+  place-items:center;
+
+  padding:22px;
+
+  background:rgba(25,24,23,.28);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+.adminQuickEditPanel{
+  width:min(640px, calc(100vw - 32px));
+  max-height:min(760px, calc(100vh - 44px));
+  overflow:auto;
+
+  border:1px solid var(--sole-line);
+  border-radius:24px;
+
+  padding:20px;
+
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.96), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.94), rgba(255,247,241,.88));
+
+  color:var(--sole-ink);
+
+  box-shadow:
+    0 30px 90px rgba(76,49,31,.20),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+.adminQuickEditHeader{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+
+  margin-bottom:18px;
+}
+
+.adminQuickEditHeader h3{
+  margin:0 0 6px;
+  color:var(--sole-ink);
+  font-size:22px;
+  line-height:1.1;
+}
+
+.adminQuickEditHeader p{
+  margin:0;
+  color:var(--sole-soft-ink);
+  font-size:13px;
+  line-height:1.4;
+}
+
+.adminQuickEditPanel textarea{
+  min-height:110px;
+}
+
+.adminQuickEditActions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+
+  margin-top:18px;
+}
+
+.adminTemplateVariantPill{
+  display:inline-flex;
+  align-items:center;
+  vertical-align:middle;
+
+  margin-left:8px;
+  padding:4px 8px;
+
+  border:1px solid rgba(50,36,28,.08);
+  border-radius:999px;
+
+  background:rgba(255,255,255,.52);
+  color:rgba(25,24,23,.56);
+
+  font-size:11px;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:.02em;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+/* =========================================================
+   ADMIN CHAT FACTS
+   CMS for chatSubtitle factoids.
+   ========================================================= */
+
+.adminFactsPanel {
+  display: grid;
+  gap: 18px;
+}
+
+.adminFactsList {
+  display: grid;
+  gap: 14px;
+}
+
+.adminFactsUserCard {
+  border: 1px solid var(--sole-line);
+  border-radius: 20px;
+  padding: 16px;
+
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.78), transparent 34%),
+    rgba(255,255,255,.38);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.adminFactsUserHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+
+  margin-bottom: 14px;
+}
+
+.adminFactsUserHeader h4 {
+  margin: 0 0 4px;
+  color: var(--sole-ink);
+  font-size: 17px;
+}
+
+.adminFactsUserHeader p {
+  margin: 0;
+  color: var(--sole-soft-ink);
+  font-size: 13px;
+}
+
+.adminFactsUserHeader span {
+  flex: 0 0 auto;
+
+  border: 1px solid rgba(50,36,28,.08);
+  border-radius: 999px;
+  padding: 6px 9px;
+
+  background: rgba(255,255,255,.42);
+  color: rgba(25,24,23,.48);
+
+  font-size: 11px;
+  line-height: 1;
+}
+
+.adminFactsRows {
+  display: grid;
+  gap: 8px;
+}
+
+.adminFactRow,
+.adminFactNewRow {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.adminFactNewRow {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(50,36,28,.07);
+}
+
+.adminFactRow input,
+.adminFactNewRow input {
+  min-width: 0;
+
+  border: 1px solid var(--sole-line);
+  border-radius: 12px;
+  padding: 9px 10px;
+
+  background: rgba(255,255,255,.62);
+  color: var(--sole-ink);
+
+  font: inherit;
+  font-size: 13px;
+}
+
+.adminFactOrderInput {
+  text-align: center;
+}
+
+.adminFactActiveToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  color: rgba(25,24,23,.52);
+
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.adminFactsEmpty {
+  padding: 12px;
+
+  border: 1px dashed rgba(50,36,28,.12);
+  border-radius: 14px;
+
+  color: var(--sole-soft-ink);
+  background: rgba(255,255,255,.28);
+
+  font-size: 13px;
+}
+
+.adminDangerBtn {
+  color: #c84d3b !important;
+}
+
+@media (max-width: 900px) {
+  .adminFactRow,
+  .adminFactNewRow {
+    grid-template-columns: 1fr;
+  }
+
+  .adminFactActiveToggle {
+    justify-content: flex-start;
+  }
+}
+
+/* =========================================================
+   ADMIN SETTINGS
+   ========================================================= */
+
+.adminSettingsPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.adminSettingCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  border: 1px solid var(--sole-line);
+  border-radius: 20px;
+  padding: 16px;
+
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.78), transparent 34%),
+    rgba(255,255,255,.38);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.adminSettingCard h4 {
+  margin: 0 0 5px;
+  color: var(--sole-ink);
+  font-size: 17px;
+}
+
+.adminSettingCard p {
+  margin: 0;
+  max-width: 520px;
+  color: var(--sole-soft-ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+@media (max-width: 760px) {
+  .adminSettingCard {
+    display: grid;
+  }
+
+  .adminSettingCard .btn {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   ADMIN FEEDBACK
+   ========================================================= */
+
+.adminFeedbackPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.adminFeedbackList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminFeedbackCard {
+  border: 1px solid var(--sole-line);
+  border-radius: 18px;
+  padding: 14px;
+
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.76), transparent 34%),
+    rgba(255,255,255,.38);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.adminFeedbackMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  margin-bottom: 10px;
+
+  color: var(--sole-soft-ink);
+  font-size: 12px;
+}
+
+.adminFeedbackMeta strong {
+  color: var(--sole-ink);
+  font-size: 13px;
+}
+
+.adminFeedbackMeta em {
+  border: 1px solid rgba(50,36,28,.08);
+  border-radius: 999px;
+  padding: 3px 7px;
+
+  background: rgba(255,255,255,.46);
+  color: rgba(25,24,23,.48);
+
+  font-style: normal;
+  font-size: 11px;
+}
+
+.adminFeedbackText {
+  white-space: pre-wrap;
+  color: rgba(25,24,23,.72);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   ADMIN CHATS OVERVIEW — WhatsApp-style pair inbox
+   ========================================================= */
+
+.adminChatsOverviewPanel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.adminChatsOverviewPanel .adminPanelHeader {
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid rgba(50,36,28,.07);
+}
+
+.adminChatsOverviewList {
+  display: grid;
+}
+
+.adminChatOverviewRow {
+  appearance: none;
+  width: 100%;
+
+  border: 0;
+  border-bottom: 1px solid rgba(50,36,28,.07);
+  background: transparent;
+  color: var(--sole-ink);
+
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+
+  padding: 14px 18px;
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.adminChatOverviewRow:hover {
+  background: rgba(255,255,255,.44);
+}
+
+.adminChatOverviewRow.hasUnread {
+  background:
+    radial-gradient(circle at 2% 50%, rgba(255,118,95,.08), transparent 28%),
+    rgba(255,255,255,.30);
+}
+
+.adminChatAvatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255,255,255,.94), rgba(255,255,255,.24)),
+    rgba(255,118,95,.10);
+
+  color: rgba(25,24,23,.72);
+
+  font-size: 17px;
+  font-weight: 750;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.78),
+    0 10px 24px rgba(76,49,31,.06);
+}
+
+.adminChatOverviewMain {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.adminChatOverviewTop {
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.adminChatOverviewTop strong {
+  min-width: 0;
+
+  color: var(--sole-ink);
+  font-size: 15px;
+  line-height: 1.15;
+  font-weight: 650;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adminChatOverviewTop time {
+  color: rgba(25,24,23,.48);
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.adminChatPreview {
+  min-width: 0;
+
+  color: rgba(25,24,23,.56);
+  font-size: 13px;
+  line-height: 1.25;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adminChatOverviewRow.hasUnread .adminChatOverviewTop strong,
+.adminChatOverviewRow.hasUnread .adminChatPreview {
+  font-weight: 750;
+  color: rgba(25,24,23,.82);
+}
+
+.adminChatUnreadBadge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+
+  border-radius: 999px;
+
+  display: inline-grid;
+  place-items: center;
+
+  background: #27c46a;
+  color: #fff;
+
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+
+  box-shadow:
+    0 8px 18px rgba(39,196,106,.18),
+    0 0 0 4px rgba(39,196,106,.08);
+}
+
+.adminChatReadSpacer {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 720px) {
+  .adminChatOverviewRow {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 11px;
+    padding: 13px 14px;
+  }
+
+  .adminChatAvatar {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+
+  .adminChatOverviewTop strong {
+    font-size: 14px;
+  }
+}
+
+/* =========================================================
+   MOBILE ADMIN WORKSPACE
+   Full-screen admin with slide-over menu.
+   ========================================================= */
+
+.mobileAdminQuickBtn {
+  display: none;
+}
+
+.adminMobileMenuBtn,
+.adminMobileNavScrim {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileAdminQuickBtn {
+    position: fixed;
+    right: 14px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    z-index: 19000;
+
+    min-height: 38px;
+    padding: 0 13px;
+
+    border: 1px solid rgba(50,36,28,.10);
+    border-radius: 999px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.94), transparent 34%),
+      rgba(255,255,255,.78);
+
+    color: var(--sole-ink);
+
+    font: inherit;
+    font-size: 12px;
+    font-weight: 750;
+
+    box-shadow:
+      0 18px 42px rgba(76,49,31,.14),
+      inset 0 1px 0 rgba(255,255,255,.86);
+
+    backdrop-filter: blur(18px) saturate(1.15);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  }
+
+  .mobileAdminQuickBtn[hidden] {
+    display: none !important;
+  }
+
+  .app.isAdminMode .adminWorkspaceShell {
+    grid-template-columns: 1fr !important;
+    display: block !important;
+    position: relative;
+  }
+
+  .app.isAdminMode .adminWorkspaceContent {
+    width: 100vw !important;
+    height: 100dvh !important;
+    padding: 64px 12px 18px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .adminMobileMenuBtn {
+    position: fixed;
+    left: 12px;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    z-index: 13020;
+
+    height: 38px;
+    padding: 0 13px;
+
+    border: 1px solid rgba(50,36,28,.10);
+    border-radius: 999px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.94), transparent 34%),
+      rgba(255,255,255,.82);
+
+    color: var(--sole-ink);
+
+    font: inherit;
+    font-size: 12px;
+    font-weight: 750;
+
+    box-shadow:
+      0 14px 34px rgba(76,49,31,.12),
+      inset 0 1px 0 rgba(255,255,255,.86);
+
+    backdrop-filter: blur(18px) saturate(1.15);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  }
+
+  .adminMobileNavScrim {
+    position: fixed;
+    inset: 0;
+    z-index: 13000;
+
+    display: block;
+
+    background: rgba(25,24,23,.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .adminMobileNavScrim[hidden] {
+    display: none !important;
+  }
+
+  .app.isAdminMode .adminWorkspaceNav {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 13010;
+
+    width: min(310px, calc(100vw - 46px)) !important;
+    height: 100dvh !important;
+
+    padding: calc(22px + env(safe-area-inset-top, 0px)) 16px 18px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+
+    border-right: 1px solid rgba(50,36,28,.10) !important;
+
+    background:
+      radial-gradient(circle at 12% 8%, rgba(255,255,255,.96), transparent 34%),
+      linear-gradient(135deg, rgba(255,255,255,.94), rgba(255,247,241,.90)) !important;
+
+    box-shadow:
+      26px 0 70px rgba(76,49,31,.18),
+      inset 0 1px 0 rgba(255,255,255,.88) !important;
+
+    overflow-y: auto !important;
+
+    transform: translateX(-105%);
+    transition: transform 180ms cubic-bezier(.16, 1, .3, 1);
+  }
+
+  .app.isAdminMode .adminWorkspaceNav.isOpen {
+    transform: translateX(0);
+  }
+
+  .app.isAdminMode .adminWorkspaceTitle {
+    margin-bottom: 12px;
+    padding-right: 42px;
+  }
+
+  .app.isAdminMode .adminNavBtn {
+    min-height: 40px;
+    border-radius: 14px;
+    padding: 0 12px;
+    background: rgba(255,255,255,.42);
+  }
+
+  .app.isAdminMode .adminNavBtn.isActive {
+    background: rgba(255,118,95,.10);
+    color: var(--sole-ink);
+    font-weight: 750;
+  }
+
+  .app.isAdminMode .adminPanel {
+    border-radius: 22px;
+  }
+}
+
+@media (max-width: 768px) {
+  .adminPairTranscript {
+    height: calc(100dvh - 310px);
+    min-height: 280px;
+    border-radius: 20px;
+    padding: 12px;
+  }
+
+  .adminTranscriptLine {
+    width: 100%;
+  }
+
+  .adminTranscriptLineBody {
+    max-width: min(82vw, 500px);
+  }
+
+  .adminSystemComposer {
+    grid-template-columns: 1fr !important;
+    border-radius: 20px;
+  }
+
+  .adminChatsOverviewPanel .adminPanelHeader {
+    padding: 18px 16px 14px;
+  }
+
+  .adminChatOverviewRow {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    padding: 13px 12px;
+    gap: 11px;
+  }
+
+  .adminChatAvatar {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ADMIN MOBILE SURFACE HARD OVERRIDE */
+body.mobileViewHome:has(.app.isAdminMode) .main,
+body.mobileViewMessages:has(.app.isAdminMode) .main,
+body:has(.app.isAdminMode) .main {
+  display: block !important;
+}
+
+body:has(.app.isAdminMode) .sidebar.soleDashboardPane,
+body:has(.app.isAdminMode) .mobileTopActions,
+body:has(.app.isAdminMode) .mobileRailScrim,
+body:has(.app.isAdminMode) .mobileSidebarBackdrop {
+  display: none !important;
+}
+
+body:has(.app.isAdminMode) .app.soleRedesignApp {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+}
+
+body:has(.app.isAdminMode) .messages {
+  display: block !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+/* ADMIN SYSTEM NOTE AUDIENCE PICKER */
+
+.adminSystemAudienceField {
+  display: grid;
+  grid-template-columns: auto minmax(0, 220px);
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 8px;
+
+  color: rgba(25,24,23,.52);
+  font-size: 12px;
+}
+
+.adminSystemAudienceField span {
+  font-weight: 700;
+}
+
+.adminSystemAudienceField select {
+  width: 100%;
+
+  border: 1px solid var(--sole-line);
+  border-radius: 999px;
+  padding: 8px 11px;
+
+  background: rgba(255,255,255,.68);
+  color: var(--sole-ink);
+
+  font: inherit;
+  font-size: 12px;
+}
+
+.adminSystemAudienceField select:focus {
+  outline: none;
+  border-color: rgba(255,118,95,.28);
+  box-shadow: 0 0 0 3px rgba(255,118,95,.08);
+}
+
+@media (max-width: 768px) {
+  .adminSystemAudienceField {
+    grid-template-columns: 1fr;
+  }
+}

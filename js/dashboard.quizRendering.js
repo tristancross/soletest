@@ -261,14 +261,27 @@ if (question.type === "ranking") {
               <div class="quizSwipeCaption">${escapeHtml(currentCard.label)}</div>
             </div>
 
-            <div class="quizSwipeActions">
-              <button type="button" class="quizSwipeBtn reject" data-swipe-direction="reject">
-                Pass
-              </button>
-              <button type="button" class="quizSwipeBtn like" data-swipe-direction="like">
-                Like
-              </button>
-            </div>
+<div class="quizSwipeActions">
+  <button
+    type="button"
+    class="quizSwipeBtn reject"
+    data-swipe-direction="reject"
+    aria-label="Pass"
+    title="Pass"
+  >
+    <span class="quizSwipeBtnText">Pass</span>
+  </button>
+
+  <button
+    type="button"
+    class="quizSwipeBtn like"
+    data-swipe-direction="like"
+    aria-label="Like"
+    title="Like"
+  >
+    <span class="quizSwipeBtnText">Like</span>
+  </button>
+</div>
           `
       }
     </div>
@@ -690,9 +703,16 @@ const isFinalStep = currentStep === assignment.questions.length - 1;
       >
 
 
-        ${renderQuestionInput(currentQuestion, mergedAnswers, escapeHtml)}
+        <div class="quizQuestionMount">
+          ${renderQuestionInput(currentQuestion, mergedAnswers, escapeHtml)}
+        </div>
 
-<div class="quizActions${currentQuestion?.type === "swipeDeck" ? " isHidden" : ""}">
+<div class="quizActions${
+  currentQuestion?.type === "swipeDeck" &&
+  !canAdvanceQuestion(currentQuestion, currentAnswer)
+    ? " isHidden"
+    : ""
+}">
   <button
     type="button"
     class="quizBackBtn"

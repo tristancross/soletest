@@ -1681,3 +1681,447 @@ height: auto;
     animation: none !important;
   }
 }
+
+/* =========================================================
+   DESKTOP MODEL INFO BUTTON
+   Header-native version of the mobile conversation info action.
+   ========================================================= */
+
+.desktopModelInfoBtn {
+  display: none;
+}
+
+@media (min-width: 951px) {
+  .header {
+    position: relative;
+  }
+
+  .desktopModelInfoBtn {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    z-index: 20;
+
+    width: 32px;
+    height: 32px;
+
+    display: grid;
+    place-items: center;
+
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(25,24,23,.48);
+
+    cursor: pointer;
+
+    transition:
+      color 160ms ease,
+      background 160ms ease,
+      transform 160ms ease;
+  }
+
+  .desktopModelInfoBtn:hover {
+    color: var(--sole-ink);
+    background: rgba(25,24,23,.035);
+  }
+
+  .desktopModelInfoBtn i {
+    font-size: 18px;
+    line-height: 1;
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 950px) {
+  .desktopModelInfoBtn {
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   MODEL INFO POPUP
+   Custom app-styled replacement for native alert().
+   ========================================================= */
+
+.modelInfoPopup {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+
+  display: grid;
+  place-items: center;
+
+  padding: 22px;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 180ms ease;
+}
+
+.modelInfoPopup.isVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modelInfoPopup.isLeaving {
+  opacity: 0;
+}
+
+.modelInfoScrim {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(25,24,23,.18);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.modelInfoPanel {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+
+  width: min(390px, calc(100vw - 32px));
+
+  padding: 22px;
+
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 28px;
+
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255,255,255,.96), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(255,118,95,.12), transparent 34%),
+    radial-gradient(circle at 88% 92%, rgba(255,214,111,.14), transparent 42%),
+    linear-gradient(135deg, rgba(255,255,255,.86), rgba(255,247,241,.72));
+
+  color: var(--sole-ink);
+
+  box-shadow:
+    0 30px 90px rgba(76,49,31,.18),
+    inset 0 1px 0 rgba(255,255,255,.92),
+    inset 0 -1px 0 rgba(255,118,95,.06);
+
+  backdrop-filter: blur(24px) saturate(1.18);
+  -webkit-backdrop-filter: blur(24px) saturate(1.18);
+
+  transform: translateY(10px) scale(.98);
+  transition: transform 180ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.modelInfoPopup.isVisible .modelInfoPanel {
+  transform: translateY(0) scale(1);
+}
+
+.modelInfoClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  width: 32px;
+  height: 32px;
+
+  border: 1px solid rgba(50,36,28,.08);
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(255,255,255,.46);
+  color: rgba(25,24,23,.44);
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.modelInfoClose:hover {
+  background: rgba(255,255,255,.72);
+  color: var(--sole-ink);
+}
+
+.modelInfoOrb {
+  width: 54px;
+  height: 54px;
+
+  margin-bottom: 16px;
+
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255,255,255,.95), rgba(255,255,255,.18)),
+    rgba(255,118,95,.10);
+
+  box-shadow:
+    0 14px 32px rgba(255,118,95,.10),
+    inset 0 1px 0 rgba(255,255,255,.86);
+}
+
+.modelInfoOrb span {
+  width: 11px;
+  height: 11px;
+
+  border-radius: 999px;
+
+  background: var(--sole-coral);
+
+  box-shadow:
+    0 0 0 7px rgba(255,118,95,.10),
+    0 0 20px rgba(255,118,95,.34);
+}
+
+.modelInfoEyebrow {
+  margin-bottom: 8px;
+
+  color: rgba(25,24,23,.44);
+
+  font-family: var(--font-data, monospace);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.modelInfoTitleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  margin-bottom: 10px;
+}
+
+.modelInfoTitleRow h3 {
+  margin: 0;
+
+  color: var(--sole-ink);
+
+  font-family: "Instrument Serif", "Source Serif 4", Georgia, serif;
+  font-size: 38px;
+  line-height: .95;
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+.modelInfoTitleRow span {
+  margin-top: 3px;
+
+  color: rgba(25,24,23,.42);
+
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.modelInfoStatus {
+  margin: 0 0 16px;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: rgba(25,24,23,.52);
+
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.modelInfoStatus i {
+  color: #d8942d;
+  font-size: 11px;
+}
+
+.modelInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+
+  margin: 0 0 16px;
+}
+
+.modelInfoGrid div {
+  min-width: 0;
+
+  padding: 11px 12px;
+
+  border: 1px solid rgba(50,36,28,.07);
+  border-radius: 16px;
+
+  background: rgba(255,255,255,.42);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.modelInfoGrid span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: rgba(25,24,23,.40);
+
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
+.modelInfoGrid strong {
+  display: block;
+
+  color: rgba(25,24,23,.74);
+
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.modelInfoNote {
+  margin: 0;
+
+  color: rgba(25,24,23,.46);
+
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 520px) {
+  .modelInfoPopup {
+    place-items: end center;
+    padding: 12px;
+  }
+
+  .modelInfoPanel {
+    width: 100%;
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .modelInfoTitleRow h3 {
+    font-size: 34px;
+  }
+}
+
+/* =========================================================
+   MODEL INFO POPUP — EXPLAINER COPY
+   Replaces the abstract stat grid with useful onboarding copy.
+   ========================================================= */
+
+.modelInfoExplainer {
+  display: grid;
+  gap: 9px;
+
+  margin: 4px 0 0;
+}
+
+.modelInfoExplainerItem {
+  padding: 13px 14px;
+
+  border: 1px solid rgba(50,36,28,.07);
+  border-radius: 18px;
+
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255,255,255,.70), transparent 34%),
+    rgba(255,255,255,.36);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.modelInfoExplainerItem span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: rgba(25,24,23,.42);
+
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.modelInfoExplainerItem p {
+  margin: 0;
+
+  color: rgba(25,24,23,.64);
+
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.modelInfoExplainerItem p strong {
+  color: rgba(25,24,23,.78);
+}
+
+/* =========================================================
+   MODEL INFO POPUP — SCROLL FIX
+   Prevents the panel being cut off on short mobile screens.
+   ========================================================= */
+
+.modelInfoPanel {
+  max-height: min(720px, calc(100dvh - 24px));
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25,24,23,.22) transparent;
+}
+
+.modelInfoPanel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modelInfoPanel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modelInfoPanel::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(25,24,23,.18);
+}
+
+@media (max-width: 520px) {
+  .modelInfoPopup {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .modelInfoPanel {
+    max-height: calc(100dvh - 20px);
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}
+
+/* =========================================================
+   VOICE RECORDING BUTTON STATE
+   Clearer pause/recording state while recording.
+   ========================================================= */
+
+.micBtn.recording {
+  background: linear-gradient(135deg, #ff9a80, #ff6654) !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  box-shadow:
+    0 14px 34px rgba(255,101,84,.25),
+    0 0 0 6px rgba(255,118,95,.08) !important;
+}
+
+.micBtn.recording i {
+  color: #fff !important;
+}
+
+.voiceMessagesDisabled .micBtn {
+  display: none !important;
+}
+

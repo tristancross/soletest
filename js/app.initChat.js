@@ -32,6 +32,7 @@ if (window.visualViewport) {
 
 me = profile;
 applyMe();
+syncChatModelVersionFromProfile?.(me);
 
 await window.solePush?.registerForSolePush?.();
 
@@ -58,6 +59,7 @@ try {
   await window.soleDayConfigs?.loadExperimentSettings?.(sb, {
     force: true
   });
+    window.soleVoiceMessages?.applyVoiceMessagesEnabledFromSettings?.();
 } catch (error) {
   console.warn("Could not preload experiment day settings", error);
 }
@@ -74,11 +76,16 @@ assignedPartner = await getAssignedPartner(me.id);
 setupAdminUI();
 
 if (me.is_admin) {
+  document.body.classList.remove("isCheckingFirstTimeUser");
+  document.body.classList.remove("isFirstTimeUserActive");
+  document.body.classList.remove("isFirstTimeChatShellVisible");
+  document.body.classList.remove("isFirstTimeChatShellClear");
+
   await renderSidebar();
   await updateSidebarDailyTasks();
   await updateInsightNotificationDots();
 
-  await enterAdminMode("users");
+await enterAdminMode(window.matchMedia("(max-width: 768px)").matches ? "chats" : "users");
 } else {
   const handledFirstTimeUser = await window.firstTimeUser?.runIfNeeded?.();
 

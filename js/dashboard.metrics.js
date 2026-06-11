@@ -134,12 +134,35 @@ function getCompletedStepCount(assignment = {}, currentStep = 0, answers = {}) {
   }, 0);
 }
 
+function getQuestionProgressFraction(question, answer) {
+  if (!question || answer === undefined || answer === null) return 0;
+
+  if (question.type === "swipeDeck") {
+    const cards = Array.isArray(question.config?.cards)
+      ? question.config.cards
+      : [];
+
+    const decisions = Array.isArray(answer?.decisions)
+      ? answer.decisions
+      : [];
+
+    if (!cards.length) return 0;
+
+    return Math.max(
+      0,
+      Math.min(1, decisions.length / cards.length)
+    );
+  }
+
+  return doesAnswerCountTowardProgress(question, answer) ? 1 : 0;
+}
+
 function getAnsweredQuestionCount(me, assignment) {
   const mergedAnswers = getMergedAssignmentAnswers(me, assignment);
 
   return (assignment.questions || []).reduce((count, question) => {
     const answer = mergedAnswers[question.id];
-    return count + (doesAnswerCountTowardProgress(question, answer) ? 1 : 0);
+    return count + getQuestionProgressFraction(question, answer);
   }, 0);
 }
 
@@ -499,18 +522,19 @@ const earned = moduleAssignments.reduce((total, assignment) => {
       moduleName
     );
 
-    const earnedForQuiz = Array.from(questionWeights.entries()).reduce(
-      (quizTotal, [question, questionWeight]) => {
-        const answer = mergedAnswers[question.id];
+const earnedForQuiz = Array.from(questionWeights.entries()).reduce(
+  (quizTotal, [question, questionWeight]) => {
+    const answer = mergedAnswers[question.id];
+    const questionProgress = getQuestionProgressFraction(question, answer);
 
-        if (!doesAnswerCountTowardProgress(question, answer)) {
-          return quizTotal;
-        }
+    if (questionProgress <= 0) {
+      return quizTotal;
+    }
 
-        return quizTotal + questionWeight;
-      },
-      0
-    );
+    return quizTotal + (questionWeight * questionProgress);
+  },
+  0
+);
 
     return total + earnedForQuiz;
   }, 0);

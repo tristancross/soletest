@@ -239,6 +239,7 @@ function normaliseExperimentSettings(row = {}) {
   return {
     id: 1,
     current_day: currentDay,
+    voice_messages_enabled: row.voice_messages_enabled !== false,
     updated_at: row.updated_at || null,
     updated_by: row.updated_by || null
   };
@@ -297,6 +298,28 @@ async function saveExperimentCurrentDay(sb, currentDay) {
   return soleExperimentSettingsCache;
 }
 
+async function saveExperimentVoiceMessagesEnabled(sb, enabled) {
+  if (!sb) throw new Error("Missing Supabase client.");
+
+  const { data, error } = await sb
+    .from("experiment_settings")
+    .upsert(
+      {
+        id: 1,
+        voice_messages_enabled: !!enabled,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "id" }
+    )
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  soleExperimentSettingsCache = normaliseExperimentSettings(data);
+  return soleExperimentSettingsCache;
+}
+
 function getExperimentSettingsFromCache() {
   return soleExperimentSettingsCache || normaliseExperimentSettings({ current_day: 1 });
 }
@@ -310,6 +333,7 @@ window.soleDayConfigs = {
 
   loadExperimentSettings,
   saveExperimentCurrentDay,
+  saveExperimentVoiceMessagesEnabled,
   getExperimentSettingsFromCache,
   normaliseExperimentSettings
 };

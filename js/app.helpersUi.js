@@ -29,7 +29,7 @@ document.addEventListener("visibilitychange", async () => {
   if (isCurrentChatActuallyVisible()) {
     await markThreadAsRead(me.id, them.id);
     await renderSidebar(them.id);
-    await updateConversationStatus();
+    // await updateConversationStatus();
     updateMobileMenuUnreadBadge();
   }
 });
@@ -849,6 +849,35 @@ function removeResponseNeuralRow() {
     row.remove();
   }, 520);
 }
+
+function cleanupChatRuntimeEffects() {
+  clearResponseTimers?.();
+
+  if (responseNeuralRaf) {
+    cancelAnimationFrame(responseNeuralRaf);
+    responseNeuralRaf = null;
+  }
+
+  if (responseNeuralRow) {
+    responseNeuralRow.remove?.();
+    responseNeuralRow = null;
+  }
+
+  if (typeof previewDraftClearTimeout !== "undefined" && previewDraftClearTimeout) {
+    clearTimeout(previewDraftClearTimeout);
+    previewDraftClearTimeout = null;
+  }
+
+  if (typeof liveDraftClearTimeout !== "undefined" && liveDraftClearTimeout) {
+    clearTimeout(liveDraftClearTimeout);
+    liveDraftClearTimeout = null;
+  }
+
+  clearLiveDraft?.();
+  hideTypingIndicator?.();
+}
+
+window.cleanupChatRuntimeEffects = cleanupChatRuntimeEffects;
 
 function ensureResponseNeuralRow() {
   if (responseNeuralRow) {

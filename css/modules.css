@@ -2146,3 +2146,320 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
     transform: translateY(0) scale(1);
   }
 }
+
+/* =========================================================
+   ACTIVE QUIZ CARD LAYOUT
+   Card = question top / answer middle / actions bottom.
+   The answer area scrolls when needed.
+   ========================================================= */
+
+.sidebarNavPane:has(.moduleQuizMetricDock){
+  display:flex !important;
+  flex-direction:column !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .moduleHero{
+  flex:0 0 auto !important;
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .moduleSubviewContent{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+
+  display:flex !important;
+  flex-direction:column !important;
+
+  overflow:hidden !important;
+  padding-bottom:0 !important;
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .moduleSubviewContent .quizPanel{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+
+  display:flex !important;
+  flex-direction:column !important;
+
+  margin-bottom:0 !important;
+  overflow:hidden !important;
+}
+
+/* quizCardStage is the card itself, not a parent of .quizCard */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+
+  display:grid !important;
+  grid-template-rows:minmax(0, 1fr) auto !important;
+  gap:1px !important;
+
+  box-sizing:border-box !important;
+
+  padding:20px 24px 10px 24px !important;
+  overflow:hidden !important;
+}
+
+/* Middle wrapper created in JS */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount{
+  min-height:0 !important;
+  overflow:hidden !important;
+  display:block !important;
+}
+
+/* One active question fills the available card body */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount > .quizBlock{
+  height:100% !important;
+  min-height:0 !important;
+
+  display:grid !important;
+  grid-template-rows:auto minmax(0, 1fr) !important;
+  gap:18px !important;
+
+  align-items:stretch !important;
+}
+
+/* Question text: top-aligned, never clipped */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount .quizLabel{
+  margin:0 !important;
+  padding:0 2px !important;
+
+  line-height:1.22 !important;
+  position:relative !important;
+  z-index:2 !important;
+}
+
+/* Default answer areas become the middle row */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizValues,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizScaleShell,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizRankingList,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizRankingItems,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizSwipeDeckBlock,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizUploadBlock,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizImageChoiceGrid,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizFreeText{
+  min-height:0 !important;
+  grid-row:2 !important;
+}
+
+/* Most question types: center the answer content vertically */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizValues,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizScaleShell,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizUploadBlock,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizImageChoiceGrid{
+  align-self:center !important;
+}
+
+/* Long types: scroll internally */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizRankingList,
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizRankingItems{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+
+  padding-right:10px !important;
+
+  scrollbar-width:thin;
+  scrollbar-color:rgba(25,24,23,.14) transparent;
+}
+
+/* Actions stay pinned to card bottom */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizActions{
+  align-self:end !important;
+  margin-top:0 !important;
+  position:relative !important;
+  z-index:3 !important;
+}
+
+/* Hide standard Back/Continue on swipeDeck as your JS already does */
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizActions.isHidden{
+  display:none !important;
+}
+
+/* Mobile dock breathing room */
+@media (max-width:768px){
+  .sidebarNavPane:has(.moduleQuizMetricDock) .moduleSubviewContent{
+    padding-bottom:128px !important;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage{
+    min-height:0 !important;
+    padding:22px 20px 150px !important;
+  }
+}
+
+/* =========================================================
+   BETA FEEDBACK PANEL
+   ========================================================= */
+
+.betaFeedbackPanel {
+  display: grid;
+  gap: 16px;
+  min-height: 100%;
+  align-content: start;
+}
+
+.betaFeedbackHeader {
+  border: 1px solid var(--sole-line);
+  border-radius: 28px;
+  padding: 22px;
+
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.94), transparent 34%),
+    radial-gradient(circle at 86% 18%, rgba(255,118,95,.10), transparent 38%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,249,244,.48));
+
+  box-shadow:
+    0 24px 70px rgba(76,49,31,.09),
+    inset 0 1px 0 rgba(255,255,255,.92);
+}
+
+.betaFeedbackHeader h3 {
+  margin: 0 0 10px;
+  color: var(--sole-ink);
+  font-size: 36px;
+  line-height: .96;
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+.betaFeedbackHeader p {
+  margin: 0;
+  color: var(--sole-soft-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.betaFeedbackCard {
+  display: grid;
+  gap: 10px;
+
+  border: 1px solid var(--sole-line);
+  border-radius: 24px;
+  padding: 16px;
+
+  background: rgba(255,255,255,.52);
+  box-shadow:
+    0 18px 42px rgba(76,49,31,.07),
+    inset 0 1px 0 rgba(255,255,255,.82);
+}
+
+.betaFeedbackLabel {
+  color: rgba(25,24,23,.52);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
+.betaFeedbackTextarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+
+  border: 1px solid rgba(50,36,28,.10);
+  border-radius: 18px;
+  padding: 14px;
+
+  background: rgba(255,255,255,.68);
+  color: var(--sole-ink);
+
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.betaFeedbackTextarea:focus {
+  outline: none;
+  border-color: rgba(255,118,95,.28);
+  box-shadow: 0 0 0 3px rgba(255,118,95,.08);
+}
+
+.betaFeedbackActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.betaFeedbackStatus {
+  margin: 0;
+  min-height: 18px;
+  color: var(--sole-soft-ink);
+  font-size: 12px;
+}
+
+.betaFeedbackStatus[data-kind="success"] {
+  color: #168b54;
+}
+
+.betaFeedbackStatus[data-kind="error"] {
+  color: #c84d3b;
+}
+
+.betaFeedbackSendBtn {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+
+.betaFeedbackSendBtn:disabled {
+  opacity: .52;
+  cursor: not-allowed;
+}
+
+.betaFeedbackForm[hidden],
+.betaFeedbackThanks[hidden] {
+  display: none !important;
+}
+
+.betaFeedbackCard.isSubmitted {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+}
+
+.betaFeedbackThanks {
+  width: 100%;
+  min-height: 220px;
+
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+
+  text-align: center;
+  color: var(--sole-ink);
+}
+
+.betaFeedbackThanks i {
+  width: 46px;
+  height: 46px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 999px;
+  border: 1px solid rgba(22,139,84,.18);
+
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255,255,255,.95), rgba(255,255,255,.28)),
+    rgba(22,139,84,.08);
+
+  color: #168b54;
+  font-size: 22px;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    0 12px 30px rgba(22,139,84,.08);
+}
+
+.betaFeedbackThanks strong {
+  color: var(--sole-ink);
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.betaFeedbackThanks span {
+  color: var(--sole-soft-ink);
+  font-size: 13px;
+}

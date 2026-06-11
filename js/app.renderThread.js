@@ -11,6 +11,33 @@ function renderThreadLoadingState() {
   hideTypingIndicator();
 }
 
+function cleanupChatRuntimeEffects() {
+  clearResponseTimers?.();
+
+  if (responseNeuralRaf) {
+    cancelAnimationFrame(responseNeuralRaf);
+    responseNeuralRaf = null;
+  }
+
+  if (responseNeuralRow) {
+    responseNeuralRow.remove?.();
+    responseNeuralRow = null;
+  }
+
+  if (previewDraftClearTimeout) {
+    clearTimeout(previewDraftClearTimeout);
+    previewDraftClearTimeout = null;
+  }
+
+  if (typeof liveDraftClearTimeout !== "undefined" && liveDraftClearTimeout) {
+    clearTimeout(liveDraftClearTimeout);
+    liveDraftClearTimeout = null;
+  }
+
+  clearLiveDraft?.();
+  hideTypingIndicator?.();
+}
+
 async function loadThread(aId, bId, alignAsSenderId){
   renderThreadLoadingState();
 
@@ -288,20 +315,57 @@ bubble.innerHTML = formatMessageText(displayText);
 async function loadMessageOverrides(messageIds = []) {
   if (!messageIds.length) return [];
 
-  const { data, error } = await sb
-    .from("message_overrides")
-    .select("*")
-    .in("message_id", messageIds);
+  const uniqueIds = [...new Set(messageIds.filter(Boolean))];
 
-  if (error) {
-    console.warn("Could not load message overrides", error);
-    return [];
+  // Supabase turns `.in()` into a GET URL.
+  // Big arrays can create a URL so long that PostgREST rejects it.
+  const chunkSize = 75;
+  const allOverrides = [];
+
+  for (let i = 0; i < uniqueIds.length; i += chunkSize) {
+    const chunk = uniqueIds.slice(i, i + chunkSize);
+
+    const { data, error } = await sb
+      .from("message_overrides")
+      .select("*")
+      .in("message_id", chunk);
+
+    if (error) {
+      console.warn("Could not load message override chunk", {
+        error,
+        chunkStart: i,
+        chunkSize: chunk.length
+      });
+      continue;
+    }
+
+    allOverrides.push(...(data || []));
   }
 
-  return data || [];
+  return allOverrides;
+}
+
+function shouldHideMessageForViewer(message, viewerId) {
+  const visibleToUserId =
+    message.visible_to_user_id ||
+    message.system_visible_to_user_id ||
+    null;
+
+  // null means visible to both users.
+  if (!visibleToUserId) return false;
+
+  return visibleToUserId !== viewerId;
 }
 
 function resolveMessageForViewer(message, overrides = [], viewerId) {
+if (shouldHideMessageForViewer(message, viewerId)) {
+    return {
+      ...message,
+      display_text: "",
+      hidden_for_viewer: true
+    };
+  }
+
   const viewerSpecific = overrides.find(item =>
     item.message_id === message.id &&
     item.viewer_id === viewerId

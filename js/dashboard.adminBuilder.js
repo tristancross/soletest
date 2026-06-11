@@ -531,6 +531,17 @@ ${isSwipeDeck ? `
   `;
 }
 
+function formatAudienceVariantLabel(value) {
+  const key = String(value || "").toLowerCase();
+
+  if (key === "men" || key === "male") return "Men deck";
+  if (key === "women" || key === "female") return "Women deck";
+  if (key === "mixed") return "Mixed deck";
+  if (key === "neutral") return "Neutral";
+
+  return value || "";
+}
+
 function renderSavedTemplateList(templates, profiles, escapeHtml) {
   if (!templates.length) {
     return `<div class="adminQuizEmpty">No saved templates yet.</div>`;
@@ -547,11 +558,25 @@ function renderSavedTemplateList(templates, profiles, escapeHtml) {
   data-template-drag-id="${escapeAttr(template.id)}"
 >
       <div class="adminQuizTemplateMeta">
-        <div class="adminQuizTemplateTitle">${escapeHtml(String(template.title ?? ""))}</div>
-        <div class="adminQuizTemplateSub">
-                   status ${escapeHtml(template.status || "active")} · priority ${escapeHtml(String(template.priority ?? ""))}
+<div class="adminQuizTemplateTitle">
+  ${escapeHtml(String(template.title ?? ""))}
+</div>
 
-        </div>
+${
+  template.audience_variant || template.admin_label
+    ? `
+      <div class="adminQuizTemplateSub">
+        <span class="adminTemplateVariantPill">
+          ${escapeHtml(template.admin_label || formatAudienceVariantLabel(template.audience_variant))}
+        </span>
+      </div>
+    `
+    : ""
+}
+
+<div class="adminQuizTemplateSub">
+  status ${escapeHtml(template.status || "active")} · priority ${escapeHtml(String(template.priority ?? ""))}
+</div>
         <div class="adminQuizTemplateSub">
           target ${escapeHtml(formatAssignmentTargetLabel(template, profilesById))}
         </div>
@@ -571,18 +596,36 @@ function renderSavedTemplateList(templates, profiles, escapeHtml) {
         </select>
       </div>
 
-      <div class="adminQuizTemplateActions">
-      <button
-  type="button"
-  class="btn btnGhost"
-  data-template-overrides="${escapeAttr(template.id)}"
->
-  User overrides
-</button>
-        <button type="button" class="btn btnGhost" data-duplicate-template="${escapeAttr(template.id)}">Duplicate</button>
-        <button type="button" class="btn btnGhost" data-edit-template="${escapeAttr(template.id)}">Edit</button>
-        <button type="button" class="btn btnGhost adminQuizDeleteBtn" data-delete-template="${escapeAttr(template.id)}">Delete</button>
-      </div>
+<div class="adminQuizTemplateActions">
+  <button
+    type="button"
+    class="btn btnGhost"
+    data-template-quick-edit="${escapeAttr(template.id)}"
+  >
+    Quick edit
+  </button>
+
+  <button
+    type="button"
+    class="btn btnGhost"
+    data-template-overrides="${escapeAttr(template.id)}"
+  >
+    User overrides
+  </button>
+
+  <button
+    type="button"
+    class="btn btnGhost"
+    data-template-assign="${escapeAttr(template.id)}"
+  >
+    Assign users
+  </button>
+
+
+  <button type="button" class="btn btnGhost" data-duplicate-template="${escapeAttr(template.id)}">Duplicate</button>
+  <button type="button" class="btn btnGhost" data-edit-template="${escapeAttr(template.id)}">Edit</button>
+  <button type="button" class="btn btnGhost adminQuizDeleteBtn" data-delete-template="${escapeAttr(template.id)}">Delete</button>
+</div>
     </article>
   `;
 
@@ -685,6 +728,28 @@ async function updateQuizTemplateStatusInSupabase(sb, templateId, status) {
   if (error) throw error;
 }
 
+async function updateQuizTemplateQuickCopyInSupabase(sb, templateId, payload) {
+  const title = String(payload?.title || "").trim();
+  const prompt = String(payload?.prompt || "").trim();
+  const description = String(payload?.description || "").trim();
+
+  if (!title) {
+    throw new Error("Title is required.");
+  }
+
+  const { error } = await sb
+    .from("quiz_templates")
+    .update({
+      title,
+      prompt,
+      description,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", templateId);
+
+  if (error) throw error;
+}
+
 async function renderAdminDashboardHome({ sb, me, escapeHtml }) {
   let templates = [];
   let profiles = [];
@@ -751,6 +816,28 @@ return `
             <input type="text" data-builder-root-field="ctaLabel" value="Save" />
           </div>
         </div>
+
+        <div class="adminQuizFieldRow">
+  <div class="adminQuizField">
+    <label>Admin label</label>
+    <input
+      type="text"
+      data-builder-root-field="adminLabel"
+      placeholder="First Pull — Men"
+    />
+  </div>
+
+  <div class="adminQuizField">
+    <label>Audience variant</label>
+    <select data-builder-root-field="audienceVariant">
+      <option value="">None</option>
+      <option value="men">Men deck</option>
+      <option value="women">Women deck</option>
+      <option value="mixed">Mixed deck</option>
+      <option value="neutral">Neutral</option>
+    </select>
+  </div>
+</div>
 
         <div class="adminQuizField">
           <label>Prompt</label>
@@ -1022,7 +1109,8 @@ function initAssignmentInteractions({
   escapeHtml,
   adminPreview = false,
   onRefresh = null,
-  onOptimisticAdvance = null
+  onOptimisticAdvance = null,
+  onProgressChange = null
 }) {
   if (adminPreview) return;
 
@@ -1459,9 +1547,19 @@ if (progressBar) {
 saveAssignmentProgress(sb, me, assignment, {
   answers,
   currentStep
-}).catch(error => {
-  console.warn("Swipe deck autosave failed", error);
-});
+})
+  .then(async () => {
+    if (onProgressChange) {
+      await onProgressChange({
+        assignment,
+        currentStep,
+        answers
+      });
+    }
+  })
+  .catch(error => {
+    console.warn("Swipe deck autosave failed", error);
+  });
 
 if (nextDecisions.length >= cards.length) {
   if (!isFinalStep) {
@@ -1549,10 +1647,27 @@ rerenderSwipeDeck();
               <div class="quizSwipeCaption">${escapeHtml(currentCard.label)}</div>
             </div>
 
-            <div class="quizSwipeActions">
-              <button type="button" class="quizSwipeBtn reject" data-swipe-direction="reject">Pass</button>
-              <button type="button" class="quizSwipeBtn like" data-swipe-direction="like">Like</button>
-            </div>
+<div class="quizSwipeActions">
+  <button
+    type="button"
+    class="quizSwipeBtn reject"
+    data-swipe-direction="reject"
+    aria-label="Pass"
+    title="Pass"
+  >
+    <span class="quizSwipeBtnText">Pass</span>
+  </button>
+
+  <button
+    type="button"
+    class="quizSwipeBtn like"
+    data-swipe-direction="like"
+    aria-label="Like"
+    title="Like"
+  >
+    <span class="quizSwipeBtnText">Like</span>
+  </button>
+</div>
           `
       }
     `;
@@ -1910,9 +2025,48 @@ await updateInsightNotificationDots?.();
 backBtn?.addEventListener("click", async () => {
   if (currentStep <= 0) return;
 
+  const previousStep = currentStep - 1;
+  const previousQuestion = assignment.questions?.[previousStep];
+
+  const nextAnswers = {
+    ...answers
+  };
+
+  /*
+    If the previous question is a completed swipeDeck, reopening it exactly
+    as-is produces the dead "Swipe deck complete" state.
+
+    So when the user goes back into a completed swipe deck, remove the final
+    swipe decision. That reopens the last card, letting them change it.
+  */
+  if (previousQuestion?.type === "swipeDeck") {
+    const previousAnswer = nextAnswers[previousQuestion.id];
+    const cards = Array.isArray(previousQuestion.config?.cards)
+      ? previousQuestion.config.cards
+      : [];
+
+    const decisions = Array.isArray(previousAnswer?.decisions)
+      ? previousAnswer.decisions
+      : [];
+
+    if (cards.length && decisions.length >= cards.length) {
+      const trimmedDecisions = decisions.slice(0, -1);
+
+      nextAnswers[previousQuestion.id] = {
+        decisions: trimmedDecisions,
+        likedValues: trimmedDecisions
+          .filter(item => item.direction === "like")
+          .map(item => item.value),
+        rejectedValues: trimmedDecisions
+          .filter(item => item.direction === "reject")
+          .map(item => item.value)
+      };
+    }
+  }
+
   await saveAssignmentProgress(sb, me, assignment, {
-    answers,
-    currentStep: currentStep - 1
+    answers: nextAnswers,
+    currentStep: previousStep
   });
 
   if (onRefresh) {
@@ -2083,10 +2237,12 @@ function parseOptionsFromAdminTextarea(text = "") {
     editingTemplateId = "";
     selectedUserIds = [];
 
-    getRootField("title").value = "";
-    getRootField("ctaLabel").value = "Save";
-    getRootField("prompt").value = "";
-    getRootField("description").value = "";
+getRootField("title").value = "";
+getRootField("ctaLabel").value = "Save";
+getRootField("adminLabel").value = "";
+getRootField("audienceVariant").value = "";
+getRootField("prompt").value = "";
+getRootField("description").value = "";
     getRootField("priority").value = 100;
     getRootField("dayIndex").value = "1";
     getRootField("category").value = "chemistry";
@@ -2124,9 +2280,16 @@ if (advancedToggleBtn) advancedToggleBtn.textContent = "Show overrides";
     getRootField("title").value = duplicate
       ? `${template.title || "Untitled"} (Copy)`
       : (template.title || "");
-    getRootField("ctaLabel").value = template.cta_label || "Save";
-    getRootField("prompt").value = template.prompt || "";
-    getRootField("description").value = template.description || "";
+getRootField("ctaLabel").value = template.cta_label || "Save";
+
+getRootField("adminLabel").value = duplicate
+  ? `${template.admin_label || template.title || "Untitled"} (Copy)`
+  : (template.admin_label || "");
+
+getRootField("audienceVariant").value = template.audience_variant || "";
+
+getRootField("prompt").value = template.prompt || "";
+getRootField("description").value = template.description || "";
     getRootField("priority").value = template.priority ?? 100;
     getRootField("dayIndex").value = String(template.day_index || 1);
     getRootField("category").value = template.category || "";
@@ -3151,6 +3314,421 @@ if (field === "type") {
       });
   }
 
+  function getAssignmentDraftFromTemplate(template) {
+  const assignments = Array.isArray(template?.quiz_assignments)
+    ? template.quiz_assignments.filter(row => row.is_active)
+    : [];
+
+  if (!assignments.length) {
+    return {
+      mode: "all_users",
+      targetUserIds: [],
+      targetTag: ""
+    };
+  }
+
+  if (assignments.some(row => row.assignment_mode === "all_users")) {
+    return {
+      mode: "all_users",
+      targetUserIds: [],
+      targetTag: ""
+    };
+  }
+
+  const tagAssignment = assignments.find(row => row.assignment_mode === "tag");
+  if (tagAssignment?.target_tag) {
+    return {
+      mode: "tag",
+      targetUserIds: [],
+      targetTag: tagAssignment.target_tag
+    };
+  }
+
+  const targetUserIds = assignments
+    .filter(row => row.assignment_mode === "specific_user")
+    .map(row => row.target_user_id)
+    .filter(Boolean);
+
+  if (targetUserIds.length) {
+    return {
+      mode: "specific_users",
+      targetUserIds,
+      targetTag: ""
+    };
+  }
+
+  return {
+    mode: "all_users",
+    targetUserIds: [],
+    targetTag: ""
+  };
+}
+
+function closeTemplateAssignModal() {
+  document.querySelector("[data-template-assign-overlay]")?.remove();
+}
+
+function closeTemplateQuickEditModal() {
+  document.querySelector("[data-template-quick-edit-overlay]")?.remove();
+}
+
+async function openTemplateQuickEditModal(templateId) {
+  if (!templateId) return;
+
+  let template;
+
+  try {
+    template = await loadQuizTemplateDetailFromSupabase(sb, templateId);
+  } catch (error) {
+    setFeedback(error?.message || "Could not load template copy.", "error");
+    return;
+  }
+
+  if (!template) {
+    setFeedback("Template could not be found.", "error");
+    return;
+  }
+
+  closeTemplateQuickEditModal();
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="adminQuickEditOverlay" data-template-quick-edit-overlay>
+      <section class="adminQuickEditPanel" role="dialog" aria-modal="true">
+        <div class="adminQuickEditHeader">
+          <div>
+            <div class="dashboardEyebrow">Quick edit</div>
+            <h3>${escapeHtml(template.title || "Untitled template")}</h3>
+            <p>Edit the user-facing title, intro copy and description without opening the full template builder.</p>
+          </div>
+
+          <button
+            type="button"
+            class="btn btnGhost"
+            data-template-quick-edit-close
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="adminQuizField">
+          <label>Title</label>
+          <input
+            type="text"
+            data-template-quick-edit-title
+            value="${escapeAttr(template.title || "")}"
+            placeholder="Conversation Style"
+          />
+        </div>
+
+        <div class="adminQuizField">
+          <label>Intro copy / prompt</label>
+          <textarea
+            data-template-quick-edit-prompt
+            placeholder="The copy users see before starting the quiz."
+          >${escapeHtml(template.prompt || "")}</textarea>
+        </div>
+
+        <div class="adminQuizField">
+          <label>Description</label>
+          <textarea
+            data-template-quick-edit-description
+            placeholder="Short admin/user-facing description of what this quiz gauges."
+          >${escapeHtml(template.description || "")}</textarea>
+        </div>
+
+        <div class="adminQuickEditActions">
+          <button type="button" class="btn btnGhost" data-template-quick-edit-close>
+            Cancel
+          </button>
+
+          <button type="button" class="btn" data-template-quick-edit-save>
+            Save copy
+          </button>
+        </div>
+
+        <div class="adminQuizFeedback" data-template-quick-edit-feedback></div>
+      </section>
+    </div>
+  `);
+
+  const overlayEl = document.querySelector("[data-template-quick-edit-overlay]");
+  const feedbackEl = overlayEl.querySelector("[data-template-quick-edit-feedback]");
+
+  function setModalFeedback(message, kind = "error") {
+    if (!feedbackEl) return;
+    feedbackEl.textContent = message || "";
+    feedbackEl.dataset.kind = kind;
+  }
+
+  overlayEl
+    .querySelectorAll("[data-template-quick-edit-close]")
+    .forEach(button => {
+      button.addEventListener("click", closeTemplateQuickEditModal);
+    });
+
+  overlayEl.addEventListener("click", event => {
+    if (event.target === overlayEl) {
+      closeTemplateQuickEditModal();
+    }
+  });
+
+  overlayEl
+    .querySelector("[data-template-quick-edit-save]")
+    ?.addEventListener("click", async () => {
+      const title = overlayEl
+        .querySelector("[data-template-quick-edit-title]")
+        ?.value
+        ?.trim() || "";
+
+      const prompt = overlayEl
+        .querySelector("[data-template-quick-edit-prompt]")
+        ?.value
+        ?.trim() || "";
+
+      const description = overlayEl
+        .querySelector("[data-template-quick-edit-description]")
+        ?.value
+        ?.trim() || "";
+
+      if (!title) {
+        setModalFeedback("Title is required.");
+        return;
+      }
+
+      try {
+        await updateQuizTemplateQuickCopyInSupabase(sb, templateId, {
+          title,
+          prompt,
+          description
+        });
+
+        closeTemplateQuickEditModal();
+
+        await mountWelcomeDashboard({
+          messagesEl,
+          mainEl,
+          sb,
+          me,
+          escapeHtml,
+          animateMetrics: false,
+          adminPreview: false,
+          adminHome: true
+        });
+      } catch (error) {
+        setModalFeedback(error?.message || "Could not save template copy.");
+      }
+    });
+}
+
+async function openTemplateAssignModal(templateId) {
+  if (!templateId) return;
+
+  let template;
+  let users;
+
+  try {
+    [template, users] = await Promise.all([
+      loadQuizTemplateDetailFromSupabase(sb, templateId),
+      loadNonAdminProfilesFromSupabase(sb)
+    ]);
+  } catch (error) {
+    setFeedback(error?.message || "Could not load template assignments.", "error");
+    return;
+  }
+
+  if (!template) {
+    setFeedback("Template could not be found.", "error");
+    return;
+  }
+
+  const assignmentDraft = getAssignmentDraftFromTemplate(template);
+  let selectedUserIds = [...assignmentDraft.targetUserIds];
+
+  closeTemplateAssignModal();
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="adminQuickAssignOverlay" data-template-assign-overlay>
+      <section class="adminQuickAssignPanel" role="dialog" aria-modal="true">
+        <div class="adminQuickAssignHeader">
+          <div>
+            <div class="dashboardEyebrow">Assign users</div>
+            <h3>${escapeHtml(template.title || "Untitled template")}</h3>
+            <p>Choose who should receive this quiz template.</p>
+          </div>
+
+          <button
+            type="button"
+            class="btn btnGhost"
+            data-template-assign-close
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="adminQuizField">
+          <label>Assign to</label>
+          <select data-template-assign-mode>
+            <option value="all_users" ${assignmentDraft.mode === "all_users" ? "selected" : ""}>
+              All users
+            </option>
+            <option value="specific_users" ${assignmentDraft.mode === "specific_users" ? "selected" : ""}>
+              Specific users
+            </option>
+            <option value="tag" ${assignmentDraft.mode === "tag" ? "selected" : ""}>
+              Tag
+            </option>
+          </select>
+        </div>
+
+        <div class="adminQuizField" data-template-assign-tag-wrap hidden>
+          <label>Tag</label>
+          <input
+            type="text"
+            data-template-assign-tag
+            value="${escapeAttr(assignmentDraft.targetTag || "")}"
+            placeholder="cohort_a"
+          />
+        </div>
+
+        <div class="adminQuizField" data-template-assign-users-wrap hidden>
+          <label>Selected users</label>
+
+          <div class="adminQuizUserPicker adminQuickAssignUserPicker">
+            ${users.map(user => `
+              <button
+                type="button"
+                class="adminQuizUserChip ${selectedUserIds.includes(user.id) ? "isSelected" : ""}"
+                data-template-assign-user="${escapeAttr(user.id)}"
+              >
+                ${escapeHtml(user.display_name || "User")}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="adminQuickAssignActions">
+          <button type="button" class="btn btnGhost" data-template-assign-close>
+            Cancel
+          </button>
+
+          <button type="button" class="btn" data-template-assign-save>
+            Save assignments
+          </button>
+        </div>
+
+        <div class="adminQuizFeedback" data-template-assign-feedback></div>
+      </section>
+    </div>
+  `);
+
+  const overlayEl = document.querySelector("[data-template-assign-overlay]");
+  const modeEl = overlayEl.querySelector("[data-template-assign-mode]");
+  const tagWrapEl = overlayEl.querySelector("[data-template-assign-tag-wrap]");
+  const usersWrapEl = overlayEl.querySelector("[data-template-assign-users-wrap]");
+  const feedbackEl = overlayEl.querySelector("[data-template-assign-feedback]");
+
+  function setModalFeedback(message, kind = "error") {
+    if (!feedbackEl) return;
+    feedbackEl.textContent = message || "";
+    feedbackEl.dataset.kind = kind;
+  }
+
+  function updateModalVisibility() {
+    const mode = modeEl?.value || "all_users";
+    if (tagWrapEl) tagWrapEl.hidden = mode !== "tag";
+    if (usersWrapEl) usersWrapEl.hidden = mode !== "specific_users";
+  }
+
+  function renderModalUserChips() {
+    overlayEl
+      .querySelectorAll("[data-template-assign-user]")
+      .forEach(chip => {
+        chip.classList.toggle(
+          "isSelected",
+          selectedUserIds.includes(chip.dataset.templateAssignUser)
+        );
+      });
+  }
+
+  updateModalVisibility();
+
+  overlayEl
+    .querySelectorAll("[data-template-assign-close]")
+    .forEach(button => {
+      button.addEventListener("click", closeTemplateAssignModal);
+    });
+
+  overlayEl.addEventListener("click", event => {
+    if (event.target === overlayEl) {
+      closeTemplateAssignModal();
+    }
+  });
+
+  modeEl?.addEventListener("change", updateModalVisibility);
+
+  overlayEl
+    .querySelectorAll("[data-template-assign-user]")
+    .forEach(chip => {
+      chip.addEventListener("click", () => {
+        const userId = chip.dataset.templateAssignUser;
+        if (!userId) return;
+
+        if (selectedUserIds.includes(userId)) {
+          selectedUserIds = selectedUserIds.filter(id => id !== userId);
+        } else {
+          selectedUserIds = [...selectedUserIds, userId];
+        }
+
+        renderModalUserChips();
+      });
+    });
+
+  overlayEl
+    .querySelector("[data-template-assign-save]")
+    ?.addEventListener("click", async () => {
+      const mode = modeEl?.value || "all_users";
+      const targetTag = overlayEl
+        .querySelector("[data-template-assign-tag]")
+        ?.value
+        ?.trim() || "";
+
+      const assignment = {
+        mode,
+        targetUserIds: selectedUserIds,
+        targetTag
+      };
+
+      if (mode === "specific_users" && !selectedUserIds.length) {
+        setModalFeedback("Select at least one user.");
+        return;
+      }
+
+      if (mode === "tag" && !targetTag) {
+        setModalFeedback("Enter a tag.");
+        return;
+      }
+
+      try {
+        await saveTemplateAssignmentToSupabase(sb, me, templateId, assignment);
+
+        closeTemplateAssignModal();
+
+        await mountWelcomeDashboard({
+          messagesEl,
+          mainEl,
+          sb,
+          me,
+          escapeHtml,
+          animateMetrics: false,
+          adminPreview: false,
+          adminHome: true
+        });
+      } catch (error) {
+        setModalFeedback(error?.message || "Could not save assignments.");
+      }
+    });
+}
+
   function bindTemplateRowActions() {
     messagesEl
       .querySelectorAll("[data-edit-template]")
@@ -3357,6 +3935,28 @@ messagesEl.querySelectorAll(".adminTemplateDropZone").forEach(zone => {
 });
 
 messagesEl
+  .querySelectorAll("[data-template-quick-edit]")
+  .forEach(button => {
+    button.addEventListener("click", async () => {
+      const templateId = button.dataset.templateQuickEdit;
+      if (!templateId) return;
+
+      await openTemplateQuickEditModal(templateId);
+    });
+  });
+
+messagesEl
+  .querySelectorAll("[data-template-assign]")
+  .forEach(button => {
+    button.addEventListener("click", async () => {
+      const templateId = button.dataset.templateAssign;
+      if (!templateId) return;
+
+      await openTemplateAssignModal(templateId);
+    });
+  });
+
+messagesEl
   .querySelectorAll("[data-template-overrides]")
   .forEach(button => {
     button.addEventListener("click", async () => {
@@ -3445,11 +4045,14 @@ updateBuilderModeUI();
       const assignmentMode = getRootField("assignmentMode")?.value || "all_users";
       const targetTag = getRootField("targetTag")?.value?.trim() || "";
 
-      const root = {
-        title: getRootField("title")?.value?.trim() || "",
-        prompt: getRootField("prompt")?.value?.trim() || "",
-        description: getRootField("description")?.value?.trim() || "",
-        ctaLabel: getRootField("ctaLabel")?.value?.trim() || "Save",
+const root = {
+  title: getRootField("title")?.value?.trim() || "",
+  prompt: getRootField("prompt")?.value?.trim() || "",
+  description: getRootField("description")?.value?.trim() || "",
+  ctaLabel: getRootField("ctaLabel")?.value?.trim() || "Save",
+
+  adminLabel: getRootField("adminLabel")?.value?.trim() || "",
+  audienceVariant: getRootField("audienceVariant")?.value || "",
         priority: getRootField("priority")?.value || 100,
           dayIndex: getRootField("dayIndex")?.value || 1,
         category: getRootField("category")?.value?.trim() || "",

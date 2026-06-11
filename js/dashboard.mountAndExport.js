@@ -33,6 +33,8 @@ async function mountWelcomeDashboard({
 
   const dash = getDashboardState(me, messageCount, runtimeAssignments);
 
+window.cleanupChatRuntimeEffects?.();
+
   messagesEl.innerHTML = await buildWelcomeMarkup({
     sb,
     me,
@@ -1953,7 +1955,7 @@ ${
             data-module-subview="model"
             type="button"
           >
-            Model
+            SoleMate
           </button>
         </div>
       `
@@ -2247,6 +2249,37 @@ onRefresh: async () => {
     activeAssignmentId: activeQuizAssignment.id
   });
 },
+
+onProgressChange: async () => {
+  const dash = getDashboardState(
+    me,
+    liveMessageStats.count || 0,
+    runtimeAssignments,
+    liveMessageStats
+  );
+
+  liveDashboardState = dash;
+
+  const startingCandidates =
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  window.updateModuleQuizMetricDock?.({
+    attraction: dash.attraction,
+    connection: dash.connection,
+    confidence: dash.confidence,
+    candidates: dash.remainingCandidates,
+    startingCandidates
+  });
+
+  window.updateSidebarProgress?.({
+    attraction: dash.attraction,
+    connection: dash.connection,
+    confidence: dash.confidence,
+    candidates: dash.remainingCandidates,
+    startingCandidates
+  });
+},
+
 onOptimisticAdvance: ({ nextStep, answers }) => {
   const totalSteps = getAssignmentStepTotal(activeQuizAssignment);
 

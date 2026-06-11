@@ -38,22 +38,22 @@ let ambientState = "";
 let ambientStateTimer = null;
 
 function setChatSubtitleStatus(text) {
-  if (text === lastStatusText) return;
+  // if (text === lastStatusText) return;
 
-  if (!chatModelStatus) return;
+  // if (!chatModelStatus) return;
 
-  chatModelStatus.classList.add("statusChanging");
+  // chatModelStatus.classList.add("statusChanging");
 
-  setTimeout(() => {
-    chatModelStatus.textContent = text || "";
-    chatModelStatus.classList.toggle("statusActive", !!text);
-    chatModelStatus.classList.remove("statusChanging");
-    lastStatusText = text;
-  }, 160);
+  // setTimeout(() => {
+  //   chatModelStatus.textContent = text || "";
+  //   chatModelStatus.classList.toggle("statusActive", !!text);
+  //   chatModelStatus.classList.remove("statusChanging");
+  //   lastStatusText = text;
+  // }, 160);
 }
 
 function clearChatSubtitleStatus() {
-  setChatSubtitleStatus("");
+  // setChatSubtitleStatus("");
 }
 
 function getStatusFromElapsed(ms) {
@@ -115,26 +115,26 @@ async function updateConversationStatus() {
 
   // typing / reacting overrides everything
   if (reactingUntil > now) {
-    setChatSubtitleStatus(STATUS_TEXT.reacting);
+    // setChatSubtitleStatus(STATUS_TEXT.reacting);
     return;
   }
 
 // if they sent the last message, show ambient "living" state
 if (latestMsg.sender_id === them.id) {
-  setChatSubtitleStatus(getAmbientStatus());
+  // setChatSubtitleStatus(getAmbientStatus());
   return;
 }
 
   // if I sent the last message and they haven't read it yet
 if (latestMsg.sender_id === me.id && !latestMsg.read_at) {
-  setChatSubtitleStatus(getAmbientStatus());
+  // setChatSubtitleStatus(getAmbientStatus());
   return;
 }
 
   // if they have read my latest message
   if (latestMsg.sender_id === me.id && latestMsg.read_at) {
     const elapsed = now - new Date(latestMsg.read_at).getTime();
-    setChatSubtitleStatus(getStatusFromElapsed(elapsed));
+    // setChatSubtitleStatus(getStatusFromElapsed(elapsed));
     return;
   }
 

@@ -326,7 +326,7 @@ async function closeMobileSidebar() {
   if (isCurrentChatActuallyVisible()) {
     await markCurrentThreadReadIfVisible("closed mobile sidebar");
     await renderSidebar(them?.id);
-    await updateConversationStatus();
+    // await updateConversationStatus();
   }
 }
 
@@ -544,11 +544,113 @@ function closeMobileRailMenu() {
   document.getElementById("mobileMenuBtnGlobal")?.setAttribute("aria-expanded", "false");
 }
 
+function closeModelInfoPopup() {
+  const existing = document.getElementById("modelInfoPopup");
+  if (!existing) return;
+
+  existing.classList.add("isLeaving");
+
+  window.setTimeout(() => {
+    existing.remove();
+  }, 180);
+}
+
+function openModelInfoPopup() {
+  closeModelInfoPopup();
+
+  const name = chatTitle?.textContent?.trim() || "Conversation";
+  const version = chatModelVersion?.textContent?.trim() || "";
+  const status = chatSubtitle?.textContent?.trim() || "Conversational profile still forming";
+
+  const popup = document.createElement("div");
+  popup.id = "modelInfoPopup";
+  popup.className = "modelInfoPopup";
+  popup.setAttribute("role", "dialog");
+  popup.setAttribute("aria-modal", "true");
+  popup.setAttribute("aria-label", "Conversation information");
+
+  popup.innerHTML = `
+    <div class="modelInfoScrim" data-model-info-close></div>
+
+    <section class="modelInfoPanel">
+      <button
+        class="modelInfoClose"
+        type="button"
+        aria-label="Close conversation information"
+        data-model-info-close
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modelInfoEyebrow">Conversational Agent</div>
+
+      <div class="modelInfoTitleRow">
+        <h3>${escapeHtml(name)}</h3>
+        ${version ? `<span>${escapeHtml(version)}</span>` : ""}
+      </div>
+
+      <p class="modelInfoStatus">
+        <i class="fa-regular fa-circle-dot"></i>
+        ${escapeHtml(status)}
+      </p>
+
+      <div class="modelInfoExplainer">
+        <div class="modelInfoExplainerItem">
+          <span>Model Persona</span>
+          <p>
+            ${escapeHtml(name)} has been designed to behave less like an assistant
+            and more like a real person inside a dating app.
+          </p>
+        </div>
+
+                <div class="modelInfoExplainerItem">
+          <span>Continuity</span>
+          <p>
+            As far as ${escapeHtml(name)} is concerned, they are a real person
+            living a real life. They have a persistent, linear life inside Sole.
+          </p>
+        </div>
+
+        <div class="modelInfoExplainerItem">
+          <span>Response time</span>
+          <p>
+            They may pause, misunderstand, change mood, get distracted, or take
+            time to reply. They are not designed to respond the moment you do.
+          </p>
+        </div>
+
+
+        <div class="modelInfoExplainerItem">
+          <span>Best results</span>
+          <p>
+            Interact with ${escapeHtml(name)} however you would with someone you
+            had just matched with. Talk naturally, and say things you would
+            actually say.
+          </p>
+        </div>
+      </div>
+    </section>
+  `;
+
+  document.body.appendChild(popup);
+
+  requestAnimationFrame(() => {
+    popup.classList.add("isVisible");
+  });
+
+  popup.querySelectorAll("[data-model-info-close]").forEach(el => {
+    el.addEventListener("click", closeModelInfoPopup);
+  });
+}
+
 function initMobileTopNavigation() {
 const chatBtn = document.getElementById("mobileChatBtn");
 const menuBtn = document.getElementById("mobileMenuBtnGlobal");
 const mobileTopBrand = document.getElementById("mobileTopBrand");
-const modelInfoBtn = document.getElementById("mobileModelInfoBtn");
+const modelInfoBtns = [
+  document.getElementById("mobileModelInfoBtn"),
+  document.getElementById("desktopModelInfoBtn")
+].filter(Boolean);
 const oldHeaderMenuBtn = document.getElementById("mobileMenuBtn");
 const scrim = document.getElementById("mobileRailScrim");
 
@@ -580,21 +682,18 @@ const scrim = document.getElementById("mobileRailScrim");
   window.soleRedesignNavigate?.("home");
 });
 
-  modelInfoBtn?.addEventListener("click", () => {
-  const name = chatTitle?.textContent?.trim() || "Conversation";
-  const version = chatModelVersion?.textContent?.trim() || "";
-  const status = chatSubtitle?.textContent?.trim() || "";
-
-  alert(
-    `${name}\n\nConversational Model${version ? ` ${version}` : ""}${status ? `\n${status}` : ""}`
-  );
+modelInfoBtns.forEach(btn => {
+  btn.addEventListener("click", openModelInfoPopup);
 });
 
   scrim?.addEventListener("click", closeMobileRailMenu);
 
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape") closeMobileRailMenu();
-  });
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeMobileRailMenu();
+    closeModelInfoPopup();
+  }
+});
 
   ["focus", "visibilitychange", "pageshow"].forEach(eventName => {
   window.addEventListener(eventName, () => {

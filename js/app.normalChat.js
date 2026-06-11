@@ -39,6 +39,8 @@ stopPartnerFactRotation();
   viewA = null;
   viewB = null;
 
+window.cleanupChatRuntimeEffects?.();
+
 messagesEl.innerHTML = `
   <div class="messagesLoadingState" role="status" aria-live="polite">
     <span class="messagesLoadingSpinner" aria-hidden="true"></span>
@@ -67,9 +69,9 @@ await renderSidebar(them.id);
 await subscribeRealtime(me.id, them.id, me.id);
 await subscribeMessageOverrideRealtime(me.id, them.id, me.id);
 
-  startAmbientStateRotation();
-  startSubtitleStateLoop();
-  updateConversationStatus();
+  // startAmbientStateRotation();
+  // startSubtitleStateLoop();
+  // updateConversationStatus();
 
   textInput.disabled = false;
   autoResizeTextarea();

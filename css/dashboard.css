@@ -2106,7 +2106,7 @@
   .sidebarNavPane:has(.moduleHero) {
     display: flex !important;
     flex-direction: column !important;
-    gap: 14px !important;
+    gap: 2px !important;
 
     height: 100% !important;
     min-height: 0 !important;

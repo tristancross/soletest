@@ -80,6 +80,16 @@ body:has(.app.soleRedesignApp[data-active-module="solemate"]){
   --chat-aura-2:rgba(255,156,64,.22);
   --chat-aura-3:rgba(255,50,90,.18);
 }
+.app.soleRedesignApp[data-active-module="feedback"]{
+  --module-accent:#ff4f3f;
+  --module-accent-soft:rgba(255,79,63,.20);
+
+  --module-page-bg:#ff6b5a;
+
+  --chat-aura-1:rgba(255,79,63,.34);
+  --chat-aura-2:rgba(255,156,64,.22);
+  --chat-aura-3:rgba(255,50,90,.18);
+}
 
 /* CONNECTION — vivid signal */
 .app.soleRedesignApp[data-active-module="connection"],

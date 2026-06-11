@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="./css/splash.css" />
   <link rel="stylesheet" href="./css/firsttime.css" />
   <link rel="stylesheet" href="./css/admin.css" />
+  <link rel="stylesheet" href="./css/performance.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link id="soleDynamicFavicon" rel="icon" type="image/svg+xml" href="">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -129,10 +130,10 @@
   </div>
 
   <div class="soleRailBottom">
-    <button class="soleRailItem" type="button" data-sole-rail="settings" aria-label="Settings">
-      <i class="fa-solid fa-gear"></i>
-      <span>Settings</span>
-    </button>
+<button class="soleRailItem" type="button" data-sole-rail="feedback" aria-label="Feedback">
+  <i class="fa-regular fa-comment-dots"></i>
+  <span>Feedback</span>
+</button>
 
 <div class="soleRailAccount" id="soleRailAccount">
   <button class="soleRailUser" type="button" data-sole-rail="account" aria-label="Account">
@@ -272,6 +273,14 @@
     </span>
   </div>
 </div>
+<button
+  class="desktopModelInfoBtn"
+  id="desktopModelInfoBtn"
+  type="button"
+  aria-label="Conversation information"
+>
+  <i class="fa-solid fa-ellipsis"></i>
+</button>
 <button class="mobileMenuBtn" id="mobileMenuBtn" aria-label="Open menu" aria-expanded="false">
   <i class="fa-solid fa-bars"></i>
   <span class="mobileMenuUnreadBadge" id="mobileMenuUnreadBadge" hidden></span>

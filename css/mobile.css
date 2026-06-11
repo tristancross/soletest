@@ -1022,8 +1022,19 @@
 }
 }
 
+@media (max-height: 850px) {
+  .soleDailyHero h3{
+    font-size:26px;
+  }
+  
+  .soleDashboardGreeting h2{
+    font-size:16px;
+  }
+}
 /* Matrix gets a slightly wider breakpoint because it breaks earlier */
 @media (max-width: 1000px) {
+
+
   .soleMatrixPanel {
     padding: 14px 8px !important;
     border-radius: 18px !important;
@@ -2199,3 +2210,4 @@ html.isCapacitorApp .soleModuleTile p {
 html.isCapacitorApp .soleModuleTile h4 {
   font-size: clamp(34px, 8vw, 52px);
 }
+

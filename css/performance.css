@@ -1,0 +1,89 @@
+/* www/css/performance.css */
+
+/* Laptop/mobile performance pass */
+@media (max-width: 1200px), (prefers-reduced-motion: reduce) {
+  .solemateRing,
+  .solemateCore,
+  .connectionCircle.left,
+  .connectionCircle.right,
+  .firework,
+  .firework::before,
+  .firework::after,
+  .chatSubtitle.statusActive::after,
+  .bubble.typewriter::after {
+    animation: none !important;
+  }
+
+  .signalLayersCard,
+  .sidebarTasksPane,
+  .modelInfoPanel,
+  .modelInfoScrim,
+  .soleNoticeToast,
+  .adminQuickAssignOverlay,
+  .adminQuickEditOverlay,
+  .messagesLoadingState,
+  .soleModuleExplore,
+  .progressStat,
+  .solemateRing,
+  .solemateTooltip {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .signalRingFill,
+  .solemateConfidenceNode,
+  .solemateRefinementNode,
+  .solemateActiveOrbit,
+  .responseNeuralDot,
+  .manifestImageBase,
+  .manifestImageGhost {
+    filter: none !important;
+  }
+
+  .sidebarTaskCard:hover,
+  .signalLayerBtn.isActive,
+  .soleModuleExplore:hover,
+  .soleModuleExplore:hover i {
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messagesLoadingSpinner {
+    animation: none !important;
+  }
+}
+
+body.isTabHidden * {
+  animation-play-state: paused !important;
+}
+
+/* Pause dashboard/sidebar visual work while user is focused on chat */
+.app.isChatFocus .sidebar *,
+body.mobileViewMessages .sidebar * {
+  animation-play-state: paused !important;
+  transition-property: none !important;
+}
+
+/* Also neutralise expensive sidebar rendering while hidden/focused */
+.app.isChatFocus .sidebar,
+body.mobileViewMessages .sidebar {
+  contain: layout paint style;
+}
+
+.app.isChatFocus .signalRingFill,
+.app.isChatFocus .manifestImageBase,
+.app.isChatFocus .manifestImageGhost,
+body.mobileViewMessages .signalRingFill,
+body.mobileViewMessages .manifestImageBase,
+body.mobileViewMessages .manifestImageGhost {
+  filter: none !important;
+}
+
+.app.isChatFocus .signalLayersCard,
+.app.isChatFocus .sidebarTasksPane,
+body.mobileViewMessages .signalLayersCard,
+body.mobileViewMessages .sidebarTasksPane {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

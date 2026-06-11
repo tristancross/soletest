@@ -3,6 +3,7 @@ let adminPairPanelChannel = null;
 let adminPairOverridePanelChannel = null;
 let adminPairPresenceChannel = null;
 let adminPairPanelDraftTimeout = null;
+let adminChatsOverviewChannel = null;
 
 async function cleanupAdminPairTranscriptChannels() {
   if (adminPairPanelChannel) {
@@ -20,14 +21,58 @@ async function cleanupAdminPairTranscriptChannels() {
     adminPairPresenceChannel = null;
   }
 
+    if (adminChatsOverviewChannel) {
+    await sb.removeChannel(adminChatsOverviewChannel);
+    adminChatsOverviewChannel = null;
+  }
+
   if (adminPairPanelDraftTimeout) {
     clearTimeout(adminPairPanelDraftTimeout);
     adminPairPanelDraftTimeout = null;
   }
 }
 
-function setupAdminUI(){
-  adminToggleBtn.onclick = () => toggleAdminMode();
+async function openAdminFromAnywhere(screen) {
+  const effectiveAdmin = adminActualProfile || me;
+
+  if (!effectiveAdmin?.is_admin) {
+    console.warn("Admin button clicked, but current profile is not admin", effectiveAdmin);
+    return;
+  }
+
+  await enterAdminMode(
+    screen || (window.matchMedia("(max-width: 768px)").matches ? "chats" : "users")
+  );
+}
+
+function setupAdminUI() {
+  adminToggleBtn.onclick = async () => {
+    await openAdminFromAnywhere();
+  };
+
+  if (!document.getElementById("mobileAdminQuickBtn")) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "mobileAdminQuickBtn";
+    btn.className = "mobileAdminQuickBtn";
+    btn.innerHTML = `<i class="fa-solid fa-shield-halved"></i><span>Admin</span>`;
+
+    btn.addEventListener("click", async () => {
+      await openAdminFromAnywhere("chats");
+    });
+
+    document.body.appendChild(btn);
+  }
+
+  updateMobileAdminQuickButton();
+}
+
+function updateMobileAdminQuickButton() {
+  const btn = document.getElementById("mobileAdminQuickBtn");
+  if (!btn) return;
+
+  const effectiveAdmin = adminActualProfile || me;
+  btn.hidden = !effectiveAdmin?.is_admin || appMode === "admin" || appMode === "preview";
 }
 
 function setAppMode(mode) {
@@ -35,6 +80,8 @@ function setAppMode(mode) {
 
   appEl.classList.toggle("isAdminMode", mode === "admin");
   appEl.classList.toggle("isPreviewMode", mode === "preview");
+
+  updateMobileAdminQuickButton();
 }
 
 function removeAdminPreviewExitButton() {
@@ -100,17 +147,49 @@ async function broadcastMessageOverrideChanged(userAId, userBId, messageId = "")
   }, 500);
 }
 
+function forceAdminMobileSurface() {
+  document.body.classList.remove(
+    "mobileViewHome",
+    "mobileViewMessages",
+    "isChatFocus",
+    "isFirstTimeUserActive",
+    "isFirstTimeChatShellVisible",
+    "isFirstTimeChatShellClear"
+  );
+
+  document.body.classList.add("mobileViewMessages");
+
+  appEl.classList.remove("isChatFocus");
+
+  closeMobileSidebar?.();
+}
+
 async function enterAdminMode(screen = "users") {
-  removeAdminPreviewExitButton();
+  try {
+    removeAdminPreviewExitButton();
 
-  setAppMode("admin");
-  adminMode = true;
+    setAppMode("admin");
+    adminMode = true;
 
-  closeAdminOverlay();
+    forceAdminMobileSurface();
 
-  await loadAdminProfiles();
+    closeAdminOverlay();
 
-  await renderAdminWorkspace(screen);
+    textInput.disabled = true;
+    updateSendButton?.();
+
+    await loadAdminProfiles();
+
+    await renderAdminWorkspace(screen);
+
+    window.requestAnimationFrame(() => {
+      forceAdminMobileSurface();
+      updateMobileAdminQuickButton?.();
+    });
+  } catch (error) {
+    console.error("Could not enter admin mode", error);
+    alert(error?.message || "Could not open admin mode.");
+  }
 }
 
 async function bindAdminGlobalDayControls(root = document) {
@@ -1675,21 +1754,28 @@ async function toggleAdminMode(){
     return;
   }
 
-  await enterAdminMode("users");
+  await enterAdminMode(window.matchMedia("(max-width: 768px)").matches ? "chats" : "users");
 }
 
 async function renderAdminWorkspace(screen = "users") {
   adminScreen = screen;
 
-  messagesEl.innerHTML = `
+messagesEl.innerHTML = `
     <div class="adminWorkspaceShell">
-      <aside class="adminWorkspaceNav">
+      <button type="button" class="adminMobileMenuBtn" id="adminMobileMenuBtn">
+        <i class="fa-solid fa-bars"></i>
+        <span>Admin menu</span>
+      </button>
+
+      <div class="adminMobileNavScrim" id="adminMobileNavScrim" hidden></div>
+
+      <aside class="adminWorkspaceNav" id="adminWorkspaceNav">
         <div class="adminWorkspaceTitle">
           <h2>Admin</h2>
           <p>Control centre</p>
         </div>
 
-      ${["users", "days", "tasks", "portrait", "pairings", "chats", "insights", "templates"].map(item => `
+${["users", "days", "tasks", "portrait", "facts", "feedback", "pairings", "chats", "insights", "templates", "settings"].map(item => `
           <button
             type="button"
             class="adminNavBtn ${screen === item ? "isActive" : ""}"
@@ -1710,13 +1796,272 @@ async function renderAdminWorkspace(screen = "users") {
 
   messagesEl.querySelector("#exitAdminModeBtn")?.addEventListener("click", exitAdminMode);
 
+    const adminMobileMenuBtn = messagesEl.querySelector("#adminMobileMenuBtn");
+  const adminMobileNavScrim = messagesEl.querySelector("#adminMobileNavScrim");
+  const adminWorkspaceNav = messagesEl.querySelector("#adminWorkspaceNav");
+
+  function closeAdminMobileNav() {
+    adminWorkspaceNav?.classList.remove("isOpen");
+    adminMobileNavScrim.hidden = true;
+  }
+
+  function openAdminMobileNav() {
+    adminWorkspaceNav?.classList.add("isOpen");
+    adminMobileNavScrim.hidden = false;
+  }
+
+  adminMobileMenuBtn?.addEventListener("click", openAdminMobileNav);
+  adminMobileNavScrim?.addEventListener("click", closeAdminMobileNav);
+
   messagesEl.querySelectorAll("[data-admin-workspace-screen]").forEach(btn => {
     btn.addEventListener("click", async () => {
+      closeAdminMobileNav();
       await renderAdminWorkspace(btn.dataset.adminWorkspaceScreen);
     });
   });
 
   await renderAdminWorkspaceContent(screen);
+}
+
+async function loadAdminChatFacts() {
+  const { data, error } = await sb
+    .from("user_chat_facts")
+    .select("id,user_id,fact_text,sort_order,is_active,created_at")
+    .order("user_id", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    alert(error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function renderAdminFactsWorkspace(content) {
+  const facts = await loadAdminChatFacts();
+
+  const factsByUserId = facts.reduce((acc, fact) => {
+    if (!acc[fact.user_id]) acc[fact.user_id] = [];
+    acc[fact.user_id].push(fact);
+    return acc;
+  }, {});
+
+  content.innerHTML = `
+    <section class="adminPanel adminFactsPanel">
+      <div class="adminWorkspaceTitle">
+        <h3>Chat subtitle facts</h3>
+        <p>
+          Add small factoids for each user. Their match will see these cycling under the chat title.
+        </p>
+      </div>
+
+      <div class="adminFactsList">
+        ${adminProfiles.map(profile => {
+          const rows = factsByUserId[profile.id] || [];
+
+          return `
+            <article class="adminFactsUserCard">
+              <div class="adminFactsUserHeader">
+                <div>
+                  <h4>${escapeHtml(profile.display_name || profile.username || "Unnamed user")}</h4>
+                  <p>${escapeHtml(profile.username || profile.email || "")}</p>
+                </div>
+
+                <span>${rows.length} fact${rows.length === 1 ? "" : "s"}</span>
+              </div>
+
+              <div class="adminFactsRows">
+                ${
+                  rows.length
+                    ? rows.map(fact => `
+                      <div class="adminFactRow" data-fact-row="${fact.id}">
+                        <input
+                          class="adminFactOrderInput"
+                          type="number"
+                          value="${Number(fact.sort_order || 0)}"
+                          data-fact-order="${fact.id}"
+                          aria-label="Sort order"
+                        />
+
+                        <input
+                          class="adminFactTextInput"
+                          type="text"
+                          value="${escapeAttr(fact.fact_text || "")}"
+                          data-fact-text="${fact.id}"
+                          placeholder="e.g. Recently started learning Italian"
+                        />
+
+                        <label class="adminFactActiveToggle">
+                          <input
+                            type="checkbox"
+                            data-fact-active="${fact.id}"
+                            ${fact.is_active !== false ? "checked" : ""}
+                          />
+                          <span>Active</span>
+                        </label>
+
+                        <button
+                          type="button"
+                          class="btn btnGhost"
+                          data-fact-save="${fact.id}"
+                        >
+                          Save
+                        </button>
+
+                        <button
+                          type="button"
+                          class="btn btnGhost adminDangerBtn"
+                          data-fact-delete="${fact.id}"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    `).join("")
+                    : `<div class="adminFactsEmpty">No facts added yet.</div>`
+                }
+              </div>
+
+              <div class="adminFactNewRow">
+                <input
+                  type="number"
+                  value="${rows.length + 1}"
+                  data-new-fact-order="${profile.id}"
+                  aria-label="New fact sort order"
+                />
+
+                <input
+                  type="text"
+                  data-new-fact-text="${profile.id}"
+                  placeholder="Add a new chat subtitle fact..."
+                />
+
+                <button
+                  type="button"
+                  class="btn"
+                  data-new-fact-add="${profile.id}"
+                >
+                  Add fact
+                </button>
+              </div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+
+  content.querySelectorAll("[data-new-fact-add]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.newFactAdd;
+      const textEl = content.querySelector(`[data-new-fact-text="${userId}"]`);
+      const orderEl = content.querySelector(`[data-new-fact-order="${userId}"]`);
+
+      const factText = textEl?.value?.trim();
+      const sortOrder = Number(orderEl?.value || 0);
+
+      if (!factText) {
+        alert("Add some fact text first.");
+        return;
+      }
+
+const { error } = await sb.from("user_chat_facts").insert({
+  user_id: userId,
+  fact_text: factText,
+  sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+  is_active: true,
+  updated_at: new Date().toISOString()
+});
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      await renderAdminFactsWorkspace(content);
+      refreshPartnerFactsIfNeeded(userId);
+    });
+  });
+
+  content.querySelectorAll("[data-fact-save]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const factId = btn.dataset.factSave;
+
+      const textEl = content.querySelector(`[data-fact-text="${factId}"]`);
+      const orderEl = content.querySelector(`[data-fact-order="${factId}"]`);
+      const activeEl = content.querySelector(`[data-fact-active="${factId}"]`);
+
+      const factText = textEl?.value?.trim();
+      const sortOrder = Number(orderEl?.value || 0);
+
+      if (!factText) {
+        alert("Fact text cannot be empty.");
+        return;
+      }
+
+      const { data, error } = await sb
+        .from("user_chat_facts")
+        .update({
+          fact_text: factText,
+          sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+          is_active: !!activeEl?.checked,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", factId)
+        .select("user_id")
+        .single();
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      await renderAdminFactsWorkspace(content);
+      refreshPartnerFactsIfNeeded(data?.user_id);
+    });
+  });
+
+  content.querySelectorAll("[data-fact-delete]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const factId = btn.dataset.factDelete;
+      const confirmed = window.confirm("Delete this chat subtitle fact?");
+      if (!confirmed) return;
+
+      const { data: existing, error: findError } = await sb
+        .from("user_chat_facts")
+        .select("user_id")
+        .eq("id", factId)
+        .single();
+
+      if (findError) {
+        alert(findError.message);
+        return;
+      }
+
+      const { error } = await sb
+        .from("user_chat_facts")
+        .delete()
+        .eq("id", factId);
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      await renderAdminFactsWorkspace(content);
+      refreshPartnerFactsIfNeeded(existing?.user_id);
+    });
+  });
+}
+
+function refreshPartnerFactsIfNeeded(userId) {
+  if (!userId) return;
+
+  // If admin is currently viewing/chatting with this profile, refresh immediately.
+  if (them?.id === userId && typeof startPartnerFactRotation === "function") {
+    startPartnerFactRotation(userId);
+  }
 }
 
 async function renderAdminWorkspaceContent(screen) {
@@ -1727,10 +2072,148 @@ async function renderAdminWorkspaceContent(screen) {
   if (screen === "days") return renderAdminDaysWorkspace(content);
 if (screen === "tasks") return renderAdminTasksWorkspace(content);
 if (screen === "portrait") return await renderAdminPortraitsWorkspace(content);
+if (screen === "facts") return await renderAdminFactsWorkspace(content);
+if (screen === "feedback") return await renderAdminFeedbackWorkspace(content);
 if (screen === "pairings") return renderAdminPairingsWorkspace(content);
   if (screen === "chats") return await renderAdminChatsWorkspace(content);
   if (screen === "insights") return renderAdminInsightsWorkspace(content);
   if (screen === "templates") return renderAdminTemplatesWorkspace(content);
+    if (screen === "settings") return await renderAdminSettingsWorkspace(content);
+}
+
+async function renderAdminFeedbackWorkspace(content) {
+  const { data, error } = await sb
+    .from("beta_feedback")
+    .select(`
+      id,
+      user_id,
+      feedback_text,
+      page_context,
+      user_agent,
+      created_at,
+      profiles:user_id (
+        display_name,
+        username,
+        email
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    content.innerHTML = `
+      <section class="adminPanel">
+        <h3>Feedback</h3>
+        <p class="muted">Could not load feedback: ${escapeHtml(error.message)}</p>
+      </section>
+    `;
+    return;
+  }
+
+  const rows = data || [];
+
+  content.innerHTML = `
+    <section class="adminPanel adminFeedbackPanel">
+      <div class="adminWorkspaceTitle">
+        <h3>Beta feedback</h3>
+        <p>Participant bug reports, experience notes, and chat partner feedback.</p>
+      </div>
+
+      ${
+        rows.length
+          ? `
+            <div class="adminFeedbackList">
+              ${rows.map(row => {
+                const profile = row.profiles || {};
+                const name =
+                  profile.display_name ||
+                  profile.username ||
+                  profile.email ||
+                  "Unknown user";
+
+                const created = row.created_at
+                  ? new Date(row.created_at).toLocaleString()
+                  : "";
+
+                return `
+                  <article class="adminFeedbackCard">
+                    <div class="adminFeedbackMeta">
+                      <strong>${escapeHtml(name)}</strong>
+                      <span>${escapeHtml(created)}</span>
+                      ${
+                        row.page_context
+                          ? `<em>${escapeHtml(row.page_context)}</em>`
+                          : ""
+                      }
+                    </div>
+
+                    <div class="adminFeedbackText">
+                      ${escapeHtml(row.feedback_text)}
+                    </div>
+                  </article>
+                `;
+              }).join("")}
+            </div>
+          `
+          : `<p class="muted">No feedback submitted yet.</p>`
+      }
+    </section>
+  `;
+}
+
+async function renderAdminSettingsWorkspace(content) {
+  const settings = await window.soleDayConfigs?.loadExperimentSettings?.(sb, {
+    force: true
+  });
+
+  const voiceEnabled = settings?.voice_messages_enabled !== false;
+
+  content.innerHTML = `
+    <section class="adminPanel adminSettingsPanel">
+      <div class="adminWorkspaceTitle">
+        <h3>Settings</h3>
+        <p>Global controls for the live experiment.</p>
+      </div>
+
+      <article class="adminSettingCard">
+        <div>
+          <h4>Voice memos</h4>
+          <p>
+            Turn participant voice memo recording on or off. Existing voice messages stay visible.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="btn ${voiceEnabled ? "btnGhost" : ""}"
+          id="adminVoiceMemoToggleBtn"
+          data-enabled="${voiceEnabled ? "true" : "false"}"
+        >
+          ${voiceEnabled ? "Disable voice memos" : "Enable voice memos"}
+        </button>
+      </article>
+    </section>
+  `;
+
+  content.querySelector("#adminVoiceMemoToggleBtn")?.addEventListener("click", async event => {
+    const btn = event.currentTarget;
+    const currentlyEnabled = btn.dataset.enabled === "true";
+    const nextEnabled = !currentlyEnabled;
+
+    btn.disabled = true;
+    btn.textContent = nextEnabled ? "Enabling..." : "Disabling...";
+
+    try {
+      await window.soleDayConfigs?.saveExperimentVoiceMessagesEnabled?.(sb, nextEnabled);
+
+      window.soleVoiceMessages?.applyVoiceMessagesEnabled?.(nextEnabled);
+
+      await renderAdminSettingsWorkspace(content);
+    } catch (error) {
+      alert(error?.message || "Could not update voice memo setting.");
+      btn.disabled = false;
+      btn.textContent = currentlyEnabled ? "Disable voice memos" : "Enable voice memos";
+    }
+  });
 }
 
 function renderAdminUsersWorkspace(content) {
@@ -2610,6 +3093,22 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
   const recipientEdited = !!recipientOverride?.replacement_text;
 
   const recipientName = getAdminProfileName(message.recipient_id);
+
+  const visibleToName =
+    message.visible_to_user_id
+      ? getAdminProfileName(message.visible_to_user_id)
+      : message.system_visible_to_user_id
+        ? getAdminProfileName(message.system_visible_to_user_id)
+        : "Both users";
+
+  const systemVisibleToName = message.system_visible_to_user_id
+    ? getAdminProfileName(message.system_visible_to_user_id)
+    : "Both users";
+
+  const injectedLabel = message.admin_injected_kind
+    ? `Admin injected · ${visibleToName}`
+    : "";
+
   const messageId = escapeAttr(message.id || "");
   const recipientId = escapeAttr(message.recipient_id || "");
 
@@ -2694,7 +3193,18 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
       <div class="adminTranscriptLineMeta">
         <strong>${escapeHtml(senderName)}</strong>
         <span>${escapeHtml(fmtTime(message.created_at))}</span>
-        ${message.is_system ? `<em>System note</em>` : ""}
+
+        ${
+          message.is_system
+            ? `<em>System note · ${escapeHtml(systemVisibleToName)}</em>`
+            : ""
+        }
+
+        ${
+          injectedLabel
+            ? `<em>${escapeHtml(injectedLabel)}</em>`
+            : ""
+        }
       </div>
 
       <div class="adminTranscriptLineBody">
@@ -2933,9 +3443,11 @@ async function subscribeAdminPairPanelRealtime(userAId, userBId) {
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "messages" },
-      payload => {
+      async payload => {
         const message = payload.new;
         if (!isMessageInPair(message)) return;
+
+        await markAdminPairRead(userAId, userBId);
 
         const draftEl = document.getElementById("adminPairLiveDraft");
         if (draftEl) {
@@ -3040,10 +3552,10 @@ async function renderAdminPairChatWorkspace(content, userAId, userBId, options =
 <div id="adminPairLiveDraft" class="adminPairLiveDraft" hidden></div>
 
 <form class="adminSystemComposer" id="adminSystemComposer">
-  <div>
-    <label for="adminSystemMessageText">Inject system message</label>
-    <p>Sends a visible system note into this pair transcript.</p>
-  </div>
+<div>
+  <label for="adminSystemMessageText">Admin message</label>
+  <p>Send a system note, or send a private message that appears from one user to the other.</p>
+</div>
 
   <div class="adminSystemComposerMain">
     <div class="adminSystemFormatBar" aria-label="Format system message">
@@ -3069,6 +3581,17 @@ async function renderAdminPairChatWorkspace(content, userAId, userBId, options =
       rows="2"
       placeholder="Write a system note..."
     ></textarea>
+
+<label class="adminSystemAudienceField">
+  <span>Mode</span>
+  <select id="adminMessageMode">
+    <option value="system_both">System note · both users</option>
+    <option value="system_a">System note · ${escapeHtml(userAName)} only</option>
+    <option value="system_b">System note · ${escapeHtml(userBName)} only</option>
+    <option value="as_b_to_a">Message to ${escapeHtml(userAName)} · appears from ${escapeHtml(userBName)}</option>
+    <option value="as_a_to_b">Message to ${escapeHtml(userBName)} · appears from ${escapeHtml(userAName)}</option>
+  </select>
+</label>
   </div>
 
   <button type="submit" class="btn">
@@ -3090,7 +3613,7 @@ content
     }
   });
 
-    content.querySelector("#adminSystemComposer")?.addEventListener("submit", async event => {
+content.querySelector("#adminSystemComposer")?.addEventListener("submit", async event => {
   event.preventDefault();
 
   const textarea = content.querySelector("#adminSystemMessageText");
@@ -3099,7 +3622,7 @@ content
   if (!text) return;
 
   const submitBtn = content.querySelector("#adminSystemComposer button[type='submit']");
-  const originalText = submitBtn?.textContent || "Send system note";
+  const originalText = submitBtn?.textContent || "Send message";
 
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -3107,19 +3630,91 @@ content
   }
 
   try {
-    const { error } = await sb.from("messages").insert({
-      sender_id: userAId,
-      recipient_id: userBId,
+    const mode = content.querySelector("#adminMessageMode")?.value || "system_both";
+
+    let row = {
       text,
-      is_system: true
-    });
+      admin_injected_by: me.id,
+      admin_injected_kind: mode
+    };
+
+    if (mode === "system_both") {
+      row = {
+        ...row,
+        sender_id: userAId,
+        recipient_id: userBId,
+        is_system: true,
+        visible_to_user_id: null,
+        system_visible_to_user_id: null
+      };
+    }
+
+    if (mode === "system_a") {
+      row = {
+        ...row,
+        sender_id: userBId,
+        recipient_id: userAId,
+        is_system: true,
+        visible_to_user_id: userAId,
+        system_visible_to_user_id: userAId
+      };
+    }
+
+    if (mode === "system_b") {
+      row = {
+        ...row,
+        sender_id: userAId,
+        recipient_id: userBId,
+        is_system: true,
+        visible_to_user_id: userBId,
+        system_visible_to_user_id: userBId
+      };
+    }
+
+    if (mode === "as_b_to_a") {
+      row = {
+        ...row,
+        sender_id: userBId,
+        recipient_id: userAId,
+        is_system: false,
+        visible_to_user_id: userAId,
+        system_visible_to_user_id: null
+      };
+    }
+
+    if (mode === "as_a_to_b") {
+      row = {
+        ...row,
+        sender_id: userAId,
+        recipient_id: userBId,
+        is_system: false,
+        visible_to_user_id: userBId,
+        system_visible_to_user_id: null
+      };
+    }
+
+    const { error } = await sb.from("messages").insert(row);
 
     if (error) throw error;
 
     textarea.value = "";
+
+    const messages = await loadAdminPairTranscript(userAId, userBId);
+    const transcriptEl = content.querySelector("#adminPairTranscript");
+
+    if (transcriptEl) {
+      transcriptEl.innerHTML = messages.length
+        ? messages
+            .map(message => renderAdminTranscriptMessage(message, userAId, userBId))
+            .join("")
+        : `<div class="adminResponsesEmpty">No messages yet.</div>`;
+
+      bindAdminTranscriptModerationActions(content, userAId, userBId);
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
   } catch (error) {
-    console.error("Could not inject system message", error);
-    alert(error?.message || "Could not send system message.");
+    console.error("Could not send admin message", error);
+    alert(error?.message || "Could not send admin message.");
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -3143,6 +3738,10 @@ bindAdminSystemComposerFormatting(content);
       bindAdminTranscriptModerationActions(content, userAId, userBId);
 
     transcriptEl.scrollTop = transcriptEl.scrollHeight;
+
+    if (backMode === "chats") {
+      await markAdminPairRead(userAId, userBId);
+    }
 
     await subscribeAdminPairPanelRealtime(userAId, userBId);
     await subscribeAdminPairOverrideRealtime(userAId, userBId);
@@ -3403,27 +4002,175 @@ function getAdminPairedGroups() {
     .filter(Boolean);
 }
 
-async function renderAdminChatsWorkspace(content, selectedPairKey = "") {
-  await cleanupAdminPairTranscriptChannels();
+function getAdminStablePairIds(userAId, userBId) {
+  return [userAId, userBId].sort();
+}
 
-  const pairs = getAdminPairedGroups();
+function getAdminReadPairKey(userAId, userBId) {
+  return getAdminStablePairIds(userAId, userBId).join("__");
+}
 
-  const selectedPair =
-    pairs.find(pair => pair.key === selectedPairKey) ||
-    pairs[0];
+function formatAdminChatTime(value) {
+  if (!value) return "";
 
-  if (!pairs.length) {
-    content.innerHTML = `
-      <section class="adminPanel">
-        <h3>Chats</h3>
-        <p class="muted">No active pair chats yet.</p>
-      </section>
-    `;
-    return;
+  const date = new Date(value);
+  const now = new Date();
+
+  const sameDay = date.toDateString() === now.toDateString();
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: sameDay ? "2-digit" : undefined,
+    minute: sameDay ? "2-digit" : undefined,
+    month: sameDay ? undefined : "short",
+    day: sameDay ? undefined : "numeric"
+  }).format(date);
+}
+
+function getAdminMessagePreview(message, userA, userB) {
+  if (!message) return "No messages yet.";
+
+  if (message.is_system) {
+    return `System: ${message.text || ""}`;
   }
 
+  const sender =
+    message.sender_id === userA.id
+      ? userA
+      : message.sender_id === userB.id
+        ? userB
+        : null;
+
+  const senderName = sender?.display_name || sender?.username || "Unknown";
+
+  return `${senderName}: ${message.text || ""}`;
+}
+
+async function markAdminPairRead(userAId, userBId) {
+  if (!me?.id || !userAId || !userBId) return;
+
+  const [stableA, stableB] = getAdminStablePairIds(userAId, userBId);
+  const now = new Date().toISOString();
+
+  const { error } = await sb
+    .from("admin_pair_reads")
+    .upsert(
+      {
+        admin_id: me.id,
+        pair_key: getAdminReadPairKey(userAId, userBId),
+        user_a: stableA,
+        user_b: stableB,
+        last_read_at: now,
+        updated_at: now
+      },
+      { onConflict: "admin_id,pair_key" }
+    );
+
+  if (error) {
+    console.warn("Could not mark admin chat read", error);
+  }
+}
+
+async function loadAdminChatOverviewRows() {
+  const pairs = getAdminPairedGroups();
+
+  const rows = await Promise.all(
+    pairs.map(async pair => {
+      const userAId = pair.userA.id;
+      const userBId = pair.userB.id;
+      const pairKeyValue = getAdminReadPairKey(userAId, userBId);
+
+      const [{ data: latest, error: latestError }, { data: readRow, error: readError }] =
+        await Promise.all([
+          sb
+            .from("messages")
+          .select("id,sender_id,recipient_id,text,is_system,created_at,visible_to_user_id,admin_injected_by,admin_injected_kind")
+            .or(
+              `and(sender_id.eq.${userAId},recipient_id.eq.${userBId}),and(sender_id.eq.${userBId},recipient_id.eq.${userAId})`
+            )
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+
+          sb
+            .from("admin_pair_reads")
+            .select("last_read_at")
+            .eq("admin_id", me.id)
+            .eq("pair_key", pairKeyValue)
+            .maybeSingle()
+        ]);
+
+      if (latestError) {
+        console.warn("Could not load latest admin chat message", latestError);
+      }
+
+      if (readError) {
+        console.warn("Could not load admin chat read state", readError);
+      }
+
+      const lastReadAt = readRow?.last_read_at || "1970-01-01T00:00:00.000Z";
+
+      let unreadCount = 0;
+
+      if (latest?.created_at && latest.created_at > lastReadAt) {
+        const { count, error: countError } = await sb
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .or(
+            `and(sender_id.eq.${userAId},recipient_id.eq.${userBId}),and(sender_id.eq.${userBId},recipient_id.eq.${userAId})`
+          )
+          .gt("created_at", lastReadAt)
+          .or("is_system.is.null,is_system.eq.false");
+
+        if (countError) {
+          console.warn("Could not count unread admin chat messages", countError);
+        } else {
+          unreadCount = count || 0;
+        }
+      }
+
+      return {
+        ...pair,
+        pairKey: pairKeyValue,
+        latest: latest || null,
+        latestAt: latest?.created_at || pair.pairing?.created_at || null,
+        unreadCount
+      };
+    })
+  );
+
+  return rows.sort((a, b) => {
+    const aTime = a.latestAt ? new Date(a.latestAt).getTime() : 0;
+    const bTime = b.latestAt ? new Date(b.latestAt).getTime() : 0;
+    return bTime - aTime;
+  });
+}
+
+async function subscribeAdminChatsOverview(content) {
+  if (adminChatsOverviewChannel) {
+    await sb.removeChannel(adminChatsOverviewChannel);
+    adminChatsOverviewChannel = null;
+  }
+
+  adminChatsOverviewChannel = sb
+    .channel(`admin-chats-overview:${me.id}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages" },
+      async () => {
+        if (!content.querySelector("#adminChatsOverviewList")) return;
+        await renderAdminChatsWorkspace(content);
+      }
+    )
+    .subscribe();
+}
+
+async function renderAdminChatsWorkspace(content) {
+  await cleanupAdminPairTranscriptChannels();
+
+  const rows = await loadAdminChatOverviewRows();
+
   content.innerHTML = `
-    <section class="adminPanel adminChatsPickerPanel">
+    <section class="adminPanel adminChatsOverviewPanel">
       <div class="adminPanelHeader">
         <div>
           <h3>Chats</h3>
@@ -3431,49 +4178,71 @@ async function renderAdminChatsWorkspace(content, selectedPairKey = "") {
             Monitor live pair transcripts, inject system notes, and moderate message appearance.
           </p>
         </div>
-
-        <div class="adminChatsToolbar">
-          <label class="adminChatsPairSelectLabel" for="adminChatsPairSelect">
-            Pair
-          </label>
-
-          <select id="adminChatsPairSelect">
-            ${pairs.map(pair => `
-              <option
-                value="${escapeAttr(pair.key)}"
-                ${selectedPair?.key === pair.key ? "selected" : ""}
-              >
-                ${escapeHtml(pair.label)}
-              </option>
-            `).join("")}
-          </select>
-        </div>
       </div>
 
-      <div id="adminChatsTranscriptMount">
-        Loading chat...
+      <div id="adminChatsOverviewList" class="adminChatsOverviewList">
+        ${
+          rows.length
+            ? rows.map(row => {
+                const hasUnread = row.unreadCount > 0;
+
+                return `
+                  <button
+                    type="button"
+                    class="adminChatOverviewRow ${hasUnread ? "hasUnread" : ""}"
+                    data-open-admin-chat="${escapeAttr(row.userA.id)}"
+                    data-open-admin-chat-b="${escapeAttr(row.userB.id)}"
+                  >
+                    <span class="adminChatAvatar">
+                      ${escapeHtml((row.userA.display_name || row.userA.username || "?").slice(0, 1))}
+                    </span>
+
+                    <span class="adminChatOverviewMain">
+                      <span class="adminChatOverviewTop">
+                        <strong>
+                          ${escapeHtml(row.userA.display_name || row.userA.username || "User")}
+                          ↔
+                          ${escapeHtml(row.userB.display_name || row.userB.username || "User")}
+                        </strong>
+
+                        <time>
+                          ${escapeHtml(formatAdminChatTime(row.latestAt))}
+                        </time>
+                      </span>
+
+                      <span class="adminChatPreview">
+                        ${escapeHtml(getAdminMessagePreview(row.latest, row.userA, row.userB))}
+                      </span>
+                    </span>
+
+                    ${
+                      hasUnread
+                        ? `<span class="adminChatUnreadBadge">${row.unreadCount}</span>`
+                        : `<span class="adminChatReadSpacer"></span>`
+                    }
+                  </button>
+                `;
+              }).join("")
+            : `<div class="adminResponsesEmpty">No active pair chats yet.</div>`
+        }
       </div>
     </section>
   `;
 
-  const select = content.querySelector("#adminChatsPairSelect");
+  content.querySelectorAll("[data-open-admin-chat]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userAId = btn.dataset.openAdminChat;
+      const userBId = btn.dataset.openAdminChatB;
 
-  select?.addEventListener("change", async () => {
-    await renderAdminChatsWorkspace(content, select.value);
+      if (!userAId || !userBId) return;
+
+      await renderAdminPairChatWorkspace(content, userAId, userBId, {
+        backMode: "chats"
+      });
+    });
   });
 
-  const mount = content.querySelector("#adminChatsTranscriptMount");
-
-  if (selectedPair && mount) {
-    await renderAdminPairChatWorkspace(
-      mount,
-      selectedPair.userA.id,
-      selectedPair.userB.id,
-      {
-        backMode: "chats"
-      }
-    );
-  }
+  await subscribeAdminChatsOverview(content);
 }
 
 function renderAdminInsightsWorkspace(content, selectedUserId = "") {

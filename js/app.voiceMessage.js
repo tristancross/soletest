@@ -7,6 +7,44 @@ const previewProgressFill = document.getElementById("previewProgressFill");
 let previewAudio = null;
 const deleteRecordBtn = document.getElementById("deleteRecordBtn");
 
+let voiceMessagesEnabled = true;
+
+function syncVoiceComposerAvailability() {
+  const enabled = voiceMessagesEnabled !== false;
+
+  document.body.classList.toggle("voiceMessagesDisabled", !enabled);
+
+  if (micBtn) {
+    micBtn.hidden = !enabled;
+    micBtn.disabled = !enabled;
+    micBtn.setAttribute(
+      "aria-label",
+      enabled ? "Record voice message" : "Voice messages disabled"
+    );
+  }
+}
+
+function applyVoiceMessagesEnabled(enabled) {
+  voiceMessagesEnabled = enabled !== false;
+
+  if (!voiceMessagesEnabled) {
+    discardRecording?.();
+  }
+
+  syncVoiceComposerAvailability();
+  updateSendButton?.();
+}
+
+function applyVoiceMessagesEnabledFromSettings() {
+  const settings = window.soleDayConfigs?.getExperimentSettingsFromCache?.();
+  applyVoiceMessagesEnabled(settings?.voice_messages_enabled !== false);
+}
+
+window.soleVoiceMessages = {
+  applyVoiceMessagesEnabled,
+  applyVoiceMessagesEnabledFromSettings
+};
+
 function getCurrentRecordingDurationSeconds() {
   if (!recordingStartTime) return recordingDurationSeconds || 0;
 
@@ -53,7 +91,7 @@ function resetRecordingState() {
   deleteRecordBtn.hidden = true;
 
   textInput.hidden = false;
-  micBtn.hidden = false;
+syncVoiceComposerAvailability();
 
   micBtn.classList.remove("recording");
   micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
@@ -136,6 +174,13 @@ function buildVoicePreviewFromChunks() {
 }
 
 micBtn.onclick = async () => {
+  if (!voiceMessagesEnabled) {
+    showSoleNotice?.("Voice messages are currently disabled.", {
+      title: "Voice unavailable",
+      type: "warning"
+    });
+    return;
+  }
 
   // resume paused recording from preview state
   if (mediaRecorder && mediaRecorder.state === "paused") {
@@ -186,43 +231,64 @@ micBtn.onclick = async () => {
 
     stopRecordingTimer();
 
-    setTimeout(() => {
-      buildVoicePreviewFromChunks();
-      updateSendButton();
-    }, 50);
+setTimeout(() => {
+  buildVoicePreviewFromChunks();
+  updateSendButton();
+}, 180);
 
     return;
   }
   updateSendButton();
 
   // start fresh recording
-  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
   mediaRecorder = new MediaRecorder(stream);
   audioChunks = [];
-  recordingStartTime = Date.now();
+  recordingStartTime = null;
   pausedElapsedMs = 0;
   pauseStartedAt = null;
-  recordingState = "recording";
+  recordingState = "starting";
 
   mediaRecorder.ondataavailable = e => {
-    audioChunks.push(e.data);
+    if (e.data && e.data.size > 0) {
+      audioChunks.push(e.data);
+    }
+  };
+
+  mediaRecorder.onstart = () => {
+    recordingStartTime = Date.now();
+
+    isRecording = true;
+    recordingState = "recording";
+
+    micBtn.classList.add("recording");
+    micBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+
+    recordingTimerEl.textContent = "0:00";
+
+    updateRecordingVisualState();
+    startRecordingTimer();
+    updateSendButton();
   };
 
   mediaRecorder.onstop = async () => {
-    const totalMs = Date.now() - recordingStartTime - pausedElapsedMs;
+    const totalMs = recordingStartTime
+      ? Date.now() - recordingStartTime - pausedElapsedMs
+      : 0;
+
     const duration = Math.floor(totalMs / 1000);
 
     recordingStartTime = null;
 
-    if (duration > 120){
+    if (duration > 120) {
       alert("Voice messages must be under 2 minutes.");
       resetRecordingState();
       return;
     }
 
     recordingBlob = new Blob(audioChunks, { type: "audio/webm" });
-    recordingDurationSeconds = duration;
+    recordingDurationSeconds = Math.max(1, duration);
 
     if (previewAudioUrl) URL.revokeObjectURL(previewAudioUrl);
     previewAudioUrl = URL.createObjectURL(recordingBlob);
@@ -230,17 +296,15 @@ micBtn.onclick = async () => {
     showPreviewState();
   };
 
-  mediaRecorder.start();
-
-  isRecording = true;
-  micBtn.classList.add("recording");
-  micBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-  updateRecordingVisualState();
-
-  startRecordingTimer();
+  /*
+    The 250ms timeslice makes the browser hand us audio chunks continuously,
+    rather than waiting until pause/stop. This should stop the first moments
+    of the recording being swallowed.
+  */
+  mediaRecorder.start(250);
 
   setTimeout(() => {
-    if (isRecording){
+    if (isRecording) {
       stopRecording();
     }
   }, 120000);
@@ -261,7 +325,20 @@ function stopRecording(){
 }
 
 async function sendRecordedVoiceMessage() {
+  if (!voiceMessagesEnabled) {
+    discardRecording?.();
+
+    showSoleNotice?.("Voice messages are currently disabled.", {
+      title: "Voice unavailable",
+      type: "warning"
+    });
+
+    return;
+  }
+
   if (!recordingBlob) return;
+
+  const blobToSend = recordingBlob;
 
   const duration =
     recordingDurationSeconds > 0
@@ -289,14 +366,32 @@ async function sendRecordedVoiceMessage() {
     mediaRecorder = null;
   }
 
-  await uploadVoiceMessage(recordingBlob, duration);
-
   if (previewAudioUrl) {
     URL.revokeObjectURL(previewAudioUrl);
     previewAudioUrl = null;
   }
 
+  /*
+    Important: reset the composer before awaiting the upload.
+    This makes the input immediately return to normal after pressing send.
+  */
   resetRecordingState();
+
+  try {
+    const insertedMessage = await uploadVoiceMessage(blobToSend, duration);
+
+    if (!insertedMessage) return;
+
+    await renderMessage(insertedMessage, me.id, false);
+    scrollToBottom();
+
+    setResponseStateListening?.();
+
+    await renderSidebar?.(them?.id);
+    await updateSidebarDailyTasks?.();
+  } finally {
+    updateSendButton?.();
+  }
 }
 
 function discardRecording() {
@@ -311,9 +406,8 @@ function discardRecording() {
   resetRecordingState();
 }
 
-async function uploadVoiceMessage(blob, duration){
-
-  if (!me || !them) return;
+async function uploadVoiceMessage(blob, duration) {
+  if (!me || !them) return null;
 
   const fileName = `${crypto.randomUUID()}.webm`;
   const path = `${me.id}/${fileName}`;
@@ -322,9 +416,9 @@ async function uploadVoiceMessage(blob, duration){
     .from("voice-notes")
     .upload(path, blob);
 
-  if (uploadError){
+  if (uploadError) {
     alert(uploadError.message);
-    return;
+    return null;
   }
 
   const { data } = sb.storage
@@ -333,7 +427,7 @@ async function uploadVoiceMessage(blob, duration){
 
   const audioUrl = data.publicUrl;
 
-  const { error } = await sb
+  const { data: insertedMessage, error } = await sb
     .from("messages")
     .insert({
       sender_id: me.id,
@@ -341,12 +435,16 @@ async function uploadVoiceMessage(blob, duration){
       message_type: "voice",
       audio_path: audioUrl,
       audio_duration_seconds: duration
-    });
+    })
+    .select("*")
+    .single();
 
-  if (error){
+  if (error) {
     alert(error.message);
+    return null;
   }
 
+  return insertedMessage;
 }
 
 function formatDuration(seconds){

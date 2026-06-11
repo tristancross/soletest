@@ -1,7 +1,7 @@
 let lastRenderedMetricSnapshot = null;
 const DEFAULT_CANDIDATE_POOL = 102437
 
-const ADMIN_BUILDER_MAX_OPTIONS = 10;
+const ADMIN_BUILDER_MAX_OPTIONS = 20;
 const ADMIN_BUILDER_MIN_OPTIONS = 2;
 
 function escapeHtml(str) {
@@ -971,6 +971,8 @@ async function createQuizTemplateInSupabase(sb, me, payload) {
     title: payload.title,
     prompt: payload.prompt,
     description: payload.description,
+      admin_label: payload.adminLabel || null,
+  audience_variant: payload.audienceVariant || null,
 status: payload.status || "active",
 priority: Number(payload.priority) || 100,
 day_index: Number(payload.dayIndex) || 1,
@@ -1002,10 +1004,12 @@ created_by: me?.id || null
 }
 
 async function updateQuizTemplateInSupabase(sb, me, templateId, payload) {
-  const updatePayload = {
-    title: payload.title,
-    prompt: payload.prompt,
-    description: payload.description,
+const updatePayload = {
+  title: payload.title,
+  prompt: payload.prompt,
+  description: payload.description,
+  admin_label: payload.adminLabel || null,
+  audience_variant: payload.audienceVariant || null,
 status: payload.status || "active",
 priority: Number(payload.priority) || 100,
 day_index: Number(payload.dayIndex) || 1,

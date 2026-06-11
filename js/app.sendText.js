@@ -1,6 +1,23 @@
 // ====== SEND TEXT ======
 async function sendText() {
 
+    if (
+    window.soleDayConfigs?.getExperimentSettingsFromCache?.()?.voice_messages_enabled === false &&
+    (
+      (mediaRecorder && mediaRecorder.state === "recording") ||
+      (recordingState === "preview" && recordingBlob)
+    )
+  ) {
+    discardRecording?.();
+
+    showSoleNotice?.("Voice messages are currently disabled.", {
+      title: "Voice unavailable",
+      type: "warning"
+    });
+
+    return;
+  }
+
   // VOICE: if currently recording, stop now and send what we have
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.requestData();
@@ -113,6 +130,10 @@ lastDraftSentAt = 0;
 if (error) {
   alert(error.message);
 } else {
+window.lastSentTextForVersion = text;
+await maybeAdvanceChatModelVersionAfterUserMessage?.();
+window.lastSentTextForVersion = "";
+
   if (typeof refreshSidebarProgressFromScoring === "function") {
     await refreshSidebarProgressFromScoring({
       animateFromZero: false
@@ -129,6 +150,7 @@ if (error) {
 
   window.firstTimeUser?.maybeShowPostSendOverlay?.();
 }
+
 }
 
 

@@ -281,3 +281,13 @@ attractionCard?.addEventListener("click", async () => {
   await updateInsightNotificationDots();
 });
 }
+
+
+(function initVisibilityPerformanceMode() {
+  function syncVisibilityClass() {
+    document.body.classList.toggle("isTabHidden", document.hidden);
+  }
+
+  document.addEventListener("visibilitychange", syncVisibilityClass);
+  syncVisibilityClass();
+})();

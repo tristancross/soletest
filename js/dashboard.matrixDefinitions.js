@@ -9,7 +9,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "attraction_aesthetics_specificity",
         label: "Specificity",
         description:
-          "Measures the narrowness or breadth of someoneâ€™s attraction template.",
+          "Measures the narrowness or breadth of someone's attraction template.",
         lowDescription:
           "A more open-ended, elastic and constantly evolving attraction pattern. Attraction may form through context, chemistry or accumulation rather than a fixed type.",
         highDescription:
@@ -152,7 +152,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         lowDescription:
           "Attraction may emerge through quieter forms of presence. Subtlety, privacy or qualities that reveal themselves slowly may feel more compelling than obvious charisma.",
         highDescription:
-          "Presence matters strongly. Someoneâ€™s ability to occupy a room, hold attention or feel vividly there may be highly attractive."
+          "Presence matters strongly. Someone's ability to occupy a room, hold attention or feel vividly there may be highly attractive."
       },
       {
         key: "attraction_chemistry_atmosphere",
@@ -197,7 +197,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "attraction_romance_devotion",
         label: "Devotion",
         description:
-          "Measures the desire to be emotionally prioritised, chosen and made central in someoneâ€™s romantic world.",
+          "Measures the desire to be emotionally prioritised, chosen and made central in someone's romantic world.",
         lowDescription:
           "Romance may feel better with more air around it. Intense affection can feel overwhelming if it starts to crowd autonomy; connection does not need to consume the whole self.",
         highDescription:
@@ -415,7 +415,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "connection_attachment_proximity",
         label: "Proximity",
         description:
-          "Measures desire for closeness, shared time and involvement in each otherâ€™s everyday life.",
+          "Measures desire for closeness, shared time and involvement in each other's everyday life.",
         lowDescription:
           "Intimacy can coexist with space and separateness. Connection may not require constant contact or deep involvement in daily routines.",
         highDescription:
@@ -504,7 +504,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "connection_interpersonal_trust",
         label: "Trust",
         description:
-          "Measures ease with believing othersâ€™ intentions and allowing emotional reliance.",
+          "Measures ease with believing others' intentions and allowing emotional reliance.",
         lowDescription:
           "Trust may be earned gradually and carefully. Evidence, consistency and time may matter before emotional reliance feels safe.",
         highDescription:

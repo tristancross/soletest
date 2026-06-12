@@ -2391,7 +2391,7 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
   }
 
   .sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount > .quizBlock {
-  gap: 6px !important;
+  gap: 2px !important;
 }
 
 .sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage {

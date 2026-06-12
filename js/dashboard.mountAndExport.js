@@ -1438,7 +1438,7 @@ function renderSolemateTraits() {
                         
                           ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
                           <h4>${escapeHtml(insight.title || "Untitled trait")}</h4>
-                          <span class="insightExpandIcon">â€º</span>
+                          <span class="insightExpandIcon">›</span>
                         </div>
                                 </div>
 
@@ -1571,7 +1571,7 @@ ${item.copy}`)}"
     <section class="solemateModelPanel">
       <div class="solemateModelHeader">
         <p>
-          Dimension percentages represent Soleâ€™s confidence in each part of your
+          Dimension percentages represent Sole's confidence in each part of your
           highest-probability match profile.
         </p>
 
@@ -1742,7 +1742,7 @@ const formattedDate = `${date.toLocaleTimeString([], {
 <div class="insightTitleRow">
   ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
   <h4>${escapeHtml(insight.title || "Untitled insight")}</h4>
-  <span class="insightExpandIcon">Ã¢â‚¬Âº</span>
+  <span class="insightExpandIcon">›</span>
 </div>
 
 <div class="insightBody">
@@ -2081,18 +2081,71 @@ async function renderActiveModuleAssignment(assignment) {
     sb
   });
 
-  initAssignmentInteractions({
+initAssignmentInteractions({
+  assignment,
+  mainEl,
+  messagesEl: sidebarPaneEl,
+  sb,
+  me,
+  escapeHtml,
+  adminPreview: false,
+
+  onRefresh: async () => {
+    await renderActiveModuleAssignment(assignment);
+  },
+
+onOptimisticAdvance: ({ nextStep, answers }) => {
+  const progress = getStoredDashboardProgress(me);
+
+  progress[assignment.id] = {
+    answers,
+    currentStep: nextStep,
+    updatedAt: new Date().toISOString()
+  };
+
+  saveStoredDashboardProgress(me, progress);
+
+  const totalSteps = getAssignmentStepTotal(assignment);
+
+  const completedSteps = getCompletedStepCount(
     assignment,
-    mainEl,
-    messagesEl: sidebarPaneEl,
-    sb,
-    me,
-    escapeHtml,
-    adminPreview: false,
-    onRefresh: async () => {
-      await renderActiveModuleAssignment(assignment);
-    }
+    nextStep,
+    answers
+  );
+
+  const nextProgress = totalSteps
+    ? Math.round((completedSteps / totalSteps) * 100)
+    : 0;
+
+  animateQuizInlineProgressTo({
+    rootEl: sidebarPaneEl,
+    userId: me?.id,
+    assignmentId: assignment.id,
+    targetProgress: nextProgress
   });
+
+  refreshActiveQuizMetricsFromLocalProgress();
+},
+  onProgressChange: async ({ assignment, currentStep, answers }) => {
+    // Let the dials update after the visual question change.
+    const runtimeAssignments = window.soleRuntimeAssignmentsCache
+      ? [...window.soleRuntimeAssignmentsCache.values()].at(-1)?.data || []
+      : [];
+
+    if (!runtimeAssignments.length) return;
+
+    const dash = getDashboardState(me, 0, runtimeAssignments, { count: 0, chars: 0 });
+
+    window.updateModuleQuizMetricDock?.({
+      attraction: dash.attraction,
+      connection: dash.connection,
+      confidence: dash.confidence,
+      candidates: dash.remainingCandidates,
+      startingCandidates:
+        window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437
+    });
+  }
+});
 
   bindRankingQuestion({
   messagesEl: sidebarPaneEl,
@@ -2102,7 +2155,9 @@ async function renderActiveModuleAssignment(assignment) {
 });
 
   window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+ if (sidebarPaneEl.querySelector(".soleMatrixPanel")) {
   window.soleMatrixRendering?.animateMatrices?.(sidebarPaneEl);
+}
 }
 
 function scrollCurrentModuleAssignmentIntoView() {
@@ -2273,29 +2328,7 @@ if (!activeQuizAssignment && activeSubview === "calibration") {
   scrollCurrentModuleAssignmentIntoView();
 }
 
-
-if (activeQuizAssignment) {
-  initAssignmentInteractions({
-    assignment: activeQuizAssignment,
-    mainEl,
-    messagesEl: sidebarPaneEl,
-    sb,
-    me,
-    escapeHtml,
-    adminPreview: false,
-onRefresh: async () => {
-  await mountSidebarDashboardScreen({
-    screen,
-    sidebarPaneEl,
-    mainEl,
-    sb,
-    me,
-    escapeHtml,
-    activeAssignmentId: activeQuizAssignment.id
-  });
-},
-
-onProgressChange: async () => {
+function refreshActiveQuizMetricsFromLocalProgress() {
   const dash = getDashboardState(
     me,
     liveMessageStats.count || 0,
@@ -2305,17 +2338,16 @@ onProgressChange: async () => {
 
   liveDashboardState = dash;
 
-  window.rememberLatestSoleMetricSnapshot?.({
-  attraction: dash.attraction,
-  connection: dash.connection,
-  confidence: dash.confidence,
-  candidates: dash.remainingCandidates,
-  startingCandidates:
-    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437
-});
-
   const startingCandidates =
     window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  window.rememberLatestSoleMetricSnapshot?.({
+    attraction: dash.attraction,
+    connection: dash.connection,
+    confidence: dash.confidence,
+    candidates: dash.remainingCandidates,
+    startingCandidates
+  });
 
   window.updateModuleQuizMetricDock?.({
     attraction: dash.attraction,
@@ -2332,9 +2364,37 @@ onProgressChange: async () => {
     candidates: dash.remainingCandidates,
     startingCandidates
   });
+}
+
+if (activeQuizAssignment) {
+  initAssignmentInteractions({
+    assignment: activeQuizAssignment,
+    mainEl,
+    messagesEl: sidebarPaneEl,
+    sb,
+    me,
+    escapeHtml,
+    adminPreview: false,
+
+    onRefresh: async () => {
+      await renderActiveModuleAssignment(activeQuizAssignment);
+    },
+
+onProgressChange: async () => {
+  refreshActiveQuizMetricsFromLocalProgress();
 },
 
 onOptimisticAdvance: ({ nextStep, answers }) => {
+  const progress = getStoredDashboardProgress(me);
+
+  progress[activeQuizAssignment.id] = {
+    answers,
+    currentStep: nextStep,
+    updatedAt: new Date().toISOString()
+  };
+
+  saveStoredDashboardProgress(me, progress);
+
   const totalSteps = getAssignmentStepTotal(activeQuizAssignment);
 
   const completedSteps = getCompletedStepCount(
@@ -2353,6 +2413,8 @@ onOptimisticAdvance: ({ nextStep, answers }) => {
     assignmentId: activeQuizAssignment.id,
     targetProgress: nextProgress
   });
+
+  refreshActiveQuizMetricsFromLocalProgress();
 }
   });
 
@@ -2618,7 +2680,7 @@ async function mountAdminUserTasks({
           <div>
             <strong>${escapeHtml(task.title || "Untitled task")}</strong>
             <div class="muted">
-                           ${escapeHtml(task.task_type)} Ã‚Â· ${escapeHtml(task.status)}
+                           ${escapeHtml(task.task_type)} · ${escapeHtml(task.status)}
             </div>
           </div>
 
@@ -2834,11 +2896,11 @@ async function mountAdminUserInsights({
             <strong>${escapeHtml(insight.title || "Untitled insight")}</strong>
             <div class="muted">
               ${escapeHtml(insight.category === "general" ? "SoleMate" : insight.category)}
-              Â·
+              ·
               ${escapeHtml(insight.status)}
               ${
                 insight.icon_class
-                  ? `Â· <i class="${escapeAttr(insight.icon_class)}"></i> ${escapeHtml(insight.icon_class)}`
+                  ? `· <i class="${escapeAttr(insight.icon_class)}"></i> ${escapeHtml(insight.icon_class)}`
                   : ""
               }
             </div>

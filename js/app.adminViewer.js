@@ -726,7 +726,7 @@ async function renderAdminDaysWorkspace(content) {
         </div>
 
         <p class="adminScoreHint">
-          For now this is a preview. Next weâ€™ll make these templates movable between days,
+          For now this is a preview. Next weâ'll make these templates movable between days,
           then the scoring model will read from this curriculum structure.
         </p>
       </article>
@@ -2263,23 +2263,31 @@ function renderAdminUsersWorkspace(content) {
 
 ${renderAdminScoringControls(profile)}
 
-                <div class="adminUserActions">
-                  <button class="btn btnGhost" data-view-as-user="${profile.id}">
-                    View as ${escapeHtml(profile.display_name)}
-                  </button>
+<div class="adminUserActions">
+  <button class="btn btnGhost" data-view-as-user="${profile.id}">
+    View as ${escapeHtml(profile.display_name)}
+  </button>
 
-                  <button class="btn btnGhost" data-view-responses="${profile.id}">
-                    View responses
-                  </button>
+  <button class="btn btnGhost" data-view-responses="${profile.id}">
+    View responses
+  </button>
 
-                  <button class="btn btnGhost" data-admin-user-tasks="${profile.id}">
-                    User tasks
-                  </button>
+  <button class="btn btnGhost" data-admin-user-tasks="${profile.id}">
+    User tasks
+  </button>
 
-                  <button class="btn btnGhost" data-admin-user-insights="${profile.id}">
-                    User insights
-                  </button>
-                </div>
+  <button class="btn btnGhost" data-admin-user-insights="${profile.id}">
+    User insights
+  </button>
+
+  <button
+    class="btn ${profile.launch_block_enabled ? "" : "btnGhost"}"
+    data-admin-launch-gate="${escapeAttr(profile.id)}"
+    data-enabled="${profile.launch_block_enabled ? "true" : "false"}"
+  >
+    ${profile.launch_block_enabled ? "Unlock user now" : "Block until 9am"}
+  </button>
+</div>
               </div>
             </details>
           `;
@@ -2358,6 +2366,34 @@ content.querySelectorAll("[data-view-responses]").forEach(btn => {
 content.querySelectorAll("[data-admin-user-insights]").forEach(btn => {
   btn.addEventListener("click", () => {
     renderAdminInsightsWorkspace(content, btn.dataset.adminUserInsights);
+  });
+});
+
+content.querySelectorAll("[data-admin-launch-gate]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const userId = btn.dataset.adminLaunchGate;
+    const currentlyEnabled = btn.dataset.enabled === "true";
+    const nextEnabled = !currentlyEnabled;
+
+    btn.disabled = true;
+    btn.textContent = nextEnabled ? "Blocking..." : "Unlocking...";
+
+    try {
+      await window.soleLaunchGate.setUserLaunchGate({
+        sb,
+        userId,
+        enabled: nextEnabled,
+        unlockAt: window.soleLaunchGate.SOLE_DEFAULT_UNLOCK_AT
+      });
+
+      await loadAdminProfiles();
+      renderAdminUsersWorkspace(content);
+    } catch (error) {
+      console.error("[launch gate] update failed", error);
+      alert(error?.message || "Could not update launch gate.");
+      btn.disabled = false;
+      btn.textContent = currentlyEnabled ? "Unlock user now" : "Block until 9am";
+    }
   });
 });
 

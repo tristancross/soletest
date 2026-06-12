@@ -41,15 +41,20 @@ async function initChat() {
     return;
   }
 
-  me = profile;
-  applyMe();
-  syncChatModelVersionFromProfile?.(me);
+me = profile;
+applyMe();
+syncChatModelVersionFromProfile?.(me);
 
-  setupSidebarDashboardScreens();
-  initAccountTray();
-  setupAdminUI();
+if (window.soleLaunchGate?.isSoleLaunchGateActive?.(me)) {
+  window.soleLaunchGate.renderSoleLaunchGate(me);
+  return;
+}
 
-  await window.solePush?.registerForSolePush?.();
+setupSidebarDashboardScreens();
+initAccountTray();
+setupAdminUI();
+
+await window.solePush?.registerForSolePush?.();
 
   await startUserPresence();
   await subscribeSolematePortraitRealtime(me.id);

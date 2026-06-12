@@ -62,7 +62,7 @@ if (!text) return;
 
 if (containsBlockedLink(text)) {
   showSoleNotice(
-   "For privacy and safety, links canâ€™t be sent in chat. External links can distort Soleâ€™s compatibility analysis.",
+   "For privacy and safety, links can't be sent in chat. External links can distort Sole's compatibility analysis.",
     {
       title: "Link removed from signal",
       type: "warning"

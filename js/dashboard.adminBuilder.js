@@ -94,7 +94,7 @@ const isFreeText = question.type === "freeText";
     data-builder-question-id="${escapeAttr(question.id)}"
     ${index === 0 ? "disabled" : ""}
   >
-    â†‘
+    ↑
   </button>
 
   <button
@@ -103,7 +103,7 @@ const isFreeText = question.type === "freeText";
     data-builder-move-question="down"
     data-builder-question-id="${escapeAttr(question.id)}"
   >
-   â†“
+  ↓
   </button>
 
   <button
@@ -140,7 +140,7 @@ const isFreeText = question.type === "freeText";
 
       ${isOptionBased ? `
         <div class="adminQuizField">
-        <label>Options (one per line, 2â€“10)</label>
+        <label>Options (one per line, 2-10)</label>
           <textarea
             rows="5"
             data-builder-field="optionsText"
@@ -575,7 +575,7 @@ ${
 }
 
 <div class="adminQuizTemplateSub">
-  status ${escapeHtml(template.status || "active")} Â· priority ${escapeHtml(String(template.priority ?? ""))}
+  status ${escapeHtml(template.status || "active")} · priority ${escapeHtml(String(template.priority ?? ""))}
 </div>
         <div class="adminQuizTemplateSub">
           target ${escapeHtml(formatAssignmentTargetLabel(template, profilesById))}
@@ -1881,48 +1881,59 @@ rerenderSwipeDeck();
 submitBtn.addEventListener("click", async () => {
   if (!canAdvanceQuestion(currentQuestion, answers[currentQuestion.id])) return;
 
-  if (!isFinalStep && onOptimisticAdvance) {
+if (!isFinalStep) {
+  const nextStep = currentStep + 1;
+
+  submitBtn.disabled = true;
+
+  if (onOptimisticAdvance) {
     onOptimisticAdvance({
       currentStep,
-      nextStep: currentStep + 1,
+      nextStep,
       answers
     });
   }
 
+  const backgroundSave = saveAssignmentProgress(sb, me, assignment, {
+    answers,
+    currentStep: nextStep
+  })
+    .then(async () => {
+      if (onProgressChange) {
+        await onProgressChange({
+          assignment,
+          currentStep: nextStep,
+          answers
+        });
+      }
+    })
+    .catch(error => {
+      console.warn("Quiz progress background save failed", error);
+    });
+
+  void backgroundSave;
+
   await playAssignmentAdvanceTransition(cardEl);
 
-    if (!isFinalStep) {
-      const nextStep = currentStep + 1;
-await saveAssignmentProgress(sb, me, assignment, {
-  answers,
-  currentStep: nextStep
-});
+  if (onRefresh) {
+    onRefresh();
+  } else {
+    await refreshWelcomeDashboard({
+      mainEl,
+      messagesEl,
+      sb,
+      me,
+      escapeHtml,
+      animateMetrics: false,
+      adminPreview: false,
+      adminHome: false
+    });
+  }
 
-if (onProgressChange) {
-  await onProgressChange({
-    assignment,
-    currentStep: nextStep,
-    answers
-  });
+  return;
 }
 
-if (onRefresh) {
-  await onRefresh();
-} else {
-  await refreshWelcomeDashboard({
-    mainEl,
-    messagesEl,
-    sb,
-    me,
-    escapeHtml,
-    animateMetrics: true,
-    adminPreview: false,
-    adminHome: false
-  });
-}
-
-      return;
-    }
+await playAssignmentAdvanceTransition(cardEl);
 
 const savedResponsePayload = {
   assignmentId: assignment.id,

@@ -1,21 +1,22 @@
 // ====== INIT CHAT ======
 async function initChat() {
-syncAppHeightToViewport();
+  syncAppHeightToViewport();
 
-window.addEventListener("resize", syncAppHeightToViewport);
-// window.addEventListener("resize", fitAllProgressDialValues);
+  window.addEventListener("resize", syncAppHeightToViewport);
+  // window.addEventListener("resize", fitAllProgressDialValues);
 
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", syncAppHeightToViewport);
-  window.visualViewport.addEventListener("scroll", syncAppHeightToViewport);
-}
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", syncAppHeightToViewport);
+    window.visualViewport.addEventListener("scroll", syncAppHeightToViewport);
+  }
 
   const { data: { session }, error: sessionError } = await sb.auth.getSession();
-if (sessionError || !session?.user) {
-  hideSoleAppLoader();
-  authScreen.style.display = "grid";
-  return;
-}
+
+  if (sessionError || !session?.user) {
+    hideSoleAppLoader?.();
+    authScreen.style.display = "grid";
+    return;
+  }
 
   currentUser = session.user;
 
@@ -25,97 +26,100 @@ if (sessionError || !session?.user) {
     .eq("id", currentUser.id)
     .maybeSingle();
 
-if (error || !profile) {
-  hideSoleAppLoader();
-  setAuthError(error?.message || "No profile found for this user.");
-  authScreen.style.display = "grid";
-  return;
-}
+  if (error || !profile) {
+    hideSoleAppLoader?.();
+    setAuthError(error?.message || "No profile found for this user.");
+    authScreen.style.display = "grid";
+    return;
+  }
 
-me = profile;
-applyMe();
-syncChatModelVersionFromProfile?.(me);
+  me = profile;
+  applyMe();
+  syncChatModelVersionFromProfile?.(me);
 
-await window.solePush?.registerForSolePush?.();
+  setupSidebarDashboardScreens();
+  initAccountTray();
+  setupAdminUI();
 
-await startUserPresence();
-await subscribeSolematePortraitRealtime(me.id);
-await subscribeUserInsightsRealtime(me.id);
-await subscribeUserTasksRealtime(me.id);
-if (typeof subscribeProfileScoringRealtime === "function") {
-  await subscribeProfileScoringRealtime(me.id);
-} else {
-  console.warn("subscribeProfileScoringRealtime is not loaded");
-}
-await updateSolematePortraitNotificationDot?.();
-await updateSolemateTraitNotificationDot?.();
+  // Hide global loader as soon as the authenticated app shell can exist.
+  // Everything after this can load inside the app using local loading states.
+  hideSoleAppLoader?.();
 
-setupSidebarDashboardScreens();
-initAccountTray();
+  await window.solePush?.registerForSolePush?.();
 
-try {
-  await window.soleDayConfigs?.loadExperimentDayConfigs?.(sb, {
-    force: true
-  });
+  await startUserPresence();
+  await subscribeSolematePortraitRealtime(me.id);
+  await subscribeUserInsightsRealtime(me.id);
+  await subscribeUserTasksRealtime(me.id);
 
-  await window.soleDayConfigs?.loadExperimentSettings?.(sb, {
-    force: true
-  });
+  if (typeof subscribeProfileScoringRealtime === "function") {
+    await subscribeProfileScoringRealtime(me.id);
+  } else {
+    console.warn("subscribeProfileScoringRealtime is not loaded");
+  }
+
+  await updateSolematePortraitNotificationDot?.();
+  await updateSolemateTraitNotificationDot?.();
+
+  try {
+    await window.soleDayConfigs?.loadExperimentDayConfigs?.(sb, {
+      force: true
+    });
+
+    await window.soleDayConfigs?.loadExperimentSettings?.(sb, {
+      force: true
+    });
+
     window.soleVoiceMessages?.applyVoiceMessagesEnabledFromSettings?.();
-} catch (error) {
-  console.warn("Could not preload experiment day settings", error);
-}
-
-await refreshSidebarProgressFromScoring({
-  animateFromZero: true
-});
-
-
-await refreshBlockedPairs();
-
-assignedPartner = await getAssignedPartner(me.id);
-
-setupAdminUI();
-
-if (me.is_admin) {
-  document.body.classList.remove("isCheckingFirstTimeUser");
-  document.body.classList.remove("isFirstTimeUserActive");
-  document.body.classList.remove("isFirstTimeChatShellVisible");
-  document.body.classList.remove("isFirstTimeChatShellClear");
-
-await renderSidebar();
-hideSoleAppLoader();
-
-await updateSidebarDailyTasks();
-await updateInsightNotificationDots();
-
-await enterAdminMode(window.matchMedia("(max-width: 768px)").matches ? "chats" : "users");
-} else {
-  const handledFirstTimeUser = await window.firstTimeUser?.runIfNeeded?.();
-
-if (handledFirstTimeUser) {
-  hideSoleAppLoader();
-  return;
-}
-
-await renderSidebar();
-hideSoleAppLoader();
-
-await updateSidebarDailyTasks();
-await updateInsightNotificationDots();
-
-if (typeof setChatFocusMode === "function") {
-    setChatFocusMode(true);
-  } else {
-    document.body.classList.add("isChatFocus");
+  } catch (error) {
+    console.warn("Could not preload experiment day settings", error);
   }
 
-  if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
-    await openChat(assignedPartner);
+  await refreshSidebarProgressFromScoring({
+    animateFromZero: true
+  });
+
+  await refreshBlockedPairs();
+
+  assignedPartner = await getAssignedPartner(me.id);
+
+  if (me.is_admin) {
+    document.body.classList.remove("isCheckingFirstTimeUser");
+    document.body.classList.remove("isFirstTimeUserActive");
+    document.body.classList.remove("isFirstTimeChatShellVisible");
+    document.body.classList.remove("isFirstTimeChatShellClear");
+
+    await renderSidebar();
+    await updateSidebarDailyTasks();
+    await updateInsightNotificationDots();
+
+    await enterAdminMode(
+      window.matchMedia("(max-width: 768px)").matches ? "chats" : "users"
+    );
   } else {
-    await renderWelcomePanel();
+    const handledFirstTimeUser = await window.firstTimeUser?.runIfNeeded?.();
+
+    if (handledFirstTimeUser) {
+      hideSoleAppLoader?.();
+      return;
+    }
+
+    await renderSidebar();
+    await updateSidebarDailyTasks();
+    await updateInsightNotificationDots();
+
+    if (typeof setChatFocusMode === "function") {
+      setChatFocusMode(true);
+    } else {
+      document.body.classList.add("isChatFocus");
+    }
+
+    if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
+      await openChat(assignedPartner);
+    } else {
+      await renderWelcomePanel();
+    }
   }
-}
 
   await subscribeInboxRealtime();
   autoResizeTextarea();

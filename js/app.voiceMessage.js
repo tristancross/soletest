@@ -43,7 +43,9 @@ function applyVoiceMessagesEnabledFromSettings() {
 
 window.soleVoiceMessages = {
   applyVoiceMessagesEnabled,
-  applyVoiceMessagesEnabledFromSettings
+  applyVoiceMessagesEnabledFromSettings,
+  resetVoiceComposer: resetRecordingState,
+  discardRecording
 };
 
 function getCurrentRecordingDurationSeconds() {
@@ -129,6 +131,19 @@ syncVoiceComposerAvailability();
     mediaRecorder.stream.getTracks().forEach(track => track.stop());
   }
   mediaRecorder = null;
+
+  document.body.classList.remove("isVoiceRecording", "isVoicePreviewing");
+
+  micBtn.classList.remove("recording", "hasRecording");
+  previewPlayBtn?.classList.remove("isPaused");
+
+  if (previewPlayBtn) {
+    previewPlayBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+  }
+
+  if (previewProgressFill) {
+    previewProgressFill.style.width = "0%";
+  }
 
   updateSendButton();
   updateRecordingVisualState();

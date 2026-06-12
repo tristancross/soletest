@@ -88,10 +88,13 @@ async function initChat() {
   assignedPartner = await getAssignedPartner(me.id);
 
   if (me.is_admin) {
-    document.body.classList.remove("isCheckingFirstTimeUser");
-    document.body.classList.remove("isFirstTimeUserActive");
-    document.body.classList.remove("isFirstTimeChatShellVisible");
-    document.body.classList.remove("isFirstTimeChatShellClear");
+    document.body.classList.remove(
+      "isCheckingFirstTimeUser",
+      "isFirstTimeUserActive",
+      "isFirstTimeChatShellVisible",
+      "isFirstTimeChatShellClear",
+      "isChatFocus"
+    );
 
     await renderSidebar();
 
@@ -110,6 +113,7 @@ async function initChat() {
       await window.firstTimeUser?.runIfNeeded?.();
 
     if (handledFirstTimeUser) {
+      window.soleVoiceMessages?.resetVoiceComposer?.();
       hideSoleAppLoader?.();
       return;
     }
@@ -121,10 +125,23 @@ async function initChat() {
     await updateSidebarDailyTasks();
     await updateInsightNotificationDots();
 
-    if (typeof setChatFocusMode === "function") {
-      setChatFocusMode(true);
+    /*
+      Desktop can start in chat focus.
+      Mobile should not globally enter chat focus on login,
+      otherwise the Home/sidebar animations can get paused.
+    */
+    if (window.matchMedia("(min-width: 951px)").matches) {
+      if (typeof setChatFocusMode === "function") {
+        setChatFocusMode(true);
+      } else {
+        document.body.classList.add("isChatFocus");
+      }
     } else {
-      document.body.classList.add("isChatFocus");
+      if (typeof setChatFocusMode === "function") {
+        setChatFocusMode(false);
+      } else {
+        document.body.classList.remove("isChatFocus");
+      }
     }
 
     if (
@@ -138,6 +155,8 @@ async function initChat() {
   }
 
   await subscribeInboxRealtime();
+
+  window.soleVoiceMessages?.resetVoiceComposer?.();
 
   autoResizeTextarea();
   updateSendButton();

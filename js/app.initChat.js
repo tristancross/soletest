@@ -11,10 +11,11 @@ if (window.visualViewport) {
 }
 
   const { data: { session }, error: sessionError } = await sb.auth.getSession();
-  if (sessionError || !session?.user) {
-    authScreen.style.display = "grid";
-    return;
-  }
+if (sessionError || !session?.user) {
+  hideSoleAppLoader();
+  authScreen.style.display = "grid";
+  return;
+}
 
   currentUser = session.user;
 
@@ -24,11 +25,12 @@ if (window.visualViewport) {
     .eq("id", currentUser.id)
     .maybeSingle();
 
-  if (error || !profile) {
-   setAuthError(error?.message || "No profile found for this user.");
-    authScreen.style.display = "grid";
-    return;
-  }
+if (error || !profile) {
+  hideSoleAppLoader();
+  setAuthError(error?.message || "No profile found for this user.");
+  authScreen.style.display = "grid";
+  return;
+}
 
 me = profile;
 applyMe();
@@ -81,9 +83,11 @@ if (me.is_admin) {
   document.body.classList.remove("isFirstTimeChatShellVisible");
   document.body.classList.remove("isFirstTimeChatShellClear");
 
-  await renderSidebar();
-  await updateSidebarDailyTasks();
-  await updateInsightNotificationDots();
+await renderSidebar();
+hideSoleAppLoader();
+
+await updateSidebarDailyTasks();
+await updateInsightNotificationDots();
 
 await enterAdminMode(window.matchMedia("(max-width: 768px)").matches ? "chats" : "users");
 } else {
@@ -94,11 +98,13 @@ if (handledFirstTimeUser) {
   return;
 }
 
-  await renderSidebar();
-  await updateSidebarDailyTasks();
-  await updateInsightNotificationDots();
+await renderSidebar();
+hideSoleAppLoader();
 
-  if (typeof setChatFocusMode === "function") {
+await updateSidebarDailyTasks();
+await updateInsightNotificationDots();
+
+if (typeof setChatFocusMode === "function") {
     setChatFocusMode(true);
   } else {
     document.body.classList.add("isChatFocus");
@@ -115,5 +121,4 @@ if (handledFirstTimeUser) {
   autoResizeTextarea();
   updateSendButton();
   updateNoChatState();
-  hideSoleAppLoader();
 }

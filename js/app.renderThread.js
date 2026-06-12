@@ -93,13 +93,25 @@ async function loadThread(aId, bId, alignAsSenderId){
   });
 }
 
-async function renderMessage(m, alignAsSenderId, animate = false){
+async function renderMessage(m, alignAsSenderId, animate = false) {
   if (m.hidden_for_viewer) return;
 
-const displayText = m.display_text ?? m.text ?? "";
+  // Prevent the same message being drawn twice.
+  // This especially matters for voice notes, because the sender manually renders
+  // after upload, then realtime can also deliver the same inserted row.
+  if (
+    m.id &&
+    Array.from(messagesEl.querySelectorAll("[data-message-id]")).some(row =>
+      row.dataset.messageId === String(m.id)
+    )
+  ) {
+    return;
+  }
+
+  const displayText = m.display_text ?? m.text ?? "";
   const mine = m.sender_id === alignAsSenderId;
 
-if (m.message_type === "voice"){
+  if (m.message_type === "voice") {
 
   const row = document.createElement("div");
   row.className = "row " + (mine ? "me" : "them");

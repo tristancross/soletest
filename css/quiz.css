@@ -1469,10 +1469,10 @@ body.isRankingDragging .quizRankingItem{
 }
 
 .quizSwipeBtn{
-  width:62px !important;
-  height:62px !important;
-  min-width:62px !important;
-  min-height:62px !important;
+  width:38px !important;
+  height:38px !important;
+  min-width:38px !important;
+  min-height:38px !important;
 
   padding:0 !important;
   border-radius:999px !important;
@@ -1515,11 +1515,12 @@ body.isRankingDragging .quizRankingItem{
 
 .quizSwipeBtn.reject::before{
   content:"×";
-  transform:translateY(-1px);
+  transform:translateY(-3px);
 }
 
 .quizSwipeBtn.like::before{
   content:"♥";
+  transform:translateY(-1px);
   font-size:28px !important;
 }
 

@@ -87,3 +87,31 @@ body.mobileViewMessages .sidebarTasksPane {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+/* FINAL COMPOSER BASELINE FIX */
+.composerInner {
+  align-items: center !important;
+}
+
+.input,
+#textInput {
+  box-sizing: border-box !important;
+  display: block !important;
+
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 180px !important;
+
+  padding: 0 10px !important;
+  margin: 0 !important;
+
+  line-height: 24px !important;
+  overflow-y: hidden !important;
+
+  transform: none !important;
+}
+
+.input::placeholder,
+#textInput::placeholder {
+  line-height: 24px !important;
+}

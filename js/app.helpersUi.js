@@ -1187,17 +1187,42 @@ async function renderSystemConsole(animateMetrics = false) {
   });
 }
 
+function showSoleAppLoader() {
+  const loader = document.getElementById("soleAppLoader");
+  if (!loader) return;
+
+  loader.hidden = false;
+
+  requestAnimationFrame(() => {
+    loader.classList.add("isVisible");
+  });
+}
+
+function hideSoleAppLoader() {
+  const loader = document.getElementById("soleAppLoader");
+  if (!loader) return;
+
+  loader.classList.remove("isVisible");
+
+  window.setTimeout(() => {
+    loader.hidden = true;
+  }, 200);
+}
+
 function autoResizeTextarea() {
-  textInput.style.height = "auto";
+  if (!textInput) return;
 
-  const newHeight = Math.min(textInput.scrollHeight, 180);
-  textInput.style.height = newHeight + "px";
+  const isEmpty = !textInput.value.trim();
+  const baseHeight = 24;
+  const maxHeight = 180;
 
-  if (textInput.scrollHeight > 180) {
-    textInput.style.overflowY = "auto";
-  } else {
-    textInput.style.overflowY = "hidden";
+  textInput.style.height = baseHeight + "px";
+
+  if (!isEmpty) {
+    textInput.style.height = Math.min(textInput.scrollHeight, maxHeight) + "px";
   }
+
+  textInput.style.overflowY = textInput.scrollHeight > maxHeight ? "auto" : "hidden";
 }
 
 

@@ -8,6 +8,7 @@ let previewAudio = null;
 const deleteRecordBtn = document.getElementById("deleteRecordBtn");
 
 let voiceMessagesEnabled = true;
+let voiceSendInFlight = false;
 
 function syncVoiceComposerAvailability() {
   const enabled = voiceMessagesEnabled !== false;
@@ -64,23 +65,31 @@ function updateRecordingVisualState() {
     (recordingBlob && recordingDurationSeconds > 0) ||
     (audioChunks.length > 0 && getCurrentRecordingDurationSeconds() > 0);
 
-  // mic goes red only when there's something recorded and we're not actively recording
   micBtn.classList.toggle(
     "hasRecording",
     !isRecording && hasExistingRecording
   );
 
-  // hide the record dot when paused / previewing
   const isPausedPreview = recordingState === "preview";
   const recordDotEl = recordingMeta.querySelector(".recordDot");
+
   if (recordDotEl) {
     recordDotEl.classList.toggle("hiddenDot", isPausedPreview);
   }
 
-  // make preview play/pause button red in paused/preview state
   if (previewPlayBtn) {
     previewPlayBtn.classList.toggle("isPaused", isPausedPreview);
   }
+
+  document.body.classList.toggle(
+    "isVoiceRecording",
+    recordingState === "recording" || recordingState === "starting"
+  );
+
+  document.body.classList.toggle(
+    "isVoicePreviewing",
+    recordingState === "preview"
+  );
 }
 
 function resetRecordingState() {
@@ -123,6 +132,7 @@ syncVoiceComposerAvailability();
 
   updateSendButton();
   updateRecordingVisualState();
+  autoResizeTextarea?.();
 }
 
 function showPreviewState() {
@@ -325,6 +335,8 @@ function stopRecording(){
 }
 
 async function sendRecordedVoiceMessage() {
+  if (voiceSendInFlight) return;
+
   if (!voiceMessagesEnabled) {
     discardRecording?.();
 
@@ -377,6 +389,8 @@ async function sendRecordedVoiceMessage() {
   */
   resetRecordingState();
 
+  voiceSendInFlight = true;
+
   try {
     const insertedMessage = await uploadVoiceMessage(blobToSend, duration);
 
@@ -390,6 +404,7 @@ async function sendRecordedVoiceMessage() {
     await renderSidebar?.(them?.id);
     await updateSidebarDailyTasks?.();
   } finally {
+    voiceSendInFlight = false;
     updateSendButton?.();
   }
 }

@@ -89,9 +89,10 @@ await enterAdminMode(window.matchMedia("(max-width: 768px)").matches ? "chats" :
 } else {
   const handledFirstTimeUser = await window.firstTimeUser?.runIfNeeded?.();
 
-  if (handledFirstTimeUser) {
-    return;
-  }
+if (handledFirstTimeUser) {
+  hideSoleAppLoader();
+  return;
+}
 
   await renderSidebar();
   await updateSidebarDailyTasks();
@@ -114,4 +115,5 @@ await enterAdminMode(window.matchMedia("(max-width: 768px)").matches ? "chats" :
   autoResizeTextarea();
   updateSendButton();
   updateNoChatState();
+  hideSoleAppLoader();
 }

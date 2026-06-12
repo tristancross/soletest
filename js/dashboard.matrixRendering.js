@@ -460,54 +460,61 @@ point.addEventListener("mouseenter", () => {
   }
 });
 
-      point.addEventListener("mousemove", event => {
-        tooltip.style.display = "block";
-const tooltipKind = point.dataset.tooltipKind || "score";
+point.addEventListener("mousemove", event => {
+  tooltip.style.display = "block";
 
-if (tooltipKind === "label") {
-  tooltip.innerHTML = `
-    <div class="soleMatrixTooltipTitle">
-      <strong>${point.dataset.label}</strong>
-    </div>
-    <div class="soleMatrixTooltipBody">
-      ${point.dataset.tip || ""}
-    </div>
-  `;
-} else {
-  tooltip.innerHTML = `
-    <div class="soleMatrixTooltipTitle">
-      <strong>
-        ${point.dataset.label}:
-        <span class="soleMatrixTooltipScore">${point.dataset.value}</span>
-      </strong>
-    </div>
-    <div class="soleMatrixTooltipBody">
-      ${point.dataset.tip || ""}
-    </div>
-  `;
-}
+  if (tooltip.parentElement !== document.body) {
+    document.body.appendChild(tooltip);
+  }
 
-const panelRect = panel.getBoundingClientRect();
+  const tooltipKind = point.dataset.tooltipKind || "score";
 
-const tooltipWidth = 280;
-const tooltipHeight = tooltip.offsetHeight || 220;
+  if (tooltipKind === "label") {
+    tooltip.innerHTML = `
+      <div class="soleMatrixTooltipTitle">
+        <strong>${point.dataset.label}</strong>
+      </div>
+      <div class="soleMatrixTooltipBody">
+        ${point.dataset.tip || ""}
+      </div>
+    `;
+  } else {
+    tooltip.innerHTML = `
+      <div class="soleMatrixTooltipTitle">
+        <strong>
+          ${point.dataset.label}:
+          <span class="soleMatrixTooltipScore">${point.dataset.value}</span>
+        </strong>
+      </div>
+      <div class="soleMatrixTooltipBody">
+        ${point.dataset.tip || ""}
+      </div>
+    `;
+  }
 
-let left = event.clientX - panelRect.left + 16;
-let top = event.clientY - panelRect.top - 18;
+  const tooltipWidth = 280;
+  const tooltipHeight = tooltip.offsetHeight || 220;
+  const margin = 14;
 
-left = Math.min(left, panelRect.width - tooltipWidth - 18);
+  let left = event.clientX + 18;
+  let top = event.clientY - 18;
 
-left = Math.max(left, 14);
+  if (left + tooltipWidth > window.innerWidth - margin) {
+    left = event.clientX - tooltipWidth - 18;
+  }
 
-if (top + tooltipHeight > panelRect.height - 18) {
-  top = event.clientY - panelRect.top - tooltipHeight - 18;
-}
+  if (top + tooltipHeight > window.innerHeight - margin) {
+    top = event.clientY - tooltipHeight - 18;
+  }
 
-top = Math.max(top, 14);
+  left = Math.max(margin, left);
+  top = Math.max(margin, top);
 
-tooltip.style.left = `${left}px`;
-tooltip.style.top = `${top}px`;
-      });
+  tooltip.style.position = "fixed";
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+  tooltip.style.zIndex = "99999";
+});
 
 point.addEventListener("mouseleave", () => {
   if (point.tagName.toLowerCase() === "circle") {
@@ -515,6 +522,10 @@ point.addEventListener("mouseleave", () => {
   }
 
   tooltip.style.display = "none";
+
+  if (tooltip.parentElement === document.body) {
+    panel.appendChild(tooltip);
+  }
 });
     });
   });

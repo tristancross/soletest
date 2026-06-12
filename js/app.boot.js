@@ -113,8 +113,9 @@ try {
 }
 
 try {
- runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
-  includeLocked: true
+runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: true,
+  includeQuestions: true
 });
 } catch (error) {
   console.warn("Could not load assignments for sidebar scoring", error);

@@ -7,6 +7,12 @@ let solematePortraitChannel = null;
 let profileScoringChannel = null;
 let userTasksChannel = null;
 
+function getActiveSidebarQuizAssignmentId() {
+  const sidebarPaneEl = document.querySelector(".sidebarNavPane");
+  const activeQuizEl = sidebarPaneEl?.querySelector("[data-assignment-id]");
+  return activeQuizEl?.dataset?.assignmentId || null;
+}
+
 async function updateSolemateNotificationDots() {
   if (!me?.id) return;
 
@@ -158,9 +164,13 @@ async function subscribeUserTasksRealtime(userId) {
       async payload => {
         // console.log("[user_tasks realtime]", payload.eventType, payload.new || payload.old);
 
-        await updateSidebarDailyTasks?.();
+await updateSidebarDailyTasks?.();
 
-        const activeRail = document.querySelector(".soleRailItem.isActive")?.dataset?.soleRail;
+if (getActiveSidebarQuizAssignmentId()) {
+  return;
+}
+
+const activeRail = document.querySelector(".soleRailItem.isActive")?.dataset?.soleRail;
 
         if (
           activeRail &&
@@ -219,13 +229,17 @@ async function subscribeProfileScoringRealtime(userId) {
           applyMe?.();
         }
 
-        await refreshSidebarProgressFromScoring?.({
-          animateFromZero: false
-        });
+await refreshSidebarProgressFromScoring?.({
+  animateFromZero: false
+});
 
-        await updateSidebarDailyTasks?.();
+await updateSidebarDailyTasks?.();
 
-        const activeRail = document.querySelector(".soleRailItem.isActive")?.dataset?.soleRail;
+if (getActiveSidebarQuizAssignmentId()) {
+  return;
+}
+
+const activeRail = document.querySelector(".soleRailItem.isActive")?.dataset?.soleRail;
 
         if (
           activeRail &&

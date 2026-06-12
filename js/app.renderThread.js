@@ -38,59 +38,165 @@ function cleanupChatRuntimeEffects() {
   hideTypingIndicator?.();
 }
 
-async function loadThread(aId, bId, alignAsSenderId){
-  renderThreadLoadingState();
+const THREAD_PAGE_SIZE = 75;
 
-  lastRendered = null;
-  lastRenderedWrap = null;
+let currentThreadPageState = {
+  aId: null,
+  bId: null,
+  alignAsSenderId: null,
+  oldestLoadedAt: null,
+  hasMoreOlder: false
+};
 
+let isLoadingOlderThreadPage = false;
+
+async function fetchThreadPage(aId, bId, {
+  beforeCreatedAt = null,
+  pageSize = THREAD_PAGE_SIZE
+} = {}) {
   const filter = threadFilter(aId, bId);
-  const { data: msgs, error } = await sb
+
+  let query = sb
     .from("messages")
     .select("*")
     .or(filter)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(pageSize);
 
-  if (error) {
-    messagesEl.innerHTML = "";
-    messagesEl.appendChild(typingIndicator);
-    hideTypingIndicator();
-    alert(error.message);
-    return;
+  if (beforeCreatedAt) {
+    query = query.lt("created_at", beforeCreatedAt);
   }
 
-  const rawMessages = msgs || [];
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  // Supabase returns newest first above. Render oldest -> newest.
+  return (data || []).reverse();
+}
+
+async function resolveThreadMessagesForViewer(rawMessages, alignAsSenderId) {
   const overrides = await loadMessageOverrides(
     rawMessages
       .map(message => message.id)
       .filter(Boolean)
   );
 
-  const resolvedMessages = rawMessages
+  return rawMessages
     .map(message => resolveMessageForViewer(message, overrides, alignAsSenderId))
     .filter(message => !message.hidden_for_viewer);
+}
 
-  // IMPORTANT:
-  // Loading is done. Clear the loading pill before rendering messages.
-  messagesEl.innerHTML = "";
-  messagesEl.appendChild(typingIndicator);
-  hideTypingIndicator();
+async function loadThread(aId, bId, alignAsSenderId) {
+  renderThreadLoadingState();
 
-  for (const m of resolvedMessages) {
-    await renderMessage(m, alignAsSenderId, false);
-  }
+  lastRendered = null;
+  lastRenderedWrap = null;
 
-  syncResponseStateForLatestMessage(
-    resolvedMessages[resolvedMessages.length - 1],
-    alignAsSenderId
-  );
+  try {
+    const rawMessages = await fetchThreadPage(aId, bId);
+    const resolvedMessages = await resolveThreadMessagesForViewer(
+      rawMessages,
+      alignAsSenderId
+    );
 
-  requestAnimationFrame(() => {
-    scrollToBottom();
+    currentThreadPageState = {
+      aId,
+      bId,
+      alignAsSenderId,
+      oldestLoadedAt: rawMessages[0]?.created_at || null,
+      hasMoreOlder: rawMessages.length === THREAD_PAGE_SIZE
+    };
+
+    messagesEl.innerHTML = "";
+    messagesEl.appendChild(typingIndicator);
+    hideTypingIndicator();
+
+    for (const m of resolvedMessages) {
+      await renderMessage(m, alignAsSenderId, false);
+    }
+
+    syncResponseStateForLatestMessage(
+      resolvedMessages[resolvedMessages.length - 1],
+      alignAsSenderId
+    );
+
     requestAnimationFrame(() => {
       scrollToBottom();
+      requestAnimationFrame(scrollToBottom);
     });
-  });
+  } catch (error) {
+    messagesEl.innerHTML = "";
+    messagesEl.appendChild(typingIndicator);
+    hideTypingIndicator();
+    alert(error.message);
+  }
+}
+
+async function loadOlderThreadMessages() {
+  if (isLoadingOlderThreadPage) return;
+  if (!currentThreadPageState.hasMoreOlder) return;
+  if (!currentThreadPageState.oldestLoadedAt) return;
+
+  const { aId, bId, alignAsSenderId, oldestLoadedAt } = currentThreadPageState;
+
+  isLoadingOlderThreadPage = true;
+
+  const oldScrollHeight = messagesEl.scrollHeight;
+  const oldScrollTop = messagesEl.scrollTop;
+  const firstExistingRow = messagesEl.querySelector("[data-message-id]");
+
+  try {
+    const rawOlderMessages = await fetchThreadPage(aId, bId, {
+      beforeCreatedAt: oldestLoadedAt
+    });
+
+    if (!rawOlderMessages.length) {
+      currentThreadPageState.hasMoreOlder = false;
+      return;
+    }
+
+    const resolvedOlderMessages = await resolveThreadMessagesForViewer(
+      rawOlderMessages,
+      alignAsSenderId
+    );
+
+    currentThreadPageState.oldestLoadedAt =
+      rawOlderMessages[0]?.created_at || currentThreadPageState.oldestLoadedAt;
+
+    currentThreadPageState.hasMoreOlder =
+      rawOlderMessages.length === THREAD_PAGE_SIZE;
+
+    // Render older messages normally, then move the newly rendered rows above the existing first row.
+    lastRendered = null;
+    lastRenderedWrap = null;
+
+    for (const m of resolvedOlderMessages) {
+      await renderMessage(m, alignAsSenderId, false);
+    }
+
+    const olderIds = new Set(
+      resolvedOlderMessages
+        .map(message => String(message.id || ""))
+        .filter(Boolean)
+    );
+
+    const olderRows = Array.from(messagesEl.querySelectorAll("[data-message-id]"))
+      .filter(row => olderIds.has(String(row.dataset.messageId || "")));
+
+    if (firstExistingRow) {
+      for (const row of olderRows) {
+        messagesEl.insertBefore(row, firstExistingRow);
+      }
+    }
+
+    const newScrollHeight = messagesEl.scrollHeight;
+    messagesEl.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+  } catch (error) {
+    console.warn("Could not load older messages", error);
+  } finally {
+    isLoadingOlderThreadPage = false;
+  }
 }
 
 async function renderMessage(m, alignAsSenderId, animate = false) {

@@ -26,12 +26,12 @@ function setHeaderSubtitle(text = "") {
 
 
 document.addEventListener("visibilitychange", async () => {
-  if (isCurrentChatActuallyVisible()) {
-    await markThreadAsRead(me.id, them.id);
-    await renderSidebar(them.id);
-    // await updateConversationStatus();
-    updateMobileMenuUnreadBadge();
-  }
+  if (!isCurrentChatActuallyVisible()) return;
+  if (!me?.id || !them?.id) return;
+
+  await markThreadAsRead(me.id, them.id);
+  await renderSidebar(them.id);
+  updateMobileMenuUnreadBadge();
 });
 
 
@@ -120,7 +120,7 @@ function showSoleNotice(message, {
     </div>
 
     <button type="button" class="soleNoticeClose" aria-label="Dismiss notice">
-      Ã—
+      Ãƒâ€”
     </button>
   `;
 
@@ -469,6 +469,44 @@ function animateMetricText(el, toNumber, {
 
 window.soleAnimateMetricText = animateMetricText;
 
+function normaliseSoleMetricSnapshot(raw = {}) {
+  const defaultCandidates =
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  const startingCandidates = Math.max(
+    1,
+    Number(raw.startingCandidates ?? raw.totalCandidates ?? defaultCandidates) || defaultCandidates
+  );
+
+  const candidates = Math.max(
+    1,
+    Number(raw.candidates ?? raw.remainingCandidates ?? startingCandidates) || startingCandidates
+  );
+
+  return {
+    attraction: Math.max(0, Math.min(100, Number(raw.attraction) || 0)),
+    connection: Math.max(0, Math.min(100, Number(raw.connection ?? raw.chemistry) || 0)),
+    confidence: Math.max(0, Math.min(100, Number(raw.confidence) || 0)),
+    candidates,
+    remainingCandidates: candidates,
+    startingCandidates,
+    updatedAt: raw.updatedAt || Date.now()
+  };
+}
+
+function rememberLatestSoleMetricSnapshot(raw = {}) {
+  const snapshot = normaliseSoleMetricSnapshot(raw);
+  window.soleLatestDashboardMetrics = snapshot;
+  return snapshot;
+}
+
+function getLatestSoleMetricSnapshot(fallback = {}) {
+  return window.soleLatestDashboardMetrics || normaliseSoleMetricSnapshot(fallback);
+}
+
+window.rememberLatestSoleMetricSnapshot = rememberLatestSoleMetricSnapshot;
+window.getLatestSoleMetricSnapshot = getLatestSoleMetricSnapshot;
+
 function updateModuleQuizMetricDock({
   connection = 0,
   attraction = 0,
@@ -480,6 +518,10 @@ function updateModuleQuizMetricDock({
   const dock = document.querySelector(".moduleQuizMetricDock");
   if (!dock) return;
 
+  const attractionValue = Math.max(0, Math.min(100, Number(attraction) || 0));
+  const connectionValue = Math.max(0, Math.min(100, Number(connection) || 0));
+  const confidenceValue = Math.max(0, Math.min(100, Number(confidence) || 0));
+
   const candidateValue = Math.max(1, Number(candidates) || 1);
 
   const candidateStart = Math.max(
@@ -487,9 +529,13 @@ function updateModuleQuizMetricDock({
     Number(startingCandidates ?? totalCandidates ?? candidateValue) || candidateValue
   );
 
-  const attractionValue = Math.max(0, Math.min(100, Number(attraction) || 0));
-  const connectionValue = Math.max(0, Math.min(100, Number(connection) || 0));
-  const confidenceValue = Math.max(0, Math.min(100, Number(confidence) || 0));
+  rememberLatestSoleMetricSnapshot?.({
+    attraction: attractionValue,
+    connection: connectionValue,
+    confidence: confidenceValue,
+    candidates: candidateValue,
+    startingCandidates: candidateStart
+  });
 
   const candidateRefinement = getCandidateRefinementPercent(
     candidateValue,
@@ -579,44 +625,47 @@ function updateSidebarProgress({
     Number(startingCandidates ?? totalCandidates ?? candidateValue) || candidateValue
   );
 
-  const connectionCard = document.querySelector('[data-progress-card="connection"]');
-  const attractionCard = document.querySelector('[data-progress-card="attraction"]');
-  const confidenceCard = document.querySelector('[data-progress-card="confidence"]');
-  const candidateCard = document.querySelector('[data-progress-card="candidates"]');
-
+  const metricSnapshot = rememberLatestSoleMetricSnapshot({
+    attraction: attractionValue,
+    connection: connectionValue,
+    confidence: confidenceValue,
+    candidates: candidateValue,
+    startingCandidates: candidateStart
+  });
 
   const candidateRefinementPercent = getCandidateRefinementPercent(
     candidateValue,
     candidateStart
   );
-const dialOptions = {
-  animateFromZero,
-  stagger: animateFromZero
-};
 
-setHudDial(
-  document.querySelector('[data-progress-card="connection"]'),
-  connectionValue,
-  dialOptions
-);
+  const dialOptions = {
+    animateFromZero,
+    stagger: animateFromZero
+  };
 
-setHudDial(
-  document.querySelector('[data-progress-card="attraction"]'),
-  attractionValue,
-  dialOptions
-);
+  setHudDial(
+    document.querySelector('[data-progress-card="connection"]'),
+    connectionValue,
+    dialOptions
+  );
 
-setHudDial(
-  document.querySelector('[data-progress-card="confidence"]'),
-  confidenceValue,
-  dialOptions
-);
+  setHudDial(
+    document.querySelector('[data-progress-card="attraction"]'),
+    attractionValue,
+    dialOptions
+  );
 
-setHudDial(
-  document.querySelector('[data-progress-card="candidates"]'),
-  getCandidateRefinementPercent(candidateValue, candidateStart),
-  dialOptions
-);
+  setHudDial(
+    document.querySelector('[data-progress-card="confidence"]'),
+    confidenceValue,
+    dialOptions
+  );
+
+  setHudDial(
+    document.querySelector('[data-progress-card="candidates"]'),
+    candidateRefinementPercent,
+    dialOptions
+  );
 
   const connectionEl = document.getElementById("connectionProgressValue");
   const chemistryFallbackEl = document.getElementById("chemistryProgressValue");
@@ -625,33 +674,21 @@ setHudDial(
   const candidateEl = document.getElementById("candidatePoolValue");
   const candidateCountEl = document.getElementById("candidatePoolCount");
 
-if (connectionEl) connectionEl.textContent = formatHudPercent(connectionValue);
-if (chemistryFallbackEl) chemistryFallbackEl.textContent = formatHudPercent(connectionValue);
-if (attractionEl) attractionEl.textContent = formatHudPercent(attractionValue);
-if (confidenceEl) confidenceEl.textContent = formatHudPercent(confidenceValue);
+  if (connectionEl) connectionEl.textContent = formatHudPercent(connectionValue);
+  if (chemistryFallbackEl) chemistryFallbackEl.textContent = formatHudPercent(connectionValue);
+  if (attractionEl) attractionEl.textContent = formatHudPercent(attractionValue);
+  if (confidenceEl) confidenceEl.textContent = formatHudPercent(confidenceValue);
 
   const formattedCandidates = candidateValue.toLocaleString();
 
   if (candidateEl) candidateEl.textContent = formattedCandidates;
   if (candidateCountEl) candidateCountEl.textContent = formattedCandidates;
 
-window.signalLayersUI?.update?.({
-  attraction: attractionValue,
-  connection: connectionValue,
-  confidence: confidenceValue,
-  candidates: candidateValue,
-  startingCandidates: candidateStart
-});
+  window.signalLayersUI?.update?.(metricSnapshot);
 
-updateModuleQuizMetricDock({
-  attraction: attractionValue,
-  connection: connectionValue,
-  confidence: confidenceValue,
-  candidates: candidateValue,
-  startingCandidates: candidateStart
-});
+  updateModuleQuizMetricDock(metricSnapshot);
 
-requestAnimationFrame(fitAllProgressDialValues);
+  requestAnimationFrame(fitAllProgressDialValues);
 }
 
 let responseState = "idle";
@@ -803,7 +840,7 @@ async function setTypingIndicatorVerb(prefix, nextVerb, animateChange = true) {
 
   const oldVerb = currentTypingVerb || "";
 
-  // animate OUT rightâ€™ left
+  // animate OUT rightÃ¢â‚¬â„¢ left
   for (let i = oldVerb.length; i >= 0; i--) {
     if (token !== typingVerbAnimationToken) return;
     typingIndicator.textContent = prefix + oldVerb.slice(0, i);
@@ -812,7 +849,7 @@ async function setTypingIndicatorVerb(prefix, nextVerb, animateChange = true) {
 
   await sleep(100);
 
-  // animate IN left â€™ right
+  // animate IN left Ã¢â‚¬â„¢ right
   for (let i = 0; i <= nextVerb.length; i++) {
     if (token !== typingVerbAnimationToken) return;
     typingIndicator.textContent = prefix + nextVerb.slice(0, i);

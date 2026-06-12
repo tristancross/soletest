@@ -585,6 +585,7 @@ return `
     <div class="quizCompleteCard">
       ${adminPreview ? lines.join("") : ""}
 
+      <div class="quizCompleteCopyHolder">
       ${!adminPreview ? `
         <div class="quizCompleteLine">
           Calibration complete.
@@ -593,6 +594,7 @@ return `
 
 <div class="quizCompleteHint">
   ${escapeHtml(hint)}
+</div>
 </div>
 
 <div class="quizActions quizCompleteActions">
@@ -818,6 +820,15 @@ function getVisibleAssignmentsForUser(me, assignments) {
   const sorted = [...assignments]
     .filter(item => item.status !== "archived" && item.status !== "locked")
     .sort((a, b) => a.priority - b.priority);
+
+  const completedSingle = sorted.find(item => {
+    const savedResponse = getAssignmentResponse(me, item.id);
+    return savedResponse?.completed && item.saveMode === "single";
+  });
+
+  if (completedSingle) {
+    return [completedSingle];
+  }
 
   const nextIncomplete = sorted.find(item => !isAssignmentCompleted(me, item));
 

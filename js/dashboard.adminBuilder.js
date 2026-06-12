@@ -94,7 +94,7 @@ const isFreeText = question.type === "freeText";
     data-builder-question-id="${escapeAttr(question.id)}"
     ${index === 0 ? "disabled" : ""}
   >
-    ↑
+    â†‘
   </button>
 
   <button
@@ -103,7 +103,7 @@ const isFreeText = question.type === "freeText";
     data-builder-move-question="down"
     data-builder-question-id="${escapeAttr(question.id)}"
   >
-   ↓
+   â†“
   </button>
 
   <button
@@ -140,7 +140,7 @@ const isFreeText = question.type === "freeText";
 
       ${isOptionBased ? `
         <div class="adminQuizField">
-        <label>Options (one per line, 2–10)</label>
+        <label>Options (one per line, 2â€“10)</label>
           <textarea
             rows="5"
             data-builder-field="optionsText"
@@ -575,7 +575,7 @@ ${
 }
 
 <div class="adminQuizTemplateSub">
-  status ${escapeHtml(template.status || "active")} · priority ${escapeHtml(String(template.priority ?? ""))}
+  status ${escapeHtml(template.status || "active")} Â· priority ${escapeHtml(String(template.priority ?? ""))}
 </div>
         <div class="adminQuizTemplateSub">
           target ${escapeHtml(formatAssignmentTargetLabel(template, profilesById))}
@@ -823,7 +823,7 @@ return `
     <input
       type="text"
       data-builder-root-field="adminLabel"
-      placeholder="First Pull — Men"
+      placeholder="First Pull â€” Men"
     />
   </div>
 
@@ -1398,7 +1398,7 @@ messagesEl.querySelectorAll(".quizRankingList").forEach(list => {
                 data-value="${escapeAttr(option.value)}"
                 ${index === 0 ? "disabled" : ""}
               >
-                ↑
+                â†‘
               </button>
               <button
                 type="button"
@@ -1408,7 +1408,7 @@ messagesEl.querySelectorAll(".quizRankingList").forEach(list => {
                 data-value="${escapeAttr(option.value)}"
                 ${index === orderedOptions.length - 1 ? "disabled" : ""}
               >
-                ↓
+                â†“
               </button>
             </div>
           </div>
@@ -1544,30 +1544,23 @@ if (progressBar) {
   progressBar.style.width = `${nextProgressPercent}%`;
 }
 
-saveAssignmentProgress(sb, me, assignment, {
-  answers,
-  currentStep
-})
-  .then(async () => {
-    if (onProgressChange) {
-      await onProgressChange({
-        assignment,
-        currentStep,
-        answers
-      });
-    }
-  })
-  .catch(error => {
-    console.warn("Swipe deck autosave failed", error);
-  });
+const isDeckComplete = nextDecisions.length >= cards.length;
 
-if (nextDecisions.length >= cards.length) {
+if (isDeckComplete) {
   if (!isFinalStep) {
     saveAssignmentProgress(sb, me, assignment, {
       answers,
       currentStep: currentStep + 1
     })
-      .then(() => {
+      .then(async () => {
+        if (onProgressChange) {
+          await onProgressChange({
+            assignment,
+            currentStep: currentStep + 1,
+            answers
+          });
+        }
+
         if (onRefresh) return onRefresh();
 
         return refreshWelcomeDashboard({
@@ -1589,12 +1582,23 @@ if (nextDecisions.length >= cards.length) {
   }
 
   saveAssignmentResponse(sb, me, assignment, {
-    assignmentId: assignment.id,
+    assignmentId:
+      assignment.dbAssignmentId ||
+      assignment.assignmentId ||
+      assignment.id,
     componentType: assignment.type,
     answers
   })
-    .then(() => clearAssignmentProgress(sb, me, assignment.id))
-    .then(() => {
+    .then(() => clearAssignmentProgress(sb, me, assignment))
+    .then(async () => {
+      if (onProgressChange) {
+        await onProgressChange({
+          assignment,
+          currentStep,
+          answers
+        });
+      }
+
       if (onRefresh) return onRefresh();
 
       return refreshWelcomeDashboard({
@@ -1614,6 +1618,23 @@ if (nextDecisions.length >= cards.length) {
 
   return;
 }
+
+saveAssignmentProgress(sb, me, assignment, {
+  answers,
+  currentStep
+})
+  .then(async () => {
+    if (onProgressChange) {
+      await onProgressChange({
+        assignment,
+        currentStep,
+        answers
+      });
+    }
+  })
+  .catch(error => {
+    console.warn("Swipe deck autosave failed", error);
+  });
 
 rerenderSwipeDeck();
   };
@@ -1877,6 +1898,14 @@ await saveAssignmentProgress(sb, me, assignment, {
   currentStep: nextStep
 });
 
+if (onProgressChange) {
+  await onProgressChange({
+    assignment,
+    currentStep: nextStep,
+    answers
+  });
+}
+
 if (onRefresh) {
   await onRefresh();
 } else {
@@ -1961,7 +1990,7 @@ const matrixSiblingStates = Object.fromEntries(
   ])
 );
 
-await clearAssignmentProgress(sb, me, assignment.id);
+await clearAssignmentProgress(sb, me, assignment);
 
 const sectionEl = cardEl.closest(".quizPanel");
 
@@ -2020,7 +2049,7 @@ await updateSidebarDailyTasks?.();
 await updateInsightNotificationDots?.();
   });
 
-  const backBtn = cardEl.querySelector(`[data-assignment-back="${assignment.id}"]`);
+ const backBtn = cardEl.querySelector(`[data-assignment-back="${assignment.id}"]`);
 
 backBtn?.addEventListener("click", async () => {
   if (currentStep <= 0) return;
@@ -2069,21 +2098,28 @@ backBtn?.addEventListener("click", async () => {
     currentStep: previousStep
   });
 
-  if (onRefresh) {
-    await onRefresh();
-    return;
+  if (onProgressChange) {
+    await onProgressChange({
+      assignment,
+      currentStep: previousStep,
+      answers: nextAnswers
+    });
   }
 
-  await refreshWelcomeDashboard({
-    mainEl,
-    messagesEl,
-    sb,
-    me,
-    escapeHtml,
-    animateMetrics: false,
-    adminPreview: false,
-    adminHome: false
-  });
+  if (onRefresh) {
+    await onRefresh();
+  } else {
+    await refreshWelcomeDashboard({
+      mainEl,
+      messagesEl,
+      sb,
+      me,
+      escapeHtml,
+      animateMetrics: false,
+      adminPreview: false,
+      adminHome: false
+    });
+  }
 });
 }
 
@@ -2624,7 +2660,7 @@ let extraQuestionDrafts = Array.isArray(overrideJson.extraQuestions) && override
     data-override-base-question-id="${escapeAttr(question.id)}"
     ${index === 0 ? "disabled" : ""}
   >
-    ↑
+    â†‘
   </button>
 
   <button
@@ -2634,7 +2670,7 @@ let extraQuestionDrafts = Array.isArray(overrideJson.extraQuestions) && override
     data-override-base-question-id="${escapeAttr(question.id)}"
     ${index === orderedQuestions.length - 1 ? "disabled" : ""}
   >
-    ↓
+    â†“
   </button>
 </div>
 
@@ -2663,8 +2699,8 @@ let extraQuestionDrafts = Array.isArray(overrideJson.extraQuestions) && override
       <label>
         Override choices
         ${question.type === "imageChoice" || question.type === "swipeDeck"
-          ? "<span class='muted'> — one per line as Label|Image URL</span>"
-          : "<span class='muted'> — one per line</span>"
+          ? "<span class='muted'> â€” one per line as Label|Image URL</span>"
+          : "<span class='muted'> â€” one per line</span>"
         }
       </label>
 

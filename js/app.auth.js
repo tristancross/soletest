@@ -89,14 +89,21 @@ options: {
       return;
     }
 
-    await sb
-      .from("profiles")
-.upsert({
-  id: data.user.id,
-  username: username.toLowerCase(),
-  display_name: username,
-  email: email
-});
+await sb
+  .from("profiles")
+  .upsert({
+    id: data.user.id,
+    username: username.toLowerCase(),
+    display_name: username,
+    email: email,
+
+    // New signups are held behind the launch gate by default.
+    // Admin can still unblock them from the Users screen.
+    launch_block_enabled: true,
+    launch_unlock_at: window.soleLaunchGate?.SOLE_DEFAULT_UNLOCK_AT || "2026-06-13T09:00:00-04:00",
+    launch_block_updated_at: new Date().toISOString(),
+    launch_block_updated_by: null
+  });
 
     setAuthSuccess("Account created. Check your email to verify your account.");
     showLoginForm(false);

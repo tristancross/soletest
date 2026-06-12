@@ -73,7 +73,7 @@ function renderSoleLaunchGate(profile) {
 
       <p>
         Sole is calibrating the live environment. Your account is ready, but the experiment
-        will become available at 9:00am New York time.
+        will become available at 9:00am EDT.
       </p>
 
       <div class="soleLaunchCountdown" id="soleLaunchCountdown">--:--:--</div>
@@ -86,26 +86,34 @@ function renderSoleLaunchGate(profile) {
 
   document.body.appendChild(mount);
 
-  function tick() {
-    const remaining = unlockAt.getTime() - Date.now();
-    const countdownEl = document.getElementById("soleLaunchCountdown");
+function tick() {
+  const remaining = unlockAt.getTime() - Date.now();
+  const countdownEl = document.getElementById("soleLaunchCountdown");
 
-    if (remaining <= 0) {
-      clearInterval(soleLaunchGateTimer);
-      soleLaunchGateTimer = null;
-
-      document.body.classList.remove("isLaunchGated");
-      mount.remove();
-
-      // Fresh load is safest: it re-enters initChat normally and pulls latest settings.
-      window.location.reload();
-      return;
-    }
+  if (remaining <= 0) {
+    clearInterval(soleLaunchGateTimer);
+    soleLaunchGateTimer = null;
 
     if (countdownEl) {
-      countdownEl.textContent = formatLaunchCountdown(remaining);
+      countdownEl.textContent = "Opening...";
     }
+
+    const footerEl = mount.querySelector(".soleLaunchGateFooter");
+    if (footerEl) {
+      footerEl.textContent = "Access unlocked · opening Sole";
+    }
+
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 800);
+
+    return;
   }
+
+  if (countdownEl) {
+    countdownEl.textContent = formatLaunchCountdown(remaining);
+  }
+}
 
   tick();
   soleLaunchGateTimer = setInterval(tick, 1000);

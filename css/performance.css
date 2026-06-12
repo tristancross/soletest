@@ -1,7 +1,7 @@
 /* www/css/performance.css */
 
-/* Laptop/mobile performance pass */
-@media (max-width: 1200px), (prefers-reduced-motion: reduce) {
+/* Respect reduced motion only. Do NOT globally kill mobile homepage animations. */
+@media (prefers-reduced-motion: reduce) {
   .solemateRing,
   .solemateCore,
   .connectionCircle.left,
@@ -14,6 +14,13 @@
     animation: none !important;
   }
 
+  .messagesLoadingSpinner {
+    animation: none !important;
+  }
+}
+
+/* Laptop/mobile performance pass: keep the visual simplifications, but not animation removal. */
+@media (max-width: 1200px) {
   .signalLayersCard,
   .sidebarTasksPane,
   .modelInfoPanel,
@@ -114,4 +121,66 @@ body.mobileViewMessages .sidebarTasksPane {
 .input::placeholder,
 #textInput::placeholder {
   line-height: 24px !important;
+}
+
+/* =========================================================
+   FINAL VOICE / MOBILE CHAT SAFETY OVERRIDES
+   ========================================================= */
+
+/* Hidden must always win, even against mobile flex rules. */
+#recordingMeta[hidden],
+#recordingPreview[hidden],
+#deleteRecordBtn[hidden],
+.recordingMeta[hidden],
+.recordingPreview[hidden],
+.deleteRecordBtn[hidden] {
+  display: none !important;
+}
+
+/* Voice composer should only show recording UI during explicit voice states. */
+body:not(.isVoiceRecording):not(.isVoicePreviewing) .recordingMeta,
+body:not(.isVoiceRecording):not(.isVoicePreviewing) .recordingPreview,
+body:not(.isVoiceRecording):not(.isVoicePreviewing) .deleteRecordBtn {
+  display: none !important;
+}
+
+body:not(.isVoiceRecording):not(.isVoicePreviewing) .composerInner {
+  align-items: center !important;
+}
+
+body:not(.isVoiceRecording):not(.isVoicePreviewing) #textInput {
+  display: block !important;
+}
+
+/* Prevent voice bubbles from blowing the chat width out on mobile. */
+@media (max-width: 768px) {
+  .messages {
+    overflow-x: hidden !important;
+  }
+
+  .messages > .row {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .msgWrap {
+    max-width: min(82vw, 360px) !important;
+    min-width: 0 !important;
+  }
+
+  .voiceBubble {
+    min-width: 0 !important;
+    width: min(74vw, 320px) !important;
+    max-width: 100% !important;
+  }
+
+  .row.me .voiceBubble {
+    margin-left: auto !important;
+  }
+
+  .voiceMain,
+  .voiceProgress,
+  .previewProgress {
+    min-width: 0 !important;
+  }
 }

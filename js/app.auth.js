@@ -40,9 +40,10 @@ if (!identifier.includes("@")) {
       return;
     }
 
-    currentUser = data.user;
-    authScreen.style.display = "none";
-    await initChat();
+currentUser = data.user;
+authScreen.style.display = "none";
+showSoleAppLoader();
+await initChat();
 
   } finally {
     loginBtn.disabled = false;

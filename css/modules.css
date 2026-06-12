@@ -2279,13 +2279,21 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 /* Mobile dock breathing room */
 @media (max-width:768px){
   .sidebarNavPane:has(.moduleQuizMetricDock) .moduleSubviewContent{
-    padding-bottom:128px !important;
+    padding-bottom:90px !important;
   }
 
   .sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage{
     min-height:0 !important;
-    padding:22px 20px 150px !important;
+    /* padding:22px 20px 150px !important; */
   }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount > .quizBlock {
+  gap: 6px !important;
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage {
+padding: 15px 15px 10px !important;
+}
 }
 
 /* =========================================================

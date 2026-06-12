@@ -904,7 +904,7 @@
 }
 
 .quizLabel{
-  font-size:  1.1875rem;
+  font-size:  1rem;
 }
 .quizScale7 { grid-area: scale; justify-content: space-between; }
 .disagree { grid-area: disagree; }
@@ -1334,6 +1334,12 @@
   body.mobileMenuOpen .soleRailNav {
     transform: translateX(0) scale(1) !important;
   }
+
+  .moduleHero {
+    margin: 0 0 0px;
+}
+
+
   
 }
 
@@ -1531,7 +1537,7 @@
 
   /* Add breathing room below the fixed top chrome. */
   body.mobileViewHome .sidebarNavPane {
-    padding-top: 12px !important;
+    padding-top: 4px !important;
   }
 
   /* Fixed top action layer */
@@ -2209,5 +2215,98 @@ html.isCapacitorApp .soleModuleTile p {
 
 html.isCapacitorApp .soleModuleTile h4 {
   font-size: clamp(34px, 8vw, 52px);
+}
+
+/* =========================================================
+   MOBILE VOICE COMPOSER FIX
+   Prevents preview / pause / send controls from overflowing.
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .composer {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .composerInner {
+    min-width: 0 !important;
+    width: 100% !important;
+
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+
+    overflow: hidden !important;
+
+    padding: 8px !important;
+    min-height: 56px !important;
+  }
+
+  .input {
+    height: 24px;
+    min-height: 24px;
+    line-height: 24px;
+
+    padding: 0 8px !important;
+
+    align-self: center;
+  }
+
+  .deleteRecordBtn,
+  .micBtn,
+  .sendBtnIcon,
+  .previewPlayBtn {
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px !important;
+    margin: 0 !important;
+  }
+
+  .recordingMeta {
+    height: 34px !important;
+    min-width: 38px !important;
+    flex: 0 0 auto !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+  }
+
+  .recordingTimer {
+    min-width: 30px !important;
+    font-size: 12px !important;
+  }
+
+  .recordingPreview {
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: 1 1 auto !important;
+
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .previewProgress {
+    min-width: 42px !important;
+    flex: 1 1 auto !important;
+  }
+
+  body.isVoiceRecording .composerInner,
+  body.isVoicePreviewing .composerInner {
+    gap: 5px !important;
+  }
+
+  body.isVoiceRecording #textInput,
+  body.isVoicePreviewing #textInput {
+    display: none !important;
+  }
+
+  body.isVoiceRecording .formatBar,
+  body.isVoicePreviewing .formatBar {
+    display: none !important;
+  }
 }
 

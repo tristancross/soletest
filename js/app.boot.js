@@ -2,13 +2,15 @@
 async function checkSession() {
   const { data } = await sb.auth.getSession();
 
-  if (data.session) {
-    currentUser = data.session.user;
-    authScreen.style.display = "none";
-    await initChat();
-  } else {
-    showLoginForm(false);
-  }
+if (data.session) {
+  currentUser = data.session.user;
+  authScreen.style.display = "none";
+  showSoleAppLoader();
+  await initChat();
+} else {
+  hideSoleAppLoader();
+  showLoginForm(false);
+}
 }
 
 (async function init() {

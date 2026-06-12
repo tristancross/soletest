@@ -207,3 +207,50 @@ body:not(.isSplashing) .app {
     radial-gradient(circle at 18% 72%, rgba(255,118,95,.07), transparent 42%),
     radial-gradient(circle at 72% 22%, rgba(255,214,111,.05), transparent 34%);
 }
+
+/* APP LOADER — shown after auth while app data loads */
+.soleAppLoader {
+  position: fixed;
+  inset: 0;
+  z-index: 25000;
+
+  display: grid;
+  place-items: center;
+
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.72), transparent 34%),
+    var(--sole-bg, #faf6f1);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.soleAppLoader.isVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.soleAppLoader[hidden] {
+  display: none !important;
+}
+
+.soleAppLoaderSignal {
+  --logo-size: 54px;
+  --ring-stroke: 1.4px;
+  --ring-step: 6px;
+
+  animation: soleAppLoaderPulse 1100ms ease-in-out infinite;
+}
+
+@keyframes soleAppLoaderPulse {
+  0%, 100% {
+    transform: scale(.96);
+    opacity: .66;
+  }
+
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}

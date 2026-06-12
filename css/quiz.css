@@ -1546,3 +1546,60 @@ body.isRankingDragging .quizRankingItem{
 .quizSwipeBtn{
   box-shadow:none !important;
 }
+
+/* Mobile quiz value-chip layout fix ------------------------------------- */
+
+@media (max-width:768px){
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage{
+    padding:18px 18px 12px !important;
+  }
+
+  .moduleHeroCopy h2 {
+font-size: 20px;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount > .quizBlock{
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:6px !important;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount .quizLabel{
+    font-size:12px !important;
+    line-height:1 !important;
+    margin:0 !important;
+    padding:0 4px !important;
+    /* text-align:center !important; */
+  }
+
+
+}
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizValues{
+    align-self:start !important;
+    justify-content:center !important;
+    align-content:start !important;
+
+    gap:6px 8px !important;
+    max-height:calc(100dvh - 430px) !important;
+
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+
+    padding:6px 2px 10px !important;
+
+    scrollbar-width:none;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizValues::-webkit-scrollbar{
+    display:none;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizValueBtn{
+    font-size:12px !important;
+    line-height:1 !important;
+    padding:10px !important;
+    max-width:100% !important;
+    white-space:normal !important;
+  }
+}

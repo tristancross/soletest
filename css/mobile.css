@@ -2005,7 +2005,7 @@ font-size: 14px !important;
   /* Give the desktop-ish layout a little top breathing room
      so the fixed chrome doesn't sit on the content. */
   .sidebarNavPane {
-    padding-top: 64px !important;
+    /* padding-top: 64px !important; */
   }
 
   .main {
@@ -2322,6 +2322,19 @@ display: none;
     gap: 6px !important;
   }
 
+  .quizInlineProgress {
+    margin: 4px 0;
+}
+
+.moduleHeroCopy {
+    min-width: 0;
+    max-width: 470px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: auto;
+}
+
   .recordingTimer {
     min-width: 30px !important;
     font-size: 12px !important;
@@ -2358,3 +2371,225 @@ display: none;
   }
 }
 
+
+/* Mobile quiz value-chip layout fix ------------------------------------- */
+
+@media (max-width:768px){
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizCardStage{
+    padding:16px 14px 12px !important;
+  }
+
+  .moduleHeroCopy h2 {
+font-size: 20px;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount > .quizBlock{
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:6px !important;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizQuestionMount .quizLabel{
+    font-size:12px !important;
+    line-height:1 !important;
+    margin:0 !important;
+    padding:0 4px !important;
+    /* text-align:center !important; */
+  }
+
+
+    .moduleHeroCopy p {
+        margin: 5px 0;
+    }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizValues{
+    align-self:start !important;
+    justify-content:center !important;
+    align-content:start !important;
+
+    gap:8px 8px !important;
+    max-height:calc(100dvh - 380px) !important;
+
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+
+    padding:6px 2px 10px !important;
+
+    /* scrollbar-width:none; */
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizValues::-webkit-scrollbar{
+    display:none;
+  }
+
+  .sidebarNavPane:has(.moduleQuizMetricDock) .quizValueBtn{
+    font-size:12px !important;
+    line-height:1 !important;
+    padding:12px 12px !important;
+    max-width:100% !important;
+    white-space:normal !important;
+  }
+
+      .moduleHeroCopy p {
+        margin: 5px 0;
+        font-size: 12px;
+    }
+
+        body.mobileViewHome .sidebarNavPane {
+        padding-top: 0px !important;
+    }
+
+    .sidebarNavPane:has(.moduleQuizMetricDock) .quizValues{
+  align-self:start !important;
+  justify-content:center !important;
+  align-content:start !important;
+
+  gap:10px 8px !important;
+  max-height:calc(100dvh - 430px) !important;
+
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+
+  padding:6px 2px 10px !important;
+
+  scrollbar-width:thin;
+  scrollbar-color:
+    rgba(255,118,95,.45)
+    transparent;
+}
+
+/* Chrome / Edge / Safari */
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizValues::-webkit-scrollbar{
+  width:6px;
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizValues::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizValues::-webkit-scrollbar-thumb{
+  border-radius:999px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,184,120,.85),
+      rgba(255,118,95,.85)
+    );
+
+  box-shadow:
+    0 0 8px rgba(255,118,95,.15);
+}
+
+.sidebarNavPane:has(.moduleQuizMetricDock) .quizValues::-webkit-scrollbar-thumb:hover{
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,200,145,.95),
+      rgba(255,118,95,.95)
+    );
+}
+
+.quizTextarea {
+    margin: 8px 0px;
+}
+}
+
+
+/* Completed quiz result — mobile hard fix ------------------------------ */
+
+@media (max-width:768px){
+
+  .sidebarNavPane:has(.quizPanelComplete){
+    overflow:hidden !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .moduleSubviewContent{
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding-bottom:0 !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizPanelComplete{
+    min-height:0 !important;
+    height:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+    gap:8px !important;
+    padding-bottom:0 !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizCompleteCard{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    align-items:center !important;
+    gap:6px !important;
+
+    flex:0 0 auto !important;
+    /* min-height:116px !important; */
+    padding:14px 20px !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizCompleteCopyHolder{
+    min-width:0 !important;
+    display:grid !important;
+    gap:2px !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizCompleteLine{
+    margin:0 !important;
+    font-size:12px !important;
+    line-height:1 !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizCompleteHint{
+    margin:0 !important;
+    font-size:12px !important;
+    line-height:1 !important;
+  }
+
+  .quizSubmitBtn{
+    font-size: 10px;
+    padding: 6px 10px;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizCompleteActions{
+    margin:0 !important;
+    align-self:center !important;
+    justify-content:flex-end !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .quizCompleteActions .quizSubmitBtn{
+    min-width:124px !important;
+    white-space:nowrap !important;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .soleMatrixPanel{
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    max-height:calc(100dvh - 360px) !important;
+
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+
+    margin:0 auto !important;
+    padding: 10px 4px 2px !important;
+
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .soleMatrixSvg{
+    width:100% !important;
+    /* min-width:0 !important; */
+    max-width:100% !important;
+    /* min-height:390px !important; */
+  }
+
+  .sidebarNavPane:has(.quizPanelComplete) .soleMatrixChartWrap{
+    min-height:0 !important;
+    overflow:visible !important;
+  }
+}

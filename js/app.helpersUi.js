@@ -1187,14 +1187,32 @@ async function renderSystemConsole(animateMetrics = false) {
   });
 }
 
+let soleAppLoaderShowFrame = null;
+let soleAppLoaderHideTimeout = null;
+
 function showSoleAppLoader() {
   const loader = document.getElementById("soleAppLoader");
   if (!loader) return;
 
+  window.clearTimeout(soleAppLoaderHideTimeout);
+
   loader.hidden = false;
 
-  requestAnimationFrame(() => {
+  if (soleAppLoaderShowFrame) {
+    cancelAnimationFrame(soleAppLoaderShowFrame);
+  }
+
+  soleAppLoaderShowFrame = requestAnimationFrame(() => {
     loader.classList.add("isVisible");
+    soleAppLoaderShowFrame = null;
+  });
+}
+
+function hideSoleLoaderAfterPaint() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      hideSoleAppLoader?.();
+    });
   });
 }
 
@@ -1202,11 +1220,18 @@ function hideSoleAppLoader() {
   const loader = document.getElementById("soleAppLoader");
   if (!loader) return;
 
+  if (soleAppLoaderShowFrame) {
+    cancelAnimationFrame(soleAppLoaderShowFrame);
+    soleAppLoaderShowFrame = null;
+  }
+
   loader.classList.remove("isVisible");
 
-  window.setTimeout(() => {
+  window.clearTimeout(soleAppLoaderHideTimeout);
+
+  soleAppLoaderHideTimeout = window.setTimeout(() => {
     loader.hidden = true;
-  }, 200);
+  }, 180);
 }
 
 function autoResizeTextarea() {

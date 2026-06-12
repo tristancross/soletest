@@ -10,6 +10,14 @@ async function initChat() {
     window.visualViewport.addEventListener("scroll", syncAppHeightToViewport);
   }
 
+  function hideSoleLoaderAfterPaint() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        hideSoleAppLoader?.();
+      });
+    });
+  }
+
   const { data: { session }, error: sessionError } = await sb.auth.getSession();
 
   if (sessionError || !session?.user) {
@@ -40,10 +48,6 @@ async function initChat() {
   setupSidebarDashboardScreens();
   initAccountTray();
   setupAdminUI();
-
-  // Hide global loader as soon as the authenticated app shell can exist.
-  // Everything after this can load inside the app using local loading states.
-  hideSoleAppLoader?.();
 
   await window.solePush?.registerForSolePush?.();
 
@@ -90,14 +94,20 @@ async function initChat() {
     document.body.classList.remove("isFirstTimeChatShellClear");
 
     await renderSidebar();
+
+    hideSoleLoaderAfterPaint();
+
     await updateSidebarDailyTasks();
     await updateInsightNotificationDots();
 
     await enterAdminMode(
-      window.matchMedia("(max-width: 768px)").matches ? "chats" : "users"
+      window.matchMedia("(max-width: 768px)").matches
+        ? "chats"
+        : "users"
     );
   } else {
-    const handledFirstTimeUser = await window.firstTimeUser?.runIfNeeded?.();
+    const handledFirstTimeUser =
+      await window.firstTimeUser?.runIfNeeded?.();
 
     if (handledFirstTimeUser) {
       hideSoleAppLoader?.();
@@ -105,6 +115,9 @@ async function initChat() {
     }
 
     await renderSidebar();
+
+    hideSoleLoaderAfterPaint();
+
     await updateSidebarDailyTasks();
     await updateInsightNotificationDots();
 
@@ -114,7 +127,10 @@ async function initChat() {
       document.body.classList.add("isChatFocus");
     }
 
-    if (assignedPartner && !blockedPairs.has(pairKey(me.id, assignedPartner.id))) {
+    if (
+      assignedPartner &&
+      !blockedPairs.has(pairKey(me.id, assignedPartner.id))
+    ) {
       await openChat(assignedPartner);
     } else {
       await renderWelcomePanel();
@@ -122,6 +138,7 @@ async function initChat() {
   }
 
   await subscribeInboxRealtime();
+
   autoResizeTextarea();
   updateSendButton();
   updateNoChatState();

@@ -65,7 +65,16 @@ async function updateInsightNotificationDots() {
 }
 
 async function updateSidebarDailyTasks() {
-const taskCards = document.querySelectorAll(".sidebarTaskCard[data-task-id]");
+  const appEl = document.querySelector(".app.soleRedesignApp");
+
+  // Do not rewrite daily task UI while the sidebar is showing a module/quiz.
+  // This prevents message-send refreshes from kicking the user back to the
+  // module calibration list or default task menu.
+  if (appEl?.dataset.activeModule) {
+    return;
+  }
+
+  const taskCards = document.querySelectorAll(".sidebarTaskCard");
   const countEl = document.getElementById("sidebarTasksCount");
 
   if (!taskCards.length || !me) return;
@@ -78,7 +87,9 @@ let chemistryStarted = false;
 let attractionStarted = false;
 
 try {
-  const assignments = await window.dashboardUI.loadRuntimeAssignmentsFromSupabase(sb, me);
+const assignments = await window.dashboardUI.loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeQuestions: false
+});
   const responseState = await window.dashboardUI.loadQuizResponsesFromSupabase?.(sb, me);
 
 const responses = responseState?.responses || {};

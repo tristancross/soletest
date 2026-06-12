@@ -94,6 +94,20 @@ function normaliseOptionLabels(labels = []) {
     }));
 }
 
+function clearRuntimeAssignmentsCacheForUser(userId = "") {
+  if (!window.soleRuntimeAssignmentsCache || !userId) return;
+
+  [...window.soleRuntimeAssignmentsCache.keys()].forEach(key => {
+    if (String(key).startsWith(`${userId}:`)) {
+      window.soleRuntimeAssignmentsCache.delete(key);
+    }
+  });
+}
+
+function clearRuntimeAssignmentsCache() {
+  window.soleRuntimeAssignmentsCache?.clear?.();
+}
+
 async function saveQuizTemplateOverrideInSupabase(
   sb,
   templateId,
@@ -739,13 +753,18 @@ async function loadQuizResponsesFromSupabase(sb, me, options = {}) {
 }
 
 async function upsertQuizResponseToSupabase(sb, me, assignment, payload = {}) {
-  if (!sb || !me?.id || !assignment?.id) return null;
+  const assignmentId =
+    assignment?.dbAssignmentId ||
+    assignment?.assignmentId ||
+    assignment?.id;
+
+  if (!sb || !me?.id || !assignmentId) return null;
 
   const completed = !!payload.completed;
   const nowIso = new Date().toISOString();
 
   const row = {
-    assignment_id: assignment.id,
+    assignment_id: assignmentId,
     quiz_template_id: assignment.templateId || null,
     user_id: me.id,
     answers_json: payload.answers || {},
@@ -773,9 +792,18 @@ async function upsertQuizResponseToSupabase(sb, me, assignment, payload = {}) {
     .single();
 
   if (error) {
-    console.warn("upsertQuizResponseToSupabase failed", error);
+    console.warn("upsertQuizResponseToSupabase failed", {
+      error,
+      assignmentId,
+      assignmentTitle: assignment?.title,
+      templateId: assignment?.templateId,
+      assignment
+    });
+
     throw error;
   }
+
+  clearRuntimeAssignmentsCacheForUser(me.id);
 
   return data;
 }
@@ -792,7 +820,10 @@ async function deleteQuizResponseProgressFromSupabase(sb, me, assignmentId) {
 
   if (error) {
     console.warn("deleteQuizResponseProgressFromSupabase failed", error);
+    return;
   }
+
+  clearRuntimeAssignmentsCacheForUser(me.id);
 }
 
 
@@ -1381,13 +1412,70 @@ const patchedQuestions = orderedBaseQuestions
 }
 
 function mapDbAssignmentToRuntime(row) {
-  const template = row.rendered_template || row.quiz_template;
-  const questions = Array.isArray(template?.questions_json) ? template.questions_json : [];
-  const dayIndex = Math.max(1, Math.min(5, Math.round(Number(template?.day_index || 1))));
+const template = row.rendered_template || row.quiz_template;
+const rawQuestions = Array.isArray(template?.questions_json) ? template.questions_json : [];
+const questions = row.__includeQuestions === false ? [] : rawQuestions;
+const dayIndex = Math.max(1, Math.min(5, Math.round(Number(template?.day_index || 1))));
 
-  return {
-    id: row.id,
-    templateId: template?.id || null,
+const questionCount = rawQuestions.length;
+const totalSteps = rawQuestions.reduce((total, question) => {
+  if (question?.type === "swipeDeck") {
+    return total + Math.max(question.config?.cards?.length || 0, 1);
+  }
+
+  return total + 1;
+}, 0);
+
+const responseRow = row.__quizResponse || null;
+const completed = !!responseRow?.completed;
+
+const responseAnswers =
+  responseRow?.answers_json ||
+  responseRow?.progress_json?.answers ||
+  {};
+
+let completedSteps = 0;
+
+if (completed) {
+  completedSteps = totalSteps;
+} else {
+  rawQuestions.forEach(question => {
+    const answer = responseAnswers?.[question.id];
+
+    if (!answer) return;
+
+    if (question.type === "swipeDeck") {
+      const cards = Array.isArray(question.config?.cards)
+        ? question.config.cards
+        : [];
+
+      const decisions = Array.isArray(answer?.decisions)
+        ? answer.decisions
+        : [];
+
+      completedSteps += Math.min(
+        decisions.length,
+        Math.max(cards.length, 1)
+      );
+
+      return;
+    }
+
+    if (validateQuestionAnswer?.(question, answer)) {
+      completedSteps += 1;
+    }
+  });
+}
+
+const progressFraction = totalSteps
+  ? Math.max(0, Math.min(1, completedSteps / totalSteps))
+  : 0;
+
+return {
+  id: row.id,
+  assignmentId: row.id,
+  dbAssignmentId: row.id,
+  templateId: template?.id || null,
     type: "assessmentCard",
 
     day_index: dayIndex,
@@ -1422,28 +1510,80 @@ meta: {
   assignedAt: row.created_at || null,
   assignmentMode: row.assignment_mode
 },
+summary: {
+  questionCount,
+  totalSteps,
+  completedSteps,
+  progressFraction,
+  completed
+},
+
+questionCount,
+totalSteps,
+completedSteps,
+progressFraction,
+completed,
+
     questions
   };
 }
-async function loadRuntimeAssignmentsFromSupabase(sb, me, options = {}) {
-  const { includeLocked = false } = options;
+const RUNTIME_ASSIGNMENTS_CACHE_MS = 5 * 60 * 1000;
 
-  const [userTags, assignmentResult] = await Promise.all([
-    loadUserTagsFromSupabase(sb, me),
-    sb
-      .from("quiz_assignments")
-      .select(`
+window.soleRuntimeAssignmentsCache = window.soleRuntimeAssignmentsCache || new Map();
+
+async function loadRuntimeAssignmentsFromSupabase(sb, me, options = {}) {
+  const {
+    includeLocked = false,
+    includeQuestions = true,
+    force = false
+  } = options;
+
+  if (!sb || !me?.id) return [];
+
+  const cacheKey = [
+    me.id,
+    includeLocked ? "locked" : "visible",
+    includeQuestions ? "full" : "meta"
+  ].join(":");
+
+  const cached = window.soleRuntimeAssignmentsCache.get(cacheKey);
+  const now = Date.now();
+
+  if (
+    !force &&
+    cached &&
+    now - cached.loadedAt < RUNTIME_ASSIGNMENTS_CACHE_MS
+  ) {
+    return cached.data;
+  }
+
+  const templateFields = includeQuestions
+    ? `
+      id,
+      slug,
+      title,
+      prompt,
+      description,
+      status,
+      priority,
+      day_index,
+      cta_label,
+      save_mode,
+      category,
+      matrix_id,
+      impact_weight,
+      candidate_reduction,
+      confidence_increase,
+      stage_label,
+      questions_json,
+      quiz_template_overrides (
         id,
-        quiz_template_id,
-        assignment_mode,
-        target_tag,
-        target_user_id,
-        is_active,
-        starts_at,
-        ends_at,
-        created_by,
-        created_at,
-quiz_template:quiz_template_id (
+        template_id,
+        user_id,
+        override_json
+      )
+    `
+: `
   id,
   slug,
   title,
@@ -1460,14 +1600,27 @@ quiz_template:quiz_template_id (
   candidate_reduction,
   confidence_increase,
   stage_label,
-  questions_json,
-  quiz_template_overrides (
-    id,
-    template_id,
-    user_id,
-    override_json
-  )
-)
+  questions_json
+`;
+
+  const [userTags, assignmentResult] = await Promise.all([
+    loadUserTagsFromSupabase(sb, me),
+    sb
+      .from("quiz_assignments")
+      .select(`
+        id,
+        quiz_template_id,
+        assignment_mode,
+        target_tag,
+        target_user_id,
+        is_active,
+        starts_at,
+        ends_at,
+        created_by,
+        created_at,
+        quiz_template:quiz_template_id (
+          ${templateFields}
+        )
       `)
       .order("created_at", { ascending: false })
   ]);
@@ -1478,23 +1631,84 @@ quiz_template:quiz_template_id (
 
   const rows = assignmentResult.data || [];
 
-  return rows
-    .filter(row => row.quiz_template)
-    .filter(row => includeLocked || row.quiz_template.status !== "archived")
-    .filter(row => includeLocked || row.quiz_template.status !== "draft")
-    .filter(isAssignmentLiveNow)
-    .filter(row => assignmentTargetsUser(row, me, userTags))
-.map(row => {
-  const overrides = row.quiz_template?.quiz_template_overrides || [];
-  const override = overrides.find(item => item.user_id === me.id) || null;
+const visibleRows = rows
+  .filter(row => row.quiz_template)
+  .filter(row => includeLocked || row.quiz_template.status !== "archived")
+  .filter(row => includeLocked || row.quiz_template.status !== "draft")
+  .filter(isAssignmentLiveNow)
+  .filter(row => assignmentTargetsUser(row, me, userTags))
+  .map(row => {
+    const overrides = includeQuestions
+      ? row.quiz_template?.quiz_template_overrides || []
+      : [];
 
-  return {
-    ...row,
-    rendered_template: override
-      ? applyTemplateOverride(row.quiz_template, override.override_json || {})
-      : row.quiz_template
-  };
-})
-.map(mapDbAssignmentToRuntime)
-.sort((a, b) => a.priority - b.priority);
+    const override = overrides.find(item => item.user_id === me.id) || null;
+
+    return {
+      ...row,
+      rendered_template: override
+        ? applyTemplateOverride(row.quiz_template, override.override_json || {})
+        : row.quiz_template
+    };
+  });
+
+let responseRows = [];
+
+try {
+  const assignmentIds = visibleRows
+    .map(row => row.id)
+    .filter(Boolean);
+
+  if (assignmentIds.length) {
+    const { data: quizResponseRows, error: quizResponseError } = await sb
+      .from("quiz_responses")
+      .select(`
+        id,
+        assignment_id,
+        quiz_template_id,
+        user_id,
+        answers_json,
+        progress_json,
+        completed,
+        submitted_at,
+        updated_at,
+        created_at
+      `)
+      .eq("user_id", me.id)
+      .in("assignment_id", assignmentIds)
+      .order("updated_at", { ascending: false });
+
+    if (quizResponseError) {
+      console.warn("Could not load quiz response summaries", quizResponseError);
+    } else {
+      responseRows = quizResponseRows || [];
+    }
+  }
+} catch (error) {
+  console.warn("Could not attach quiz response summaries", error);
+}
+
+const responseByAssignmentId = new Map();
+
+responseRows.forEach(row => {
+  if (!row.assignment_id || responseByAssignmentId.has(row.assignment_id)) return;
+  responseByAssignmentId.set(row.assignment_id, row);
+});
+
+const mapped = visibleRows
+  .map(row =>
+    mapDbAssignmentToRuntime({
+      ...row,
+      __includeQuestions: includeQuestions,
+      __quizResponse: responseByAssignmentId.get(row.id) || null
+    })
+  )
+  .sort((a, b) => a.priority - b.priority);
+
+  window.soleRuntimeAssignmentsCache.set(cacheKey, {
+    loadedAt: now,
+    data: mapped
+  });
+
+  return mapped;
 }

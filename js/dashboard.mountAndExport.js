@@ -13,9 +13,10 @@ async function mountWelcomeDashboard({
   let runtimeAssignments = [];
   if (!adminHome) {
     try {
-      runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
-        includeLocked: !!adminPreview
-      });
+runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: !!adminPreview,
+  includeQuestions: false
+});
     } catch (error) {
       console.warn("loadRuntimeAssignmentsFromSupabase failed", error);
       runtimeAssignments = [];
@@ -608,13 +609,13 @@ function renderModuleQuizMetricDock({
       key: "attraction",
       label: "Attraction",
       value: activeKind === "attraction" ? moduleDisplayProgress : 0,
-      display: activeKind === "attraction" ? formatSmartPercent(moduleDisplayProgress, 2) : "—"
+      display: activeKind === "attraction" ? formatSmartPercent(moduleDisplayProgress, 2) : "â€”"
     },
     {
       key: "connection",
       label: "Connection",
       value: activeKind === "connection" ? moduleDisplayProgress : 0,
-      display: activeKind === "connection" ? formatSmartPercent(moduleDisplayProgress, 2) : "—"
+      display: activeKind === "connection" ? formatSmartPercent(moduleDisplayProgress, 2) : "â€”"
     },
     {
       key: "confidence",
@@ -658,6 +659,7 @@ async function mountSidebarDashboardScreen({
   sb,
   me,
   escapeHtml,
+  adminPreview = false,
   activeAssignmentId = null
 }) {
 if (!sidebarPaneEl) return;
@@ -807,8 +809,9 @@ try {
       )
     : { count: 0, totalChars: 0, averageChars: 0 };
 
- runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
-  includeLocked: true
+runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: !!adminPreview,
+  includeQuestions: true
 });
 
   const responseState = await loadQuizResponsesFromSupabase(sb, me);
@@ -870,8 +873,9 @@ function getModuleHeroMeta() {
 
 if (!runtimeAssignments.length) {
   try {
-  runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
-  includeLocked: true
+runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeLocked: true,
+  includeQuestions: true
 });
   } catch (error) {
     console.warn("Sidebar screen assignments failed", error);
@@ -1434,7 +1438,7 @@ function renderSolemateTraits() {
                         
                           ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
                           <h4>${escapeHtml(insight.title || "Untitled trait")}</h4>
-                          <span class="insightExpandIcon">›</span>
+                          <span class="insightExpandIcon">â€º</span>
                         </div>
                                 </div>
 
@@ -1567,7 +1571,7 @@ ${item.copy}`)}"
     <section class="solemateModelPanel">
       <div class="solemateModelHeader">
         <p>
-          Dimension percentages represent Sole’s confidence in each part of your
+          Dimension percentages represent Soleâ€™s confidence in each part of your
           highest-probability match profile.
         </p>
 
@@ -1738,7 +1742,7 @@ const formattedDate = `${date.toLocaleTimeString([], {
 <div class="insightTitleRow">
   ${!insight.viewed_at ? `<span class="insightUnreadDot"></span>` : ""}
   <h4>${escapeHtml(insight.title || "Untitled insight")}</h4>
-  <span class="insightExpandIcon">â€º</span>
+  <span class="insightExpandIcon">Ã¢â‚¬Âº</span>
 </div>
 
 <div class="insightBody">
@@ -1793,16 +1797,48 @@ const quizDisplayProgress =
     : activeQuizProgress?.progressPercent || 0;
 
 function renderActiveQuizMetricDock() {
-  const startingCandidates =
+  const localMetricState = liveDashboardState || {};
+  const startingPool =
     window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
+
+  const localHasSignal =
+    Number(localMetricState.attraction) > 0 ||
+    Number(localMetricState.connection) > 0 ||
+    Number(localMetricState.confidence) > 0 ||
+    Number(localMetricState.remainingCandidates) < startingPool ||
+    Number(localMetricState.candidates) < startingPool;
+
+  const metricState = localHasSignal
+    ? localMetricState
+    : (
+        window.getLatestSoleMetricSnapshot?.(localMetricState) ||
+        localMetricState
+      );
+
+  const startingCandidates =
+    Math.max(
+      1,
+      Number(metricState.startingCandidates) ||
+      window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL ||
+      102437
+    );
 
   const remainingCandidates = Math.max(
     1,
-    Math.round(Number(liveDashboardState.remainingCandidates) || startingCandidates)
+    Math.round(
+      Number(metricState.remainingCandidates ?? metricState.candidates) ||
+      startingCandidates
+    )
   );
 
   const candidateRefinement = startingCandidates
-    ? Math.max(0, Math.min(100, ((startingCandidates - remainingCandidates) / startingCandidates) * 100))
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          ((startingCandidates - remainingCandidates) / startingCandidates) * 100
+        )
+      )
     : 0;
 
   const clampMetric = value => Math.max(0, Math.min(100, Number(value || 0)));
@@ -1811,20 +1847,20 @@ function renderActiveQuizMetricDock() {
     {
       key: "attraction",
       label: "Attraction",
-      value: clampMetric(liveDashboardState.attraction),
-      display: formatSmartPercent(liveDashboardState.attraction || 0, 2)
+      value: clampMetric(metricState.attraction),
+      display: formatSmartPercent(metricState.attraction || 0, 2)
     },
     {
       key: "connection",
       label: "Connection",
-      value: clampMetric(liveDashboardState.connection),
-      display: formatSmartPercent(liveDashboardState.connection || 0, 2)
+      value: clampMetric(metricState.connection),
+      display: formatSmartPercent(metricState.connection || 0, 2)
     },
     {
       key: "confidence",
       label: "Confidence",
-      value: clampMetric(liveDashboardState.confidence),
-      display: formatSmartPercent(liveDashboardState.confidence || 0, 2)
+      value: clampMetric(metricState.confidence),
+      display: formatSmartPercent(metricState.confidence || 0, 2)
     },
     {
       key: "candidates",
@@ -2208,7 +2244,16 @@ await bindSolematePortraitCard();
 bindCalibrationCards();
 bindMatrixSwitcher();
 bindSolemateTooltips();
+
 window.soleMatrixRendering?.bindTooltips?.(sidebarPaneEl);
+
+window.soleMatrixRendering?.bindSwitchers?.({
+  rootEl: sidebarPaneEl,
+  sb,
+  me,
+  escapeHtml,
+  escapeAttr
+});
 
 const quizMetricDock = sidebarPaneEl.querySelector(".moduleQuizMetricDock.isEntering");
 
@@ -2259,6 +2304,15 @@ onProgressChange: async () => {
   );
 
   liveDashboardState = dash;
+
+  window.rememberLatestSoleMetricSnapshot?.({
+  attraction: dash.attraction,
+  connection: dash.connection,
+  confidence: dash.confidence,
+  candidates: dash.remainingCandidates,
+  startingCandidates:
+    window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437
+});
 
   const startingCandidates =
     window.soleExperimentScoring?.DEFAULT_CANDIDATE_POOL || 102437;
@@ -2564,7 +2618,7 @@ async function mountAdminUserTasks({
           <div>
             <strong>${escapeHtml(task.title || "Untitled task")}</strong>
             <div class="muted">
-                           ${escapeHtml(task.task_type)} Â· ${escapeHtml(task.status)}
+                           ${escapeHtml(task.task_type)} Ã‚Â· ${escapeHtml(task.status)}
             </div>
           </div>
 
@@ -2780,11 +2834,11 @@ async function mountAdminUserInsights({
             <strong>${escapeHtml(insight.title || "Untitled insight")}</strong>
             <div class="muted">
               ${escapeHtml(insight.category === "general" ? "SoleMate" : insight.category)}
-              ·
+              Â·
               ${escapeHtml(insight.status)}
               ${
                 insight.icon_class
-                  ? `· <i class="${escapeAttr(insight.icon_class)}"></i> ${escapeHtml(insight.icon_class)}`
+                  ? `Â· <i class="${escapeAttr(insight.icon_class)}"></i> ${escapeHtml(insight.icon_class)}`
                   : ""
               }
             </div>
@@ -3001,5 +3055,6 @@ window.dashboardUI = {
   loadUserSolematePortraitFromSupabase,
 saveUserSolematePortraitInSupabase,
 mountAdminUserPortrait,
+clearRuntimeAssignmentsCache,
   DASHBOARD_ASSIGNMENTS
 };

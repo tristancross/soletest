@@ -134,11 +134,16 @@ window.lastSentTextForVersion = text;
 await maybeAdvanceChatModelVersionAfterUserMessage?.();
 window.lastSentTextForVersion = "";
 
-  if (typeof refreshSidebarProgressFromScoring === "function") {
-    await refreshSidebarProgressFromScoring({
-      animateFromZero: false
-    });
-  }
+const appEl = document.querySelector(".app.soleRedesignApp");
+const isInActiveModule = !!appEl?.dataset.activeModule;
+
+// Avoid a heavy sidebar scoring refresh while the user is inside a quiz.
+// The active quiz already updates its own metric dock via onProgressChange.
+if (!isInActiveModule && typeof refreshSidebarProgressFromScoring === "function") {
+  await refreshSidebarProgressFromScoring({
+    animateFromZero: false
+  });
+}
 
   try {
     await updateConversationStatus();

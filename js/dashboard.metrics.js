@@ -2,6 +2,21 @@
 const dashboardResponseCache = new Map();
 const dashboardProgressCache = new Map();
 
+function getRuntimeAssignmentId(assignmentOrId) {
+  if (!assignmentOrId) return "";
+
+  if (typeof assignmentOrId === "string") {
+    return assignmentOrId;
+  }
+
+  return (
+    assignmentOrId.dbAssignmentId ||
+    assignmentOrId.assignmentId ||
+    assignmentOrId.id ||
+    ""
+  );
+}
+
 function getStoredDashboardResponses(me) {
   if (!me?.id) return {};
   return dashboardResponseCache.get(me.id) || {};
@@ -22,12 +37,16 @@ function saveStoredDashboardProgress(me, progress) {
   dashboardProgressCache.set(me.id, progress || {});
 }
 
-function getAssignmentProgress(me, assignmentId) {
+function getAssignmentProgress(me, assignmentOrId) {
+  const assignmentId = getRuntimeAssignmentId(assignmentOrId);
   const progress = getStoredDashboardProgress(me);
   return progress[assignmentId] || null;
 }
 
 async function saveAssignmentProgress(sb, me, assignment, payload) {
+  const assignmentId = getRuntimeAssignmentId(assignment);
+  if (!assignmentId) return;
+
   const progress = getStoredDashboardProgress(me);
 
   const nextProgress = {
@@ -35,7 +54,7 @@ async function saveAssignmentProgress(sb, me, assignment, payload) {
     updatedAt: new Date().toISOString()
   };
 
-  progress[assignment.id] = nextProgress;
+  progress[assignmentId] = nextProgress;
   saveStoredDashboardProgress(me, progress);
 
   await upsertQuizResponseToSupabase(sb, me, assignment, {
@@ -45,7 +64,10 @@ async function saveAssignmentProgress(sb, me, assignment, payload) {
   });
 }
 
-async function clearAssignmentProgress(sb, me, assignmentId) {
+async function clearAssignmentProgress(sb, me, assignmentOrId) {
+  const assignmentId = getRuntimeAssignmentId(assignmentOrId);
+  if (!assignmentId) return;
+
   const progress = getStoredDashboardProgress(me);
   delete progress[assignmentId];
   saveStoredDashboardProgress(me, progress);
@@ -61,14 +83,17 @@ function saveStoredDashboardState(me, state) {
   writeJsonStorage(getDashboardStorageKey(me, "dashboard_state"), state);
 }
 
-function getAssignmentResponse(me, assignmentId) {
+function getAssignmentResponse(me, assignmentOrId) {
+  const assignmentId = getRuntimeAssignmentId(assignmentOrId);
   const responses = getStoredDashboardResponses(me);
   return responses[assignmentId] || null;
 }
 
 function getMergedAssignmentAnswers(me, assignment) {
-  const savedProgress = getAssignmentProgress(me, assignment.id);
-  const savedResponse = getAssignmentResponse(me, assignment.id);
+  const assignmentId = getRuntimeAssignmentId(assignment);
+
+  const savedProgress = getAssignmentProgress(me, assignmentId);
+  const savedResponse = getAssignmentResponse(me, assignmentId);
 
   return {
     ...(savedProgress?.answers || {}),
@@ -173,20 +198,24 @@ function getAssignmentProgressFraction(me, assignment) {
 }
 
 async function saveAssignmentResponse(sb, me, assignment, payload) {
+  const assignmentId = getRuntimeAssignmentId(assignment);
+  if (!assignmentId) return;
+
   const responses = getStoredDashboardResponses(me);
 
   const nextResponse = {
     ...payload,
+    assignmentId,
     completed: true,
     updatedAt: new Date().toISOString(),
     submittedAt: payload.submittedAt || new Date().toISOString()
   };
 
-  responses[assignment.id] = nextResponse;
+  responses[assignmentId] = nextResponse;
   saveStoredDashboardResponses(me, responses);
 
   const progress = getStoredDashboardProgress(me);
-  delete progress[assignment.id];
+  delete progress[assignmentId];
   saveStoredDashboardProgress(me, progress);
 
   await upsertQuizResponseToSupabase(sb, me, assignment, {
@@ -509,10 +538,24 @@ const earned = moduleAssignments.reduce((total, assignment) => {
   const quizWeight = quizWeights.get(assignment) || 0;
   const questions = assignment.questions || [];
 
-  if (!questions.length) return total;
-
   if (!wasAssignmentUpdatedAfterBaseline(me, assignment)) {
     return total;
+  }
+
+  if (!questions.length) {
+    const progressFraction = Number(
+      assignment.summary?.progressFraction ??
+      assignment.progressFraction ??
+      0
+    );
+
+    if (!Number.isFinite(progressFraction) || progressFraction <= 0) {
+      return total;
+    }
+
+    return total + (
+      quizWeight * Math.max(0, Math.min(1, progressFraction))
+    );
   }
 
   const mergedAnswers = getMergedAssignmentAnswers(me, assignment);

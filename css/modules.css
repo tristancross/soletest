@@ -204,6 +204,105 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 }
 
 
+/* Completed quiz result layout ----------------------------------------- */
+
+.quizPanelComplete{
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.quizPanelComplete .quizCompleteCard{
+  flex:0 0 auto;
+  min-height:0;
+  padding:16px 20px;
+  border-radius:24px;
+}
+
+.quizPanelComplete .quizCompleteCard h3,
+.quizPanelComplete .quizCompleteCard p{
+  margin-top:0;
+  margin-bottom:4px;
+}
+
+.quizPanelComplete .soleMatrixPanel{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:none;
+  margin:0 auto;
+  overflow:hidden;
+  padding:28px 30px 18px;
+}
+
+.quizPanelComplete .soleMatrixChartWrap{
+  min-height:0;
+}
+
+.quizPanelComplete .soleMatrixPanel{
+  margin:0 auto 0;
+  overflow-y:auto;
+
+  scrollbar-width:thin;
+  scrollbar-color:
+    rgba(255,118,95,.28)
+    transparent;
+}
+
+/* Chrome / Edge / Safari */
+
+.quizPanelComplete .soleMatrixPanel::-webkit-scrollbar{
+  width:8px;
+}
+
+.quizPanelComplete .soleMatrixPanel::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.quizPanelComplete .soleMatrixPanel::-webkit-scrollbar-thumb{
+  border-radius:999px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,159,125,.85),
+      rgba(255,118,95,.85)
+    );
+
+  border:2px solid transparent;
+  background-clip:padding-box;
+
+  box-shadow:
+    0 0 12px rgba(255,118,95,.18);
+}
+
+.quizPanelComplete .soleMatrixPanel::-webkit-scrollbar-thumb:hover{
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,175,145,.95),
+      rgba(255,118,95,.95)
+    );
+
+  background-clip:padding-box;
+}
+
+.quizPanelComplete .soleMatrixPanel::-webkit-scrollbar-corner{
+  background:transparent;
+}
+
+.quizPanelComplete .soleMatrixPanel::-webkit-scrollbar-thumb{
+  opacity:.35;
+  transition:opacity .2s ease;
+}
+
+.quizPanelComplete .soleMatrixPanel:hover::-webkit-scrollbar-thumb{
+  opacity:1;
+}
+
+
+
+
 .soleMatrixPanel::before{
   content:"";
   position:absolute;
@@ -235,6 +334,10 @@ radial-gradient(circle at top left, rgba(255,137,104,.06), transparent 40%),
 
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,.42);
+}
+
+.quizPanelComplete .soleMatrixPanel::before, .quizPanelComplete .soleMatrixPanel::after{
+  display: none;
 }
 
 .soleMatrixHeader {
@@ -2470,4 +2573,55 @@ padding: 15px 15px 10px !important;
 .betaFeedbackThanks span {
   color: var(--sole-soft-ink);
   font-size: 13px;
+}
+
+/* Completed quiz header card: copy left, continue right ---------------- */
+
+.quizPanelComplete .quizCompleteCard{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1fr) auto;
+  align-items:center;
+  gap:18px;
+}
+
+.quizPanelComplete .quizCompleteCopyHolder{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+.quizPanelComplete .quizCompleteLine{
+  margin:0;
+  font-size:18px;
+  line-height:1.15;
+  font-weight:500;
+  color:var(--sole-ink);
+}
+
+.quizPanelComplete .quizCompleteHint{
+  margin:0;
+  color:var(--sole-soft-ink);
+  font-size:14px;
+  line-height:1.35;
+}
+
+.quizPanelComplete .quizCompleteActions{
+  margin:0 !important;
+  justify-content:flex-end;
+  align-self:center;
+}
+
+.quizPanelComplete .quizCompleteActions .quizSubmitBtn{
+  white-space:nowrap;
+}
+
+@media (max-width:680px){
+  .quizPanelComplete .quizCompleteCard{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .quizPanelComplete .quizCompleteActions{
+    justify-content:flex-start;
+  }
 }

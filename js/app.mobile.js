@@ -95,36 +95,68 @@ const assignments = await window.dashboardUI.loadRuntimeAssignmentsFromSupabase(
 const responses = responseState?.responses || {};
 const progress = responseState?.progress || {};
 
-  const isModuleComplete = moduleName => {
-    const moduleAssignments = assignments.filter(item => {
-      const category = String(item.meta?.category || "").toLowerCase();
-      return category === moduleName;
-    });
+const currentDay = window.soleExperimentScoring?.getExperimentDayIndex
+  ? window.soleExperimentScoring.getExperimentDayIndex(me)
+  : 1;
 
-    // If there are no active tasks in that module, don't auto-tick it.
-    if (!moduleAssignments.length) return false;
+const getAssignmentDay = assignment => {
+  const raw =
+    assignment?.day_index ??
+    assignment?.day_number ??
+    assignment?.template_day_index ??
+    assignment?.meta?.day_index ??
+    assignment?.meta?.day_number ??
+    assignment?.effect?.day_index ??
+    1;
 
-const completed = moduleAssignments.every(assignment => {
-  return !!responses[assignment.id]?.completed;
-});
+  const num = Math.round(Number(raw) || 1);
+  return Math.max(1, Math.min(5, num));
+};
 
-const started = moduleAssignments.some(assignment => {
-  return !!responses[assignment.id] || !!progress[assignment.id];
-});
+const isAssignmentForDailyModule = (assignment, moduleName) => {
+  const category = String(assignment?.meta?.category || "").toLowerCase();
 
-if (moduleName === "chemistry") {
-  chemistryStarted = started;
-}
+  if (moduleName === "chemistry") {
+    return category === "chemistry" || category === "connection";
+  }
 
-if (moduleName === "attraction") {
-  attractionStarted = started;
-}
+  return category === moduleName;
+};
 
-return completed;
-  };
+const isModuleComplete = moduleName => {
+  const moduleAssignments = assignments.filter(item => {
+    const assignmentDay = getAssignmentDay(item);
 
-  chemistryDone = isModuleComplete("chemistry");
-  attractionDone = isModuleComplete("attraction");
+    return (
+      assignmentDay === currentDay &&
+      isAssignmentForDailyModule(item, moduleName)
+    );
+  });
+
+  // If there are no tasks for today's module, don't auto-tick it.
+  if (!moduleAssignments.length) return false;
+
+  const completed = moduleAssignments.every(assignment => {
+    return !!responses[assignment.id]?.completed;
+  });
+
+  const started = moduleAssignments.some(assignment => {
+    return !!responses[assignment.id] || !!progress[assignment.id];
+  });
+
+  if (moduleName === "chemistry") {
+    chemistryStarted = started;
+  }
+
+  if (moduleName === "attraction") {
+    attractionStarted = started;
+  }
+
+  return completed;
+};
+
+chemistryDone = isModuleComplete("chemistry");
+attractionDone = isModuleComplete("attraction");
 } catch (error) {
   console.warn("Could not calculate module task completion", error);
 }

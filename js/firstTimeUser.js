@@ -36,8 +36,8 @@ const firstTimeState = {
     name: "",
     dateOfBirth: "",
     singleFor: {
-      months: 0,
-      years: 0
+      years: 0,
+      months: 0
     },
     everFeltLove: "",
     idealPartnerMustHave: [],
@@ -132,7 +132,7 @@ function buildOnboardingAnswersText(answers) {
 
   return [
     `Name: ${answers.name || "Not answered"}`,
-    `Single for: ${Number(answers.singleFor?.months || 0)} months, ${Number(answers.singleFor?.years || 0)} years`,
+    `Single for: ${Number(answers.singleFor?.years || 0)} years, ${Number(answers.singleFor?.months || 0)} months`,
     `Ever felt love: ${answers.everFeltLove || "Not answered"}`,
     `Ideal partner must have: ${qualities}`,
     `Who are you looking for: ${answers.whoAreYouLookingFor || "Not answered"}`,

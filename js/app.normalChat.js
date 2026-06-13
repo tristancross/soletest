@@ -52,9 +52,13 @@ clearChatSubtitleStatus();
 
 them = nextProfile;
 
+const visibleThem =
+  window.soleNameAliases?.displayProfileForViewer?.(them, me) ||
+  them;
+
 chatTitle.textContent =
-  them.display_name ||
-  them.username ||
+  visibleThem.display_name ||
+  visibleThem.username ||
   "Conversational Model";
 
 chatMetaInner?.classList?.add("is-active");

@@ -57,8 +57,12 @@ async function sendText() {
     return;
   }
 
-  const text = textInput.value.trim();
-if (!text) return;
+const rawText = textInput.value.trim();
+if (!rawText) return;
+
+const text =
+  window.soleNameAliases?.canonicalizeOutgoingTextForRecipient?.(rawText, me, them) ||
+  rawText;
 
 if (containsBlockedLink(text)) {
   showSoleNotice(
@@ -85,13 +89,17 @@ if (text.length > 4000){
   const key = `${me.id}|${them.id}|${text}`;
   recentSends.set(key, Date.now());
 
-  const tempMsg = {
-    id: "temp-" + crypto.randomUUID(),
-    sender_id: me.id,
-    recipient_id: them.id,
-    text,
-    created_at: new Date().toISOString()
-  };
+const tempMsg = {
+  id: "temp-" + crypto.randomUUID(),
+  sender_id: me.id,
+  recipient_id: them.id,
+
+  // Show the sender what they typed, e.g. "Hello David".
+  // The database stores the canonical version, e.g. "Hello Test5".
+  text: rawText,
+
+  created_at: new Date().toISOString()
+};
   await renderMessage(tempMsg, me.id, false);
   scrollToBottom();
  setResponseStateListening();

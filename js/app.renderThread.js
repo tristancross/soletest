@@ -214,8 +214,13 @@ async function renderMessage(m, alignAsSenderId, animate = false) {
     return;
   }
 
-  const displayText = m.display_text ?? m.text ?? "";
-  const mine = m.sender_id === alignAsSenderId;
+const rawDisplayText = m.display_text ?? m.text ?? "";
+
+const displayText =
+  window.soleNameAliases?.renderTextForViewer?.(rawDisplayText, me, them) ||
+  rawDisplayText;
+
+const mine = m.sender_id === alignAsSenderId;
 
   if (m.message_type === "voice") {
 

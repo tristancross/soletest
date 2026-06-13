@@ -132,7 +132,6 @@ function buildOnboardingAnswersText(answers) {
 
   return [
     `Name: ${answers.name || "Not answered"}`,
-    `Date of birth: ${answers.dateOfBirth || "Not answered"}`,
     `Single for: ${Number(answers.singleFor?.years || 0)} years, ${Number(answers.singleFor?.months || 0)} months`,
     `Ever felt love: ${answers.everFeltLove || "Not answered"}`,
     `Ideal partner must have: ${qualities}`,
@@ -229,7 +228,7 @@ function renderFirstTimeShell(innerHtml) {
 function firstTimeProgress() {
   return `
     <div class="firstTimeUserProgress">
-      First signal ${firstTimeState.step + 1} / 7
+      First signal ${firstTimeState.step + 1} / 5
     </div>
   `;
 }
@@ -266,10 +265,8 @@ function goFirstTimeStep(index) {
   firstTimeState.step = index;
 
   const renderers = [
-    renderFirstTimeName,
-    renderFirstTimeDateOfBirth,
-    renderFirstTimeSingleFor,
     renderFirstTimeLove,
+    renderFirstTimeSingleFor,
     renderFirstTimeQualities,
     renderFirstTimeLookingFor,
     renderFirstTimeDifferent
@@ -496,17 +493,17 @@ function renderFirstTimeSingleFor() {
       months: monthsValue
     };
 
-    goFirstTimeStep(3);
+    goFirstTimeStep(2);
   });
 }
 
 function renderFirstTimeLove() {
-  const options = ["Yes", "No", "I don’t know"];
+  const options = ["Yes", "No", "Maybe", "I don’t know"];
 
   renderFirstTimeShell(`
     ${firstTimeProgress()}
     <div class="firstTimeUserEyebrow">Emotional history</div>
-    <h2>Have you ever felt love?</h2>
+    <h2>Have you ever been in love?</h2>
 
     <div class="firstTimeOptionList">
       ${options.map(option => `
@@ -543,7 +540,7 @@ function renderFirstTimeLove() {
       return;
     }
 
-    goFirstTimeStep(4);
+    goFirstTimeStep(1);
   });
 }
 
@@ -614,7 +611,7 @@ function renderFirstTimeQualities() {
       return;
     }
 
-    goFirstTimeStep(5);
+    goFirstTimeStep(3);
   });
 }
 
@@ -648,7 +645,7 @@ function renderFirstTimeLookingFor() {
     }
 
     firstTimeState.answers.whoAreYouLookingFor = value;
-    goFirstTimeStep(6);
+    goFirstTimeStep(4);
   });
 }
 
@@ -982,15 +979,14 @@ async function renderFirstTimeBuildSequence() {
 }
 
 async function completeFirstTimeUserJourney() {
-  const answers = firstTimeState.answers;
-  const username = await generateUniqueUsername(answers.name);
-  const answersText = buildOnboardingAnswersText(answers);
-//   const now = new Date().toISOString();
+const answers = firstTimeState.answers;
+
+answers.name = me?.display_name || me?.username || "User";
+delete answers.dateOfBirth;
+
+const answersText = buildOnboardingAnswersText(answers);
 
 const payload = {
-  display_name: answers.name,
-  username,
-  date_of_birth: answers.dateOfBirth || null,
   single_years: Number(answers.singleFor.years || 0),
   single_months: Number(answers.singleFor.months || 0),
   onboarding_answers: answers,
@@ -1021,7 +1017,7 @@ const payload = {
     firstTimeUserMount
       ?.querySelector("[data-first-time-retry]")
       ?.addEventListener("click", () => {
-        goFirstTimeStep(6);
+goFirstTimeStep(4);
       });
 
     return;
@@ -1321,10 +1317,10 @@ async function runFirstTimeUserJourneyIfNeeded() {
     hopingFeelsDifferent: me?.onboarding_answers?.hopingFeelsDifferent || ""
   };
 
-  document.body.classList.remove("isCheckingFirstTimeUser");
-  showFirstTimeUserOverlay();
-  renderFirstTimeName();
-  return true;
+document.body.classList.remove("isCheckingFirstTimeUser");
+showFirstTimeUserOverlay();
+goFirstTimeStep(0);
+return true;
 }
 
 window.firstTimeUser = {

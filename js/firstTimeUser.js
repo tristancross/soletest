@@ -36,8 +36,8 @@ const firstTimeState = {
     name: "",
     dateOfBirth: "",
     singleFor: {
-      years: 0,
-      months: 0
+      months: 0,
+      years: 0
     },
     everFeltLove: "",
     idealPartnerMustHave: [],

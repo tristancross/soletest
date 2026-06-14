@@ -1,20 +1,40 @@
 // ====== MOBILE ======
+const SOLE_MOBILE_BREAKPOINT = 950;
+
 function isMobileLayout() {
-  return window.innerWidth <= 768;
+  return window.matchMedia(`(max-width: ${SOLE_MOBILE_BREAKPOINT}px)`).matches;
 }
 
 function isCurrentChatActuallyVisible() {
-  if (document.visibilityState !== "visible") return false;
+  if (!mainEl || !messagesEl) return false;
 
-  if (adminMode || !them) return false;
-
-  if (isMobileLayout() && appEl.classList.contains("mobileSidebarOpen")) {
+  // If the tab itself is hidden, do not count messages as read.
+  // This fixes the “background tab with messages open” bug.
+  if (!isSoleAppForegrounded()) {
     return false;
   }
 
-  return true;
-}
+  // True mobile mode: only Messages view counts as reading.
+  if (typeof isMobileLayout === "function" && isMobileLayout()) {
+    return document.body.classList.contains("mobileViewMessages");
+  }
 
+  const mainStyle = window.getComputedStyle(mainEl);
+  const messagesStyle = window.getComputedStyle(messagesEl);
+
+  if (
+    mainStyle.display === "none" ||
+    mainStyle.visibility === "hidden" ||
+    messagesStyle.display === "none" ||
+    messagesStyle.visibility === "hidden"
+  ) {
+    return false;
+  }
+
+  const rect = messagesEl.getBoundingClientRect();
+
+  return rect.width > 0 && rect.height > 0;
+}
 async function updateInsightNotificationDots() {
   if (!me?.id || !window.dashboardUI?.loadUserInsightsFromSupabase) return;
 
@@ -45,7 +65,16 @@ async function updateInsightNotificationDots() {
 }
 
 async function updateSidebarDailyTasks() {
-const taskCards = document.querySelectorAll(".sidebarTaskCard[data-task-id]");
+  const appEl = document.querySelector(".app.soleRedesignApp");
+
+  // Do not rewrite daily task UI while the sidebar is showing a module/quiz.
+  // This prevents message-send refreshes from kicking the user back to the
+  // module calibration list or default task menu.
+  if (appEl?.dataset.activeModule) {
+    return;
+  }
+
+  const taskCards = document.querySelectorAll(".sidebarTaskCard");
   const countEl = document.getElementById("sidebarTasksCount");
 
   if (!taskCards.length || !me) return;
@@ -58,42 +87,76 @@ let chemistryStarted = false;
 let attractionStarted = false;
 
 try {
-  const assignments = await window.dashboardUI.loadRuntimeAssignmentsFromSupabase(sb, me);
+const assignments = await window.dashboardUI.loadRuntimeAssignmentsFromSupabase(sb, me, {
+  includeQuestions: false
+});
   const responseState = await window.dashboardUI.loadQuizResponsesFromSupabase?.(sb, me);
 
 const responses = responseState?.responses || {};
 const progress = responseState?.progress || {};
 
-  const isModuleComplete = moduleName => {
-    const moduleAssignments = assignments.filter(item => {
-      const category = String(item.meta?.category || "").toLowerCase();
-      return category === moduleName;
-    });
+const currentDay = window.soleExperimentScoring?.getExperimentDayIndex
+  ? window.soleExperimentScoring.getExperimentDayIndex(me)
+  : 1;
 
-    // If there are no active tasks in that module, don't auto-tick it.
-    if (!moduleAssignments.length) return false;
+const getAssignmentDay = assignment => {
+  const raw =
+    assignment?.day_index ??
+    assignment?.day_number ??
+    assignment?.template_day_index ??
+    assignment?.meta?.day_index ??
+    assignment?.meta?.day_number ??
+    assignment?.effect?.day_index ??
+    1;
 
-const completed = moduleAssignments.every(assignment => {
-  return !!responses[assignment.id]?.completed;
-});
+  const num = Math.round(Number(raw) || 1);
+  return Math.max(1, Math.min(5, num));
+};
 
-const started = moduleAssignments.some(assignment => {
-  return !!responses[assignment.id] || !!progress[assignment.id];
-});
+const isAssignmentForDailyModule = (assignment, moduleName) => {
+  const category = String(assignment?.meta?.category || "").toLowerCase();
 
-if (moduleName === "chemistry") {
-  chemistryStarted = started;
-}
+  if (moduleName === "chemistry") {
+    return category === "chemistry" || category === "connection";
+  }
 
-if (moduleName === "attraction") {
-  attractionStarted = started;
-}
+  return category === moduleName;
+};
 
-return completed;
-  };
+const isModuleComplete = moduleName => {
+  const moduleAssignments = assignments.filter(item => {
+    const assignmentDay = getAssignmentDay(item);
 
-  chemistryDone = isModuleComplete("chemistry");
-  attractionDone = isModuleComplete("attraction");
+    return (
+      assignmentDay === currentDay &&
+      isAssignmentForDailyModule(item, moduleName)
+    );
+  });
+
+  // If there are no tasks for today's module, don't auto-tick it.
+  if (!moduleAssignments.length) return false;
+
+  const completed = moduleAssignments.every(assignment => {
+    return !!responses[assignment.id]?.completed;
+  });
+
+  const started = moduleAssignments.some(assignment => {
+    return !!responses[assignment.id] || !!progress[assignment.id];
+  });
+
+  if (moduleName === "chemistry") {
+    chemistryStarted = started;
+  }
+
+  if (moduleName === "attraction") {
+    attractionStarted = started;
+  }
+
+  return completed;
+};
+
+chemistryDone = isModuleComplete("chemistry");
+attractionDone = isModuleComplete("attraction");
 } catch (error) {
   console.warn("Could not calculate module task completion", error);
 }
@@ -131,10 +194,29 @@ const replyTarget = Number(
   dayReplyGoal ||
   50
 );
+let experimentSettings = null;
+
+try {
+  experimentSettings = window.soleDayConfigs?.getExperimentSettingsFromCache?.()
+    || await window.soleDayConfigs?.loadExperimentSettings?.(sb, { force: true });
+} catch (error) {
+  console.warn("Could not load experiment settings for reply window", error);
+}
+
 const replyWindowMinutes = Number(replyGoalTask?.timeframe_minutes || 1440);
-const replyStartsAt = replyGoalTask?.starts_at
-  ? new Date(replyGoalTask.starts_at)
-  : new Date(Date.now() - replyWindowMinutes * 60 * 1000);
+
+const dayStartedAt = experimentSettings?.updated_at
+  ? new Date(experimentSettings.updated_at)
+  : null;
+
+const fallbackStartsAt = new Date(Date.now() - replyWindowMinutes * 60 * 1000);
+
+const replyStartsAt =
+  replyGoalTask?.starts_at
+    ? new Date(replyGoalTask.starts_at)
+    : dayStartedAt instanceof Date && !Number.isNaN(dayStartedAt.getTime())
+      ? dayStartedAt
+      : fallbackStartsAt;
 
   let replyCount = 0;
 
@@ -255,26 +337,45 @@ dbTasks
   if (countEl) countEl.textContent = `${complete} of ${total} completed`;
 }
 
-async function updateMobileMenuUnreadBadge() {
-  if (!mobileMenuUnreadBadge) return;
+function updateMobileMenuUnreadBadge() {
+  const badges = [
+    document.getElementById("mobileMenuUnreadBadge"),
+    document.getElementById("mobileTopUnreadBadge")
+  ].filter(Boolean);
 
-  const unreadCounts = await getUnreadCounts();
+  if (!badges.length) return;
+
+  const unreadEls = document.querySelectorAll(".unreadBadge:not([hidden])");
 
   let total = 0;
 
-  for (const [senderId, count] of unreadCounts.entries()) {
-    if (them && senderId === them.id) continue;
-    total += count;
-  }
+  unreadEls.forEach(el => {
+    const raw = (el.textContent || "").trim();
 
-  if (total > 0) {
-    mobileMenuUnreadBadge.hidden = false;
-    mobileMenuUnreadBadge.textContent = total > 99 ? "99+" : String(total);
-  } else {
-    mobileMenuUnreadBadge.hidden = true;
-    mobileMenuUnreadBadge.textContent = "";
-  }
+    if (!raw) return;
+
+    if (raw.includes("+")) {
+      total += Number(raw.replace(/\D/g, "")) || 99;
+      return;
+    }
+
+    total += Number(raw.replace(/\D/g, "")) || 0;
+  });
+
+  badges.forEach(badge => {
+    if (total > 0) {
+      badge.hidden = false;
+      badge.textContent = total > 99 ? "99+" : String(total);
+      badge.setAttribute("aria-label", `${total} unread message${total === 1 ? "" : "s"}`);
+    } else {
+      badge.hidden = true;
+      badge.textContent = "";
+      badge.removeAttribute("aria-label");
+    }
+  });
 }
+
+window.updateMobileMenuUnreadBadge = updateMobileMenuUnreadBadge;
 
 function openMobileSidebar() {
   if (!isMobileLayout()) return;
@@ -285,10 +386,9 @@ async function closeMobileSidebar() {
   appEl.classList.remove("mobileSidebarOpen");
 
   if (isCurrentChatActuallyVisible()) {
-    await markThreadAsRead(me.id, them.id);
+    await markCurrentThreadReadIfVisible("closed mobile sidebar");
     await renderSidebar(them?.id);
-    await updateConversationStatus();
-    updateMobileMenuUnreadBadge();
+    // await updateConversationStatus();
   }
 }
 
@@ -424,6 +524,49 @@ function initSoleAppHistory() {
 
 }
 
+function isSoleAppForegrounded() {
+  return document.visibilityState === "visible" && document.hasFocus();
+}
+
+async function markCurrentThreadReadIfVisible(reason = "") {
+  if (!me?.id || !them?.id) return false;
+  if (!isCurrentChatActuallyVisible()) return false;
+
+  try {
+    await markThreadAsRead(me.id, them.id);
+
+    // Force local UI to agree immediately.
+    clearCurrentThreadUnreadUI();
+
+    updateMobileMenuUnreadBadge?.();
+
+    return true;
+  } catch (error) {
+    console.warn("Could not mark current thread as read", reason, error);
+    return false;
+  }
+}
+
+function clearCurrentThreadUnreadUI() {
+  document
+    .querySelectorAll(".unreadBadge, #mobileTopUnreadBadge, #mobileMenuUnreadBadge")
+    .forEach(badge => {
+      badge.hidden = true;
+      badge.textContent = "";
+      badge.removeAttribute("aria-label");
+    });
+
+  if (typeof window.soleUnreadCount === "number") {
+    window.soleUnreadCount = 0;
+  }
+
+  if (window.soleBaseDocumentTitle) {
+    document.title = window.soleBaseDocumentTitle;
+  } else {
+    document.title = document.title.replace(/^\(\d+\)\s*/, "");
+  }
+}
+
 function setMobileView(view, options = {}) {
   if (!isMobileLayout()) return;
 
@@ -440,15 +583,15 @@ function setMobileView(view, options = {}) {
     });
   }
 
-  if (isMessages && them) {
-    requestAnimationFrame(() => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+if (isMessages && them) {
+  requestAnimationFrame(() => {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
 
-    markThreadAsRead(me.id, them.id)
-      .then(() => updateMobileMenuUnreadBadge?.())
-      .catch(error => console.warn("Could not mark mobile thread as read", error));
-  }
+  requestAnimationFrame(() => {
+    markCurrentThreadReadIfVisible("entered mobile messages view");
+  });
+}
 }
 
 function openMobileRailMenu() {
@@ -463,11 +606,115 @@ function closeMobileRailMenu() {
   document.getElementById("mobileMenuBtnGlobal")?.setAttribute("aria-expanded", "false");
 }
 
+function closeModelInfoPopup() {
+  const existing = document.getElementById("modelInfoPopup");
+  if (!existing) return;
+
+  existing.classList.add("isLeaving");
+
+  window.setTimeout(() => {
+    existing.remove();
+  }, 180);
+}
+
+function openModelInfoPopup() {
+  closeModelInfoPopup();
+
+  const name = chatTitle?.textContent?.trim() || "Conversation";
+  const version = chatModelVersion?.textContent?.trim() || "";
+  const status = chatSubtitle?.textContent?.trim() || "Conversational profile still forming";
+
+  const popup = document.createElement("div");
+  popup.id = "modelInfoPopup";
+  popup.className = "modelInfoPopup";
+  popup.setAttribute("role", "dialog");
+  popup.setAttribute("aria-modal", "true");
+  popup.setAttribute("aria-label", "Conversation information");
+
+  popup.innerHTML = `
+    <div class="modelInfoScrim" data-model-info-close></div>
+
+    <section class="modelInfoPanel">
+      <button
+        class="modelInfoClose"
+        type="button"
+        aria-label="Close conversation information"
+        data-model-info-close
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modelInfoEyebrow">Conversational Agent</div>
+
+      <div class="modelInfoTitleRow">
+        <h3>${escapeHtml(name)}</h3>
+        ${version ? `<span>${escapeHtml(version)}</span>` : ""}
+      </div>
+
+      <p class="modelInfoStatus">
+        <i class="fa-regular fa-circle-dot"></i>
+        ${escapeHtml(status)}
+      </p>
+
+      <div class="modelInfoExplainer">
+        <div class="modelInfoExplainerItem">
+          <span>Model Persona</span>
+          <p>
+            ${escapeHtml(name)} has been designed to behave less like an assistant
+            and more like a real person inside a dating app.
+          </p>
+        </div>
+
+                <div class="modelInfoExplainerItem">
+          <span>Continuity</span>
+          <p>
+            As far as ${escapeHtml(name)} is concerned, they are a real person
+            living a real life. They have a persistent, linear life inside Sole.
+          </p>
+        </div>
+
+        <div class="modelInfoExplainerItem">
+          <span>Response time</span>
+          <p>
+            They may pause, misunderstand, change mood, get distracted, or take
+            time to reply. They are not designed to respond the moment you do.
+          </p>
+        </div>
+
+
+        <div class="modelInfoExplainerItem">
+          <span>Best results</span>
+          <p>
+            Interact with ${escapeHtml(name)} however you would with someone you
+            had just matched with. Talk naturally, and say things you would
+            actually say.
+          </p>
+        </div>
+      </div>
+    </section>
+  `;
+
+  document.body.appendChild(popup);
+
+  requestAnimationFrame(() => {
+    popup.classList.add("isVisible");
+  });
+
+  popup.querySelectorAll("[data-model-info-close]").forEach(el => {
+    el.addEventListener("click", closeModelInfoPopup);
+  });
+}
+
 function initMobileTopNavigation() {
-  const chatBtn = document.getElementById("mobileChatBtn");
-  const menuBtn = document.getElementById("mobileMenuBtnGlobal");
-  const oldHeaderMenuBtn = document.getElementById("mobileMenuBtn");
-  const scrim = document.getElementById("mobileRailScrim");
+const chatBtn = document.getElementById("mobileChatBtn");
+const menuBtn = document.getElementById("mobileMenuBtnGlobal");
+const mobileTopBrand = document.getElementById("mobileTopBrand");
+const modelInfoBtns = [
+  document.getElementById("mobileModelInfoBtn"),
+  document.getElementById("desktopModelInfoBtn")
+].filter(Boolean);
+const oldHeaderMenuBtn = document.getElementById("mobileMenuBtn");
+const scrim = document.getElementById("mobileRailScrim");
 
   chatBtn?.addEventListener("click", () => {
     setMobileView("messages");
@@ -490,11 +737,33 @@ function initMobileTopNavigation() {
     }
   });
 
+  mobileTopBrand?.addEventListener("click", () => {
+  setMobileView("home", { writeHistory: false });
+  closeMobileRailMenu();
+
+  window.soleRedesignNavigate?.("home");
+});
+
+modelInfoBtns.forEach(btn => {
+  btn.addEventListener("click", openModelInfoPopup);
+});
+
   scrim?.addEventListener("click", closeMobileRailMenu);
 
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape") closeMobileRailMenu();
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeMobileRailMenu();
+    closeModelInfoPopup();
+  }
+});
+
+  ["focus", "visibilitychange", "pageshow"].forEach(eventName => {
+  window.addEventListener(eventName, () => {
+    requestAnimationFrame(() => {
+      markCurrentThreadReadIfVisible(eventName);
+    });
   });
+});
 
 document.addEventListener("click", event => {
   const railTarget = event.target.closest("[data-sole-rail]");

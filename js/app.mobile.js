@@ -194,10 +194,29 @@ const replyTarget = Number(
   dayReplyGoal ||
   50
 );
+let experimentSettings = null;
+
+try {
+  experimentSettings = window.soleDayConfigs?.getExperimentSettingsFromCache?.()
+    || await window.soleDayConfigs?.loadExperimentSettings?.(sb, { force: true });
+} catch (error) {
+  console.warn("Could not load experiment settings for reply window", error);
+}
+
 const replyWindowMinutes = Number(replyGoalTask?.timeframe_minutes || 1440);
-const replyStartsAt = replyGoalTask?.starts_at
-  ? new Date(replyGoalTask.starts_at)
-  : new Date(Date.now() - replyWindowMinutes * 60 * 1000);
+
+const dayStartedAt = experimentSettings?.updated_at
+  ? new Date(experimentSettings.updated_at)
+  : null;
+
+const fallbackStartsAt = new Date(Date.now() - replyWindowMinutes * 60 * 1000);
+
+const replyStartsAt =
+  replyGoalTask?.starts_at
+    ? new Date(replyGoalTask.starts_at)
+    : dayStartedAt instanceof Date && !Number.isNaN(dayStartedAt.getTime())
+      ? dayStartedAt
+      : fallbackStartsAt;
 
   let replyCount = 0;
 

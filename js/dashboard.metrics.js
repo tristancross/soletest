@@ -508,81 +508,138 @@ function getAssignmentDayIndexForScoring(assignment = {}) {
   return Math.max(1, Math.min(5, num));
 }
 
+function getQuestionScoreFraction(question, answer) {
+  if (!question || answer === undefined || answer === null) return 0;
+
+  if (question.type === "swipeDeck") {
+    const cards = Array.isArray(question.config?.cards)
+      ? question.config.cards
+      : [];
+
+    const decisions = Array.isArray(answer?.decisions)
+      ? answer.decisions
+      : [];
+
+    if (!cards.length) return 0;
+
+    return Math.max(
+      0,
+      Math.min(1, decisions.length / cards.length)
+    );
+  }
+
+  return doesAnswerCountTowardProgress(question, answer) ? 1 : 0;
+}
+
+function getModuleQuizBudgetForDay(moduleName, dayIndex) {
+  const scoring = window.soleExperimentScoring;
+  const safeDay = Math.max(1, Math.min(5, Math.round(Number(dayIndex) || 1)));
+  const moduleKey = normaliseModuleName(moduleName);
+
+  const budget = scoring?.getScoreBudget?.(safeDay);
+  return Number(budget?.[moduleKey]?.quiz || 0);
+}
+
+function getModuleQuizBudgetIncrementForDay(moduleName, dayIndex) {
+  const currentBudget = getModuleQuizBudgetForDay(moduleName, dayIndex);
+  const previousBudget =
+    dayIndex > 1
+      ? getModuleQuizBudgetForDay(moduleName, dayIndex - 1)
+      : 0;
+
+  return Math.max(0, currentBudget - previousBudget);
+}
+
 function getModuleQuizSignalScore(me, assignments = [], moduleName = "connection") {
-const currentDay = getExperimentDayIndex(me);
+  const currentDay = getExperimentDayIndex(me);
+  const moduleKey = normaliseModuleName(moduleName);
+  const currentQuizBudget = getModuleQuizBudgetForDay(moduleKey, currentDay);
 
-const moduleAssignments = (assignments || []).filter(assignment => {
-  const assignmentDay = getAssignmentDayIndexForScoring(assignment);
+  if (!currentQuizBudget) return 0;
 
-  return (
-    assignmentDay <= currentDay &&
-    isAssignmentForModule(assignment, moduleName)
-  );
-});
+  let earnedBudgetPoints = 0;
 
-  if (!moduleAssignments.length) return 0;
+  for (let day = 1; day <= currentDay; day += 1) {
+    const dayBudgetIncrement = getModuleQuizBudgetIncrementForDay(moduleKey, day);
 
-  /**
-   * This makes each quiz worth a slightly different share of the module's
-   * quiz lane. Completing all module quizzes still equals 100.
-   */
-  const quizWeights = allocateSeededWeights(
-    moduleAssignments,
-    100,
-    `module-quiz-weights:${normaliseModuleName(moduleName)}`,
-    0.45
-  );
+    if (dayBudgetIncrement <= 0) continue;
 
+    const dayAssignments = (assignments || []).filter(assignment => {
+      const assignmentDay = getAssignmentDayIndexForScoring(assignment);
 
-const earned = moduleAssignments.reduce((total, assignment) => {
-  const quizWeight = quizWeights.get(assignment) || 0;
-  const questions = assignment.questions || [];
+      return (
+        assignmentDay === day &&
+        isAssignmentForModule(assignment, moduleKey)
+      );
+    });
 
-  if (!wasAssignmentUpdatedAfterBaseline(me, assignment)) {
-    return total;
+    if (!dayAssignments.length) continue;
+
+    /*
+      Each day's quizzes are weighted only against that day's own slice.
+
+      This means:
+      Day 1 work keeps its Day 1 value.
+      Day 2 quizzes only add the Day 2 increment.
+      Future unlocked days no longer dilute completed past work.
+    */
+    const dayQuizWeights = allocateSeededWeights(
+      dayAssignments,
+      100,
+      `module-quiz-day-weights:${moduleKey}:day-${day}`,
+      0.45
+    );
+
+    const dayCompletionSignal = dayAssignments.reduce((dayTotal, assignment) => {
+      const assignmentWeight = dayQuizWeights.get(assignment) || 0;
+      const questions = assignment.questions || [];
+
+      if (!questions.length) return dayTotal;
+
+      if (!wasAssignmentUpdatedAfterBaseline(me, assignment)) {
+        return dayTotal;
+      }
+
+      const mergedAnswers = getMergedAssignmentAnswers(me, assignment);
+
+      const questionWeights = getQuizQuestionWeights(
+        assignment,
+        assignmentWeight,
+        moduleKey
+      );
+
+      const earnedForAssignment = Array.from(questionWeights.entries()).reduce(
+        (questionTotal, [question, questionWeight]) => {
+          const answer = mergedAnswers[question.id];
+          const fraction = getQuestionScoreFraction(question, answer);
+
+          if (fraction <= 0) {
+            return questionTotal;
+          }
+
+          return questionTotal + (questionWeight * fraction);
+        },
+        0
+      );
+
+      return dayTotal + earnedForAssignment;
+    }, 0);
+
+    earnedBudgetPoints += (Math.max(0, Math.min(100, dayCompletionSignal)) / 100) * dayBudgetIncrement;
   }
 
-  if (!questions.length) {
-    const progressFraction = Number(
-      assignment.summary?.progressFraction ??
-      assignment.progressFraction ??
-      0
-    );
-
-    if (!Number.isFinite(progressFraction) || progressFraction <= 0) {
-      return total;
-    }
-
-    return total + (
-      quizWeight * Math.max(0, Math.min(1, progressFraction))
-    );
-  }
-
-  const mergedAnswers = getMergedAssignmentAnswers(me, assignment);
-    const questionWeights = getQuizQuestionWeights(
-      assignment,
-      quizWeight,
-      moduleName
-    );
-
-const earnedForQuiz = Array.from(questionWeights.entries()).reduce(
-  (quizTotal, [question, questionWeight]) => {
-    const answer = mergedAnswers[question.id];
-    const questionProgress = getQuestionProgressFraction(question, answer);
-
-    if (questionProgress <= 0) {
-      return quizTotal;
-    }
-
-    return quizTotal + (questionWeight * questionProgress);
-  },
-  0
-);
-
-    return total + earnedForQuiz;
-  }, 0);
-
-  return Math.max(0, Math.min(100, earned));
+  /*
+    The outer score calculator expects a 0-100 quiz signal, then multiplies it
+    by the current day's quiz budget. So convert earned points back into that
+    signal shape.
+  */
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      (earnedBudgetPoints / currentQuizBudget) * 100
+    )
+  );
 }
 
 function getQuizSignalScore(me, assignments = []) {

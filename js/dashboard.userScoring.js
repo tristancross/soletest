@@ -576,6 +576,7 @@ window.soleExperimentScoring = {
   clamp: soleClamp,
   round: soleRound,
   getDayCaps: soleGetDayCaps,
+  getScoreBudget: soleGetScoreBudget,
   resolveExperimentDayFromUser: soleResolveExperimentDayFromUser,
   getExperimentDayIndex: soleGetExperimentDayIndex,
   diminishingReturns: soleDiminishingReturns,

@@ -489,6 +489,152 @@ async function handleInboxMessageChange(payload) {
     }
   }
 
+  async function handleRailClick(target) {
+  const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
+  if (!action) return;
+
+  const historyAction =
+    action === "calibration" || action === "chemistry"
+      ? "connection"
+      : action === "insights"
+        ? "solemate"
+        : action;
+
+  if (
+    ["home", "attraction", "connection", "solemate", "feedback"].includes(historyAction) &&
+    !window.soleAppHistoryIsApplying?.()
+  ) {
+    window.soleAppHistoryPush?.({
+      kind: "rail",
+      action: historyAction
+    });
+  }
+
+  if (
+    isDesktopLayout?.() &&
+    action !== "account" &&
+    qs(".app.soleRedesignApp")?.classList.contains("isChatFocus")
+  ) {
+    setDesktopChatFocus(false);
+    localStorage.setItem("sole_desktop_chat_focus", "0");
+  }
+
+  setActiveRailItem(action);
+
+  if (action === "home") {
+    const sidebarPaneEl = getSidebarPane();
+    const appEl = qs(".app.soleRedesignApp");
+
+    if (window.soleModuleTransitioning) return;
+    window.soleModuleTransitioning = true;
+
+    try {
+      clearModuleTransitionClasses(sidebarPaneEl);
+      sidebarPaneEl?.classList.add("isModuleHidden");
+
+      await wait(170);
+
+      setActiveRailItem("home");
+
+      if (appEl) {
+        delete appEl.dataset.activeModule;
+        delete appEl.dataset.transitionModule;
+      }
+
+      sidebarPaneEl?.classList.add("isModuleLoading");
+
+      window.sidebarDashboardUI?.renderMenu?.();
+
+      setTimeout(enhanceDashboard, 0);
+
+      await wait(80);
+
+      sidebarPaneEl?.classList.remove("isModuleLoading");
+      sidebarPaneEl?.classList.add("isModuleEntering");
+
+      requestAnimationFrame(() => {
+        sidebarPaneEl?.classList.remove("isModuleHidden");
+      });
+
+      window.setTimeout(() => {
+        sidebarPaneEl?.classList.remove("isModuleEntering");
+      }, 560);
+    } finally {
+      window.soleModuleTransitioning = false;
+    }
+
+    return;
+  }
+
+  if (action === "connection" || action === "calibration" || action === "chemistry") {
+    await openModule("chemistry");
+    return;
+  }
+
+  if (action === "attraction") {
+    await openModule("attraction");
+    return;
+  }
+
+  if (action === "solemate" || action === "insights") {
+    await openModule("solemate");
+    return;
+  }
+
+  if (action === "feedback") {
+    const sidebarPaneEl = getSidebarPane();
+    const appEl = qs(".app.soleRedesignApp");
+
+    if (window.soleModuleTransitioning) return;
+    window.soleModuleTransitioning = true;
+
+    try {
+      clearModuleTransitionClasses(sidebarPaneEl);
+      sidebarPaneEl?.classList.add("isModuleHidden");
+
+      await wait(170);
+
+      setActiveRailItem("feedback");
+
+      if (appEl) {
+        appEl.dataset.activeModule = "feedback";
+        appEl.dataset.transitionModule = "feedback";
+      }
+
+      sidebarPaneEl?.classList.add("isModuleLoading");
+
+      renderBetaFeedbackScreen(sidebarPaneEl);
+
+      await wait(80);
+
+      sidebarPaneEl?.classList.remove("isModuleLoading");
+      sidebarPaneEl?.classList.add("isModuleEntering");
+
+      requestAnimationFrame(() => {
+        sidebarPaneEl?.classList.remove("isModuleHidden");
+      });
+
+      window.setTimeout(() => {
+        sidebarPaneEl?.classList.remove("isModuleEntering");
+      }, 560);
+    } finally {
+      window.soleModuleTransitioning = false;
+
+      if (appEl) {
+        delete appEl.dataset.transitionModule;
+      }
+    }
+
+    return;
+  }
+
+  if (action === "account") {
+    const account = qs("#soleRailAccount");
+    account?.classList.toggle("open");
+    return;
+  }
+}
+
   function bindDesktopChatFocusToggle(){
     const appEl = qs(".app.soleRedesignApp");
     const toggleBtn = qs(".soleRailMenuBtn");

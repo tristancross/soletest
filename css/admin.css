@@ -2501,3 +2501,46 @@ body:has(.app.isAdminMode) .messages {
     grid-template-columns: 1fr;
   }
 }
+
+.adminApprovalControl {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(50,36,28,.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,.38);
+}
+
+.adminApprovalControl label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--sole-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.adminApprovalControl input {
+  accent-color: var(--sole-coral);
+}
+
+.adminApprovalControl p {
+  margin: 6px 0 0;
+  color: var(--sole-soft-ink);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.adminTranscriptLineMeta em {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(216,148,45,.16);
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: #9a641d;
+  background: rgba(255,255,255,.46);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}

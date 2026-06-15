@@ -1,13 +1,13 @@
 // ====== SEND TEXT ======
 async function sendText() {
 
-    if (
-    window.soleDayConfigs?.getExperimentSettingsFromCache?.()?.voice_messages_enabled === false &&
-    (
-      (mediaRecorder && mediaRecorder.state === "recording") ||
-      (recordingState === "preview" && recordingBlob)
-    )
-  ) {
+if (
+  window.soleVoiceMessages?.getEffectiveVoiceMessagesEnabled?.() === false &&
+  (
+    (mediaRecorder && mediaRecorder.state === "recording") ||
+    (recordingState === "preview" && recordingBlob)
+  )
+) {
     discardRecording?.();
 
     showSoleNotice?.("Voice messages are currently disabled.", {

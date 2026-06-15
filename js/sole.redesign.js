@@ -117,7 +117,7 @@ hero.innerHTML = `
   data-dashboard-screen="solemate"
   aria-label="Open Solemate"
 >
-  <span>Explore</span>
+  <span>What you're really looking for</span>
   <i class="fa-solid fa-arrow-right"></i>
 </button>
   </div>
@@ -159,10 +159,10 @@ tiles.innerHTML = `
       </h4>
     </div>
 
-    <p>Discover what draws you in and sustains desire.</p>
+    <p>What draws you in and sustains desire.</p>
 
   <button class="soleModuleExplore" type="button" data-dashboard-screen="attraction" aria-label="Open Attraction">
-      <span>Explore</span>
+      <span>Discover</span>
       <i class="fa-solid fa-arrow-right"></i>
     </button>
 
@@ -182,7 +182,7 @@ tiles.innerHTML = `
       </h4>
     </div>
 
-    <p>Explore how you connect and communicate.</p>
+    <p>How you connect and communicate.</p>
 
    <button class="soleModuleExplore" type="button" data-dashboard-screen="chemistry" aria-label="Open Connection">
       <span>Explore</span>

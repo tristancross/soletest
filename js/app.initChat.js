@@ -88,6 +88,8 @@ await window.solePush?.registerForSolePush?.();
     animateFromZero: true
   });
 
+  window.soleVoiceMessages?.applyVoiceMessagesEnabledFromSettings?.();
+
   await refreshBlockedPairs();
 
   assignedPartner = await getAssignedPartner(me.id);

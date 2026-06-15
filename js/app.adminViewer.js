@@ -2348,11 +2348,11 @@ async function renderAdminSettingsWorkspace(content) {
     btn.textContent = nextEnabled ? "Enabling..." : "Disabling...";
 
     try {
-      await window.soleDayConfigs?.saveExperimentVoiceMessagesEnabled?.(sb, nextEnabled);
+await window.soleDayConfigs?.saveExperimentVoiceMessagesEnabled?.(sb, nextEnabled);
 
-      window.soleVoiceMessages?.applyVoiceMessagesEnabled?.(nextEnabled);
+window.soleVoiceMessages?.applyVoiceMessagesEnabledFromSettings?.();
 
-      await renderAdminSettingsWorkspace(content);
+await renderAdminSettingsWorkspace(content);
     } catch (error) {
       alert(error?.message || "Could not update voice memo setting.");
       btn.disabled = false;
@@ -2426,6 +2426,15 @@ ${renderAdminScoringControls(profile)}
   </button>
 
   <button
+  type="button"
+  class="btn btnGhost"
+  data-admin-toggle-user-voice="${escapeAttr(profile.id)}"
+  data-enabled="${profile.voice_messages_enabled === true ? "true" : "false"}"
+>
+  ${profile.voice_messages_enabled === true ? "Disable voice notes" : "Enable voice notes"}
+</button>
+
+  <button
     class="btn ${profile.launch_block_enabled ? "" : "btnGhost"}"
     data-admin-launch-gate="${escapeAttr(profile.id)}"
     data-enabled="${profile.launch_block_enabled ? "true" : "false"}"
@@ -2440,6 +2449,43 @@ ${renderAdminScoringControls(profile)}
       </div>
     </section>
   `;
+
+
+  content.querySelectorAll("[data-admin-toggle-user-voice]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const userId = btn.dataset.adminToggleUserVoice;
+    const currentlyEnabled = btn.dataset.enabled === "true";
+    const nextEnabled = !currentlyEnabled;
+
+    btn.disabled = true;
+    btn.textContent = nextEnabled ? "Enabling..." : "Disabling...";
+
+    try {
+      const { data, error } = await sb
+        .from("profiles")
+        .update({
+          voice_messages_enabled: nextEnabled
+        })
+        .eq("id", userId)
+        .select("*")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        adminProfiles = adminProfiles.map(profile =>
+          profile.id === userId ? { ...profile, ...data } : profile
+        );
+      }
+
+      renderAdminUsersWorkspace(content);
+    } catch (error) {
+      alert(error?.message || "Could not update user voice-note access.");
+      btn.disabled = false;
+      btn.textContent = currentlyEnabled ? "Disable voice notes" : "Enable voice notes";
+    }
+  });
+});
 
   adminProfiles.forEach(async profile => {
   try {

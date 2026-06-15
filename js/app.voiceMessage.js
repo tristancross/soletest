@@ -36,14 +36,26 @@ function applyVoiceMessagesEnabled(enabled) {
   updateSendButton?.();
 }
 
-function applyVoiceMessagesEnabledFromSettings() {
+function getEffectiveVoiceMessagesEnabled() {
   const settings = window.soleDayConfigs?.getExperimentSettingsFromCache?.();
-  applyVoiceMessagesEnabled(settings?.voice_messages_enabled !== false);
+
+  // Global switch = enable for everyone.
+  // Per-user switch = enable for selected users.
+  const globalEnabled = settings?.voice_messages_enabled === true;
+  const userEnabled = me?.voice_messages_enabled === true;
+  const isAdmin = me?.is_admin === true;
+
+  return globalEnabled || userEnabled || isAdmin;
+}
+
+function applyVoiceMessagesEnabledFromSettings() {
+  applyVoiceMessagesEnabled(getEffectiveVoiceMessagesEnabled());
 }
 
 window.soleVoiceMessages = {
   applyVoiceMessagesEnabled,
   applyVoiceMessagesEnabledFromSettings,
+  getEffectiveVoiceMessagesEnabled,
   resetVoiceComposer: resetRecordingState,
   discardRecording
 };

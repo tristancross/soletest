@@ -305,49 +305,62 @@ async function startUserPresence() {
 }
 
 async function subscribeInboxRealtime() {
-  if (inboxChannel) await sb.removeChannel(inboxChannel);
+  if (inboxChannel) {
+    await sb.removeChannel(inboxChannel);
+    inboxChannel = null;
+  }
+
+  async function handleInboxMessageChange(payload) {
+    const m = payload.new;
+
+    if (!m || m.recipient_id !== me.id) return;
+    if (shouldHideMessageForViewer(m, me.id)) return;
+
+    const activeThreadOpen =
+      !adminMode &&
+      them &&
+      (
+        (m.sender_id === them.id && m.recipient_id === me.id) ||
+        (m.sender_id === me.id && m.recipient_id === them.id)
+      );
+
+    if (
+      activeThreadOpen &&
+      m.sender_id === them.id &&
+      isCurrentChatActuallyVisible()
+    ) {
+      await markCurrentThreadReadIfVisible("incoming realtime message");
+    } else {
+      await renderSidebar(them?.id);
+      updateMobileMenuUnreadBadge?.();
+    }
+
+    await updateConversationStatus();
+    await updateSidebarDailyTasks();
+    await updateInsightNotificationDots();
+  }
 
   inboxChannel = sb
     .channel(`inbox:${me.id}`)
     .on(
       "postgres_changes",
-    {
-  event: "INSERT",
-  schema: "public",
-  table: "messages",
-  filter: `recipient_id=eq.${me.id}`
-},
-      async (payload) => {
-        const m = payload.new;
-
-        // only care about messages sent to me
-        if (m.recipient_id !== me.id) return;
-
-        const activeThreadOpen =
-          !adminMode &&
-          them &&
-          (
-            (m.sender_id === them.id && m.recipient_id === me.id) ||
-            (m.sender_id === me.id && m.recipient_id === them.id)
-          );
-
-// If I'm genuinely looking at this exact thread, mark it read.
-// Otherwise leave it unread and refresh the badges/title.
-if (
-  activeThreadOpen &&
-  m.sender_id === them.id &&
-  isCurrentChatActuallyVisible()
-) {
-  await markCurrentThreadReadIfVisible("incoming realtime message");
-} else {
-  await renderSidebar(them?.id);
-  updateMobileMenuUnreadBadge?.();
-}
-
-await updateConversationStatus();
-await updateSidebarDailyTasks();
-await updateInsightNotificationDots();
-      }
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `recipient_id=eq.${me.id}`
+      },
+      handleInboxMessageChange
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "messages",
+        filter: `recipient_id=eq.${me.id}`
+      },
+      handleInboxMessageChange
     )
     .subscribe();
 }
@@ -470,7 +483,42 @@ function promoteLiveDraftToMessage(m, alignAsSenderId){
   return true;
 }
 
+async function refreshCurrentThreadApprovalRequired(aId, bId) {
+  currentThreadApprovalRequired = false;
+
+  if (!sb || !me?.id || !aId || !bId) return false;
+
+  const otherId = me.id === aId
+    ? bId
+    : me.id === bId
+      ? aId
+      : null;
+
+  if (!otherId) return false;
+
+  const { data, error } = await sb.rpc("is_message_approval_required", {
+    p_other_user_id: otherId
+  });
+
+  if (error) {
+    console.warn("Could not load message approval setting for thread", error);
+    return false;
+  }
+
+  currentThreadApprovalRequired = data === true;
+
+  console.log("[approval mode]", {
+    me: me?.username || me?.id,
+    otherId,
+    currentThreadApprovalRequired
+  });
+
+  return currentThreadApprovalRequired;
+}
+
 async function subscribeRealtime(aId, bId, alignAsSenderId, options = {}) {
+await refreshCurrentThreadApprovalRequired(aId, bId);
+
   const adminObserver = !!options.adminObserver;
   const dmChannelName = `dm:${pairKey(aId, bId)}`;
 
@@ -521,13 +569,19 @@ async function subscribeRealtime(aId, bId, alignAsSenderId, options = {}) {
     return "User";
   }
 
-  function broadcastAllowed(payload = {}) {
-    if (adminObserver) {
-      return isBroadcastInThread(payload);
-    }
-
-    return isBroadcastIncomingForCurrentUser(payload);
+function broadcastAllowed(payload = {}) {
+  // Admin should still see live typing/drafts, even when approval mode is on.
+  if (adminObserver) {
+    return isBroadcastInThread(payload);
   }
+
+  // Normal chat partner should not see typing/drafts when approval mode is on.
+  if (currentThreadApprovalRequired) {
+    return false;
+  }
+
+  return isBroadcastIncomingForCurrentUser(payload);
+}
 
   async function settleAfterTypingStops() {
     clearTimeout(typingTimeout);
@@ -631,6 +685,38 @@ async function subscribeRealtime(aId, bId, alignAsSenderId, options = {}) {
         await updateInsightNotificationDots();
       }
     )
+    .on(
+  "postgres_changes",
+  {
+    event: "UPDATE",
+    schema: "public",
+    table: "messages"
+  },
+  async payload => {
+    const m = payload.new;
+
+    if (!isMessageInThread(m)) return;
+    if (shouldHideMessageForViewer(m, alignAsSenderId)) return;
+
+    // Sender already has their optimistic temp message.
+    // This prevents duplicate rendering when admin approves it.
+    if (m.sender_id === alignAsSenderId) return;
+
+    const existingRow = messagesEl.querySelector(
+      `[data-message-id="${CSS.escape(String(m.id || ""))}"]`
+    );
+
+    if (!existingRow) {
+      await renderMessage(m, alignAsSenderId, false);
+      scrollToBottomIfNear();
+    }
+
+    await renderSidebar(them?.id);
+    await updateConversationStatus();
+    await updateSidebarDailyTasks();
+    await updateInsightNotificationDots();
+  }
+)
 .on("broadcast", { event: "message_override_changed" }, async ({ payload }) => {
   if (!broadcastAllowed(payload)) return;
 
@@ -794,6 +880,12 @@ textInput.addEventListener("input", () => {
   updateSendButton();
 
   if (!channel || !them || adminMode) return;
+
+  // If this pair is in admin-approval mode, do not leak typing or draft previews.
+  // The sender can type normally, but the partner/admin live draft will not receive anything.
+  if (currentThreadApprovalRequired) {
+    return;
+  }
 
   const rawText = textInput.value;
   const trimmed = rawText.trim();

@@ -129,11 +129,10 @@ lastDraftTextSent = "";
 lastDraftSentAt = 0;
 
 
-  const { error } = await sb.from("messages").insert({
-    sender_id: me.id,
-    recipient_id: them.id,
-    text
-  });
+const { data: insertedMessage, error } = await sb.rpc("send_chat_message", {
+  p_recipient_id: them.id,
+  p_text: text
+});
 
 if (error) {
   alert(error.message);

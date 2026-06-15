@@ -1054,7 +1054,7 @@ function renderFirstTimeChatIntroTwo() {
   renderFirstTimeStage({
     eyebrow: "Simulated environment",
     title: "Before introducing you to a real match",
-    body: "We place you in a simulated environment with a chat partner for five days.",
+    body: "We place you in a simulated environment with a chat partner.",
     button: "Continue",
     onNext: renderFirstTimeChatIntroThree
   });

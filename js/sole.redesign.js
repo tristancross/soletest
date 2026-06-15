@@ -438,150 +438,35 @@ window.setTimeout(() => {
   });
 }
 
-async function handleRailClick(target){
-  const action = target.closest("[data-sole-rail]")?.dataset.soleRail;
-  if (!action) return;
+async function handleInboxMessageChange(payload) {
+  const m = payload.new;
 
-  const historyAction =
-    action === "calibration" || action === "chemistry"
-      ? "connection"
-      : action === "insights"
-        ? "solemate"
-        : action;
+  if (m.recipient_id !== me.id) return;
+  if (shouldHideMessageForViewer(m, me.id)) return;
 
-if (
-  ["home", "attraction", "connection", "solemate", "feedback"].includes(historyAction) &&
-  !window.soleAppHistoryIsApplying?.()
-) {
-    window.soleAppHistoryPush?.({
-      kind: "rail",
-      action: historyAction
-    });
-  }
+  const activeThreadOpen =
+    !adminMode &&
+    them &&
+    (
+      (m.sender_id === them.id && m.recipient_id === me.id) ||
+      (m.sender_id === me.id && m.recipient_id === them.id)
+    );
+
   if (
-    isDesktopLayout?.() &&
-    action !== "account" &&
-    qs(".app.soleRedesignApp")?.classList.contains("isChatFocus")
+    activeThreadOpen &&
+    m.sender_id === them.id &&
+    isCurrentChatActuallyVisible()
   ) {
-    setDesktopChatFocus(false);
-    localStorage.setItem("sole_desktop_chat_focus", "0");
+    await markCurrentThreadReadIfVisible("incoming realtime message");
+  } else {
+    await renderSidebar(them?.id);
+    updateMobileMenuUnreadBadge?.();
   }
 
-  setActiveRailItem(action);
-if (action === "home") {
-  const sidebarPaneEl = getSidebarPane();
-  const appEl = qs(".app.soleRedesignApp");
-
-  if (window.soleModuleTransitioning) return;
-  window.soleModuleTransitioning = true;
-
-  try {
-    clearModuleTransitionClasses(sidebarPaneEl);
-
-    sidebarPaneEl?.classList.add("isModuleHidden");
-
-    await wait(170);
-
-    setActiveRailItem("home");
-
-    if (appEl) {
-      delete appEl.dataset.activeModule;
-      delete appEl.dataset.transitionModule;
-    }
-
-    sidebarPaneEl?.classList.add("isModuleLoading");
-
-    window.sidebarDashboardUI?.renderMenu?.();
-
-    setTimeout(enhanceDashboard, 0);
-
-    await wait(80);
-
-    sidebarPaneEl?.classList.remove("isModuleLoading");
-    sidebarPaneEl?.classList.add("isModuleEntering");
-
-    requestAnimationFrame(() => {
-      sidebarPaneEl?.classList.remove("isModuleHidden");
-    });
-
-    window.setTimeout(() => {
-      sidebarPaneEl?.classList.remove("isModuleEntering");
-    }, 560);
-  } finally {
-    window.soleModuleTransitioning = false;
-  }
-
-  return;
+  await updateConversationStatus();
+  await updateSidebarDailyTasks();
+  await updateInsightNotificationDots();
 }
-
-    if (action === "connection" || action === "calibration") {
-      await openModule("chemistry");
-      return;
-    }
-
-    if (action === "attraction") {
-      await openModule("attraction");
-      return;
-    }
-
-if (action === "solemate" || action === "insights") {
-  await openModule("solemate");
-  return;
-}
-
-if (action === "feedback") {
-  const sidebarPaneEl = getSidebarPane();
-  const appEl = qs(".app.soleRedesignApp");
-
-  if (window.soleModuleTransitioning) return;
-  window.soleModuleTransitioning = true;
-
-  try {
-    clearModuleTransitionClasses(sidebarPaneEl);
-    sidebarPaneEl?.classList.add("isModuleHidden");
-
-    await wait(170);
-
-    setActiveRailItem("feedback");
-
-    if (appEl) {
-      appEl.dataset.activeModule = "feedback";
-      appEl.dataset.transitionModule = "feedback";
-    }
-
-    sidebarPaneEl?.classList.add("isModuleLoading");
-
-    renderBetaFeedbackScreen(sidebarPaneEl);
-
-    await wait(80);
-
-    sidebarPaneEl?.classList.remove("isModuleLoading");
-    sidebarPaneEl?.classList.add("isModuleEntering");
-
-    requestAnimationFrame(() => {
-      sidebarPaneEl?.classList.remove("isModuleHidden");
-    });
-
-    window.setTimeout(() => {
-      sidebarPaneEl?.classList.remove("isModuleEntering");
-    }, 560);
-  } finally {
-    window.soleModuleTransitioning = false;
-
-    if (appEl) {
-      delete appEl.dataset.transitionModule;
-    }
-  }
-
-  return;
-}
-
-if (action === "account") {
-  const account = qs("#soleRailAccount");
-  account?.classList.toggle("open");
-  return;
-}
-  }
 
     function isDesktopLayout(){
     return window.matchMedia("(min-width: 769px)").matches;

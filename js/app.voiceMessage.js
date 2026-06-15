@@ -457,17 +457,11 @@ async function uploadVoiceMessage(blob, duration) {
 
   const audioUrl = data.publicUrl;
 
-  const { data: insertedMessage, error } = await sb
-    .from("messages")
-    .insert({
-      sender_id: me.id,
-      recipient_id: them.id,
-      message_type: "voice",
-      audio_path: audioUrl,
-      audio_duration_seconds: duration
-    })
-    .select("*")
-    .single();
+const { data: insertedMessage, error } = await sb.rpc("send_voice_chat_message", {
+  p_recipient_id: them.id,
+  p_audio_path: audioUrl,
+  p_audio_duration_seconds: duration
+});
 
   if (error) {
     alert(error.message);

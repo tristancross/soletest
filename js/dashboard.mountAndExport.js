@@ -15,7 +15,8 @@ async function mountWelcomeDashboard({
     try {
 runtimeAssignments = await loadRuntimeAssignmentsFromSupabase(sb, me, {
   includeLocked: !!adminPreview,
-  includeQuestions: false
+  includeQuestions: true,
+  force: true
 });
     } catch (error) {
       console.warn("loadRuntimeAssignmentsFromSupabase failed", error);

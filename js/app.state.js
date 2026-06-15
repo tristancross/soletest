@@ -32,6 +32,7 @@ let liveDraftText = "";
 let partnerFacts = [];
 let partnerFactIndex = 0;
 let partnerFactTimer = null;
+let currentThreadApprovalRequired = false;
 
 let chatModelVersionNumber = 1.03;
 let chatModelMessagesSinceBump = 0;

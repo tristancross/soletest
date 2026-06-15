@@ -104,6 +104,121 @@ function ensureAdminPreviewExitButton() {
   document.body.appendChild(btn);
 }
 
+async function loadAdminMessageApprovalSetting(userAId, userBId) {
+  const { data, error } = await sb
+    .from("message_approval_pairs")
+    .select("is_enabled")
+    .eq("pair_key", pairKey(userAId, userBId))
+    .maybeSingle();
+
+  if (error) {
+    console.warn("Could not load approval setting", error);
+    return false;
+  }
+
+  return !!data?.is_enabled;
+}
+
+async function setAdminMessageApprovalSetting(userAId, userBId, isEnabled) {
+  const { error } = await sb
+    .from("message_approval_pairs")
+    .upsert(
+      {
+        pair_key: pairKey(userAId, userBId),
+        user_a: userAId < userBId ? userAId : userBId,
+        user_b: userAId < userBId ? userBId : userAId,
+        is_enabled: !!isEnabled,
+        updated_at: new Date().toISOString(),
+        updated_by: me.id
+      },
+      { onConflict: "pair_key" }
+    );
+
+  if (error) throw error;
+}
+
+async function refreshAdminPairTranscript(root, userAId, userBId) {
+  const transcriptEl = root.querySelector("#adminPairTranscript");
+  if (!transcriptEl) return;
+
+  const messages = await loadAdminPairTranscript(userAId, userBId);
+
+  transcriptEl.innerHTML = messages.length
+    ? messages
+        .map(message => renderAdminTranscriptMessage(message, userAId, userBId))
+        .join("")
+    : `<div class="adminResponsesEmpty">No messages yet.</div>`;
+
+  bindAdminTranscriptModerationActions(root, userAId, userBId);
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+async function adminApproveMessage(messageId, root, userAId, userBId) {
+  messageId = String(messageId || "");
+
+  if (!messageId || messageId === "[object HTMLDocument]") {
+    console.warn("[admin approval] invalid approve id", {
+      messageId,
+      root,
+      userAId,
+      userBId
+    });
+
+    return;
+  }
+
+  const { error } = await sb
+    .from("messages")
+    .update({
+      visible_to_user_id: null,
+      approval_status: "approved",
+      approved_at: new Date().toISOString(),
+      approved_by: me.id
+    })
+    .eq("id", messageId);
+
+  if (error) throw error;
+
+  await refreshAdminPairTranscript(root, userAId, userBId);
+}
+
+async function adminRejectMessage(messageId, root, userAId, userBId) {
+  messageId = String(messageId || "");
+
+  if (!messageId || messageId === "[object HTMLDocument]") {
+    console.warn("[admin approval] invalid reject id", {
+      messageId,
+      root,
+      userAId,
+      userBId
+    });
+
+    return;
+  }
+
+  const { data: message, error: loadError } = await sb
+    .from("messages")
+    .select("sender_id")
+    .eq("id", messageId)
+    .single();
+
+  if (loadError) throw loadError;
+
+  const { error } = await sb
+    .from("messages")
+    .update({
+      visible_to_user_id: message.sender_id,
+      approval_status: "rejected",
+      approved_at: null,
+      approved_by: me.id
+    })
+    .eq("id", messageId);
+
+  if (error) throw error;
+
+  await refreshAdminPairTranscript(root, userAId, userBId);
+}
+
 async function broadcastMessageOverrideChanged(userAId, userBId, messageId = "") {
   const moderationChannel = sb.channel(`dm:${pairKey(userAId, userBId)}`, {
     config: {
@@ -485,8 +600,36 @@ await refreshAdminPairTranscript(userAId, userBId);
 await broadcastMessageOverrideChanged(userAId, userBId, messageId);
 }
 
-async function refreshAdminPairTranscript(userAId, userBId) {
-  const transcriptEl = document.getElementById("adminPairTranscript");
+async function refreshAdminPairTranscript(arg1, arg2, arg3) {
+  const hasRootArg = !!arg3;
+
+  const root = hasRootArg && arg1?.querySelector
+    ? arg1
+    : document;
+
+  const userAId = hasRootArg ? arg2 : arg1;
+  const userBId = hasRootArg ? arg3 : arg2;
+
+  const isUuid = value =>
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+  if (!isUuid(userAId) || !isUuid(userBId)) {
+    console.warn("[admin transcript] refusing refresh with invalid user ids", {
+      userAId,
+      userBId,
+      arg1,
+      arg2,
+      arg3
+    });
+
+    return;
+  }
+
+  const transcriptEl =
+    root.querySelector?.("#adminPairTranscript") ||
+    document.getElementById("adminPairTranscript");
+
   if (!transcriptEl) return;
 
   const wasNearBottom =
@@ -495,10 +638,12 @@ async function refreshAdminPairTranscript(userAId, userBId) {
   const messages = await loadAdminPairTranscript(userAId, userBId);
 
   transcriptEl.innerHTML = messages.length
-    ? messages.map(message => renderAdminTranscriptMessage(message, userAId, userBId)).join("")
+    ? messages
+        .map(message => renderAdminTranscriptMessage(message, userAId, userBId))
+        .join("")
     : `<div class="adminResponsesEmpty">No messages yet.</div>`;
 
-  bindAdminTranscriptModerationActions(document, userAId, userBId);
+  bindAdminTranscriptModerationActions(root, userAId, userBId);
 
   if (wasNearBottom) {
     transcriptEl.scrollTop = transcriptEl.scrollHeight;
@@ -3130,6 +3275,25 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
 
   const recipientName = getAdminProfileName(message.recipient_id);
 
+  const approvalStatus = message.approval_status || "approved";
+
+  const pendingApproval =
+    !message.is_system &&
+    (
+      approvalStatus === "pending" ||
+      message.visible_to_user_id === message.sender_id
+    );
+
+  const rejectedApproval =
+    !message.is_system &&
+    approvalStatus === "rejected";
+
+  const approvalBadge = pendingApproval
+    ? `<em>Pending approval · sender only</em>`
+    : rejectedApproval
+      ? `<em>Rejected · sender only</em>`
+      : "";
+
   const visibleToName =
     message.visible_to_user_id
       ? getAdminProfileName(message.visible_to_user_id)
@@ -3147,6 +3311,24 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
 
   const messageId = escapeAttr(message.id || "");
   const recipientId = escapeAttr(message.recipient_id || "");
+
+  const approvalActions = pendingApproval || rejectedApproval
+    ? `
+      <button
+        type="button"
+        data-admin-approve-message="${messageId}"
+      >
+        Approve for recipient
+      </button>
+
+      <button
+        type="button"
+        data-admin-reject-message="${messageId}"
+      >
+        Reject
+      </button>
+    `
+    : "";
 
   const globalActions = `
     <button
@@ -3241,6 +3423,8 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
             ? `<em>${escapeHtml(injectedLabel)}</em>`
             : ""
         }
+
+        ${approvalBadge}
       </div>
 
       <div class="adminTranscriptLineBody">
@@ -3250,6 +3434,7 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
       ${renderAdminOverrideSummary(message)}
 
       <div class="adminTranscriptActions">
+        ${approvalActions}
         ${globalActions}
         ${recipientActions}
       </div>
@@ -3282,6 +3467,54 @@ async function loadAdminPairTranscript(userAId, userBId) {
 }
 
 function bindAdminTranscriptModerationActions(root = document, userAId, userBId) {
+root.querySelectorAll("[data-admin-approve-message]:not([data-bound])").forEach(btn => {
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", async event => {
+    const button = event.currentTarget;
+    const messageId = button.getAttribute("data-admin-approve-message");
+
+    console.log("[admin approval] approve", { messageId, userAId, userBId });
+
+    button.disabled = true;
+
+    try {
+      await adminApproveMessage(messageId, root, userAId, userBId);
+    } catch (error) {
+      console.error("Could not approve message", error);
+      alert(error?.message || "Could not approve message.");
+      button.disabled = false;
+    }
+  });
+});
+
+root.querySelectorAll("[data-admin-reject-message]:not([data-bound])").forEach(btn => {
+  btn.dataset.bound = "true";
+
+  btn.addEventListener("click", async event => {
+    const button = event.currentTarget;
+    const messageId = button.getAttribute("data-admin-reject-message");
+
+    console.log("[admin approval] reject", { messageId, userAId, userBId });
+
+    const confirmed = confirm(
+      "Reject this message? The sender will still see it, but the recipient will not."
+    );
+
+    if (!confirmed) return;
+
+    button.disabled = true;
+
+    try {
+      await adminRejectMessage(messageId, root, userAId, userBId);
+    } catch (error) {
+      console.error("Could not reject message", error);
+      alert(error?.message || "Could not reject message.");
+      button.disabled = false;
+    }
+  });
+});
+
   root.querySelectorAll("[data-admin-edit-message]:not([data-bound])").forEach(btn => {
     btn.dataset.bound = "true";
 
@@ -3291,69 +3524,92 @@ function bindAdminTranscriptModerationActions(root = document, userAId, userBId)
       const currentText =
         currentLine?.querySelector(".adminTranscriptLineBody")?.innerText || "";
 
-    const isSystem = !!btn.closest(".adminTranscriptLine")?.classList.contains("isSystem");
+      const isSystem = !!btn.closest(".adminTranscriptLine")?.classList.contains("isSystem");
 
-const nextText = prompt(
-  isSystem ? "Edit system note:" : "Edit message text for everyone:",
-  currentText
-);
+      const nextText = prompt(
+        isSystem ? "Edit system note:" : "Edit message text for everyone:",
+        currentText
+      );
+
       if (nextText === null) return;
 
-btn.disabled = true;
-await adminEditMessageForEveryone(messageId, nextText, userAId, userBId);
+      btn.disabled = true;
+
+      try {
+        await adminEditMessageForEveryone(messageId, nextText, userAId, userBId);
+      } catch (error) {
+        console.error("Could not edit message", error);
+        alert(error?.message || "Could not edit message.");
+        btn.disabled = false;
+      }
     });
   });
 
-root.querySelectorAll("[data-admin-toggle-hide-everyone]:not([data-bound])").forEach(btn => {
-  btn.dataset.bound = "true";
+  root.querySelectorAll("[data-admin-toggle-hide-everyone]:not([data-bound])").forEach(btn => {
+    btn.dataset.bound = "true";
 
-  btn.addEventListener("click", async () => {
-    const messageId = btn.dataset.adminToggleHideEveryone;
-    const currentlyHidden = btn.dataset.adminCurrentlyHidden === "true";
+    btn.addEventListener("click", async () => {
+      const messageId = btn.dataset.adminToggleHideEveryone;
+      const currentlyHidden = btn.dataset.adminCurrentlyHidden === "true";
 
-    const confirmed = confirm(
-      currentlyHidden
-        ? "Unhide this message for everyone?"
-        : "Hide this message for everyone?"
-    );
+      const confirmed = confirm(
+        currentlyHidden
+          ? "Unhide this message for everyone?"
+          : "Hide this message for everyone?"
+      );
 
-    if (!confirmed) return;
+      if (!confirmed) return;
 
-    btn.disabled = true;
-    await adminToggleHideMessageForEveryone(
-      messageId,
-      !currentlyHidden,
-      userAId,
-      userBId
-    );
+      btn.disabled = true;
+
+      try {
+        await adminToggleHideMessageForEveryone(
+          messageId,
+          !currentlyHidden,
+          userAId,
+          userBId
+        );
+      } catch (error) {
+        console.error("Could not update message visibility", error);
+        alert(error?.message || "Could not update message visibility.");
+        btn.disabled = false;
+      }
+    });
   });
-});
 
-root.querySelectorAll("[data-admin-toggle-hide-recipient]:not([data-bound])").forEach(btn => {
-  btn.dataset.bound = "true";
+  root.querySelectorAll("[data-admin-toggle-hide-recipient]:not([data-bound])").forEach(btn => {
+    btn.dataset.bound = "true";
 
-  btn.addEventListener("click", async () => {
-    const messageId = btn.dataset.adminToggleHideRecipient;
-    const recipientId = btn.dataset.adminRecipientId;
-    const currentlyHidden = btn.dataset.adminCurrentlyHidden === "true";
+    btn.addEventListener("click", async () => {
+      const messageId = btn.dataset.adminToggleHideRecipient;
+      const recipientId = btn.dataset.adminRecipientId;
+      const currentlyHidden = btn.dataset.adminCurrentlyHidden === "true";
 
-    const confirmed = confirm(
-      currentlyHidden
-        ? `Unhide this message for ${getAdminProfileName(recipientId)}?`
-        : `Hide this message for ${getAdminProfileName(recipientId)} only?`
-    );
+      const confirmed = confirm(
+        currentlyHidden
+          ? `Unhide this message for ${getAdminProfileName(recipientId)}?`
+          : `Hide this message for ${getAdminProfileName(recipientId)} only?`
+      );
 
-    if (!confirmed) return;
+      if (!confirmed) return;
 
-    await adminToggleHideMessageForRecipient(
-      messageId,
-      recipientId,
-      !currentlyHidden,
-      userAId,
-      userBId
-    );
+      btn.disabled = true;
+
+      try {
+        await adminToggleHideMessageForRecipient(
+          messageId,
+          recipientId,
+          !currentlyHidden,
+          userAId,
+          userBId
+        );
+      } catch (error) {
+        console.error("Could not update recipient visibility", error);
+        alert(error?.message || "Could not update recipient visibility.");
+        btn.disabled = false;
+      }
+    });
   });
-});
 
   root.querySelectorAll("[data-admin-recipient-edit-message]:not([data-bound])").forEach(btn => {
     btn.dataset.bound = "true";
@@ -3373,38 +3629,60 @@ root.querySelectorAll("[data-admin-toggle-hide-recipient]:not([data-bound])").fo
 
       if (nextText === null) return;
 
-      await adminEditMessageForRecipient(messageId, recipientId, nextText, userAId, userBId);
+      btn.disabled = true;
+
+      try {
+        await adminEditMessageForRecipient(messageId, recipientId, nextText, userAId, userBId);
+      } catch (error) {
+        console.error("Could not edit recipient version", error);
+        alert(error?.message || "Could not edit recipient version.");
+        btn.disabled = false;
+      }
     });
   });
 
   root.querySelectorAll("[data-admin-clear-edit-everyone]:not([data-bound])").forEach(btn => {
-  btn.dataset.bound = "true";
+    btn.dataset.bound = "true";
 
-  btn.addEventListener("click", async () => {
-    const messageId = btn.dataset.adminClearEditEveryone;
+    btn.addEventListener("click", async () => {
+      const messageId = btn.dataset.adminClearEditEveryone;
 
-    const confirmed = confirm("Clear the edited version for everyone?");
-    if (!confirmed) return;
+      const confirmed = confirm("Clear the edited version for everyone?");
+      if (!confirmed) return;
 
-    btn.disabled = true;
-    await adminClearEditForEveryone(messageId, userAId, userBId);
+      btn.disabled = true;
+
+      try {
+        await adminClearEditForEveryone(messageId, userAId, userBId);
+      } catch (error) {
+        console.error("Could not clear edit", error);
+        alert(error?.message || "Could not clear edit.");
+        btn.disabled = false;
+      }
+    });
   });
-});
 
-root.querySelectorAll("[data-admin-clear-edit-recipient]:not([data-bound])").forEach(btn => {
-  btn.dataset.bound = "true";
+  root.querySelectorAll("[data-admin-clear-edit-recipient]:not([data-bound])").forEach(btn => {
+    btn.dataset.bound = "true";
 
-  btn.addEventListener("click", async () => {
-    const messageId = btn.dataset.adminClearEditRecipient;
-    const recipientId = btn.dataset.adminRecipientId;
+    btn.addEventListener("click", async () => {
+      const messageId = btn.dataset.adminClearEditRecipient;
+      const recipientId = btn.dataset.adminRecipientId;
 
-    const confirmed = confirm(`Clear the edited version for ${getAdminProfileName(recipientId)}?`);
-    if (!confirmed) return;
+      const confirmed = confirm(`Clear the edited version for ${getAdminProfileName(recipientId)}?`);
+      if (!confirmed) return;
 
-    btn.disabled = true;
-    await adminClearEditForRecipient(messageId, recipientId, userAId, userBId);
+      btn.disabled = true;
+
+      try {
+        await adminClearEditForRecipient(messageId, recipientId, userAId, userBId);
+      } catch (error) {
+        console.error("Could not clear recipient edit", error);
+        alert(error?.message || "Could not clear recipient edit.");
+        btn.disabled = false;
+      }
+    });
   });
-});
 }
 
 function renderAdminTypingDraft(payload, userAId, userBId) {
@@ -3545,6 +3823,7 @@ async function renderAdminPairChatWorkspace(content, userAId, userBId, options =
   const backMode = options.backMode || "pairings";
   const userAName = getAdminProfileName(userAId);
   const userBName = getAdminProfileName(userBId);
+  const approvalRequired = await loadAdminMessageApprovalSetting(userAId, userBId);
 
   content.innerHTML = `
     <section class="adminPanel adminPairTranscriptPanel">
@@ -3567,7 +3846,7 @@ async function renderAdminPairChatWorkspace(content, userAId, userBId, options =
         <span>${escapeHtml(userBName)}</span>
       </div>
 
-      <div class="adminPairPresenceStrip" id="adminPairPresenceStrip">
+<div class="adminPairPresenceStrip" id="adminPairPresenceStrip">
   <span class="adminPresencePill isOffline" data-admin-presence-user="${escapeAttr(userAId)}">
     <i></i>
     ${escapeHtml(userAName)}
@@ -3579,6 +3858,21 @@ async function renderAdminPairChatWorkspace(content, userAId, userBId, options =
     ${escapeHtml(userBName)}
     <strong>Offline</strong>
   </span>
+</div>
+
+<div class="adminApprovalControl">
+  <label>
+    <input
+      type="checkbox"
+      id="adminApprovalToggle"
+      ${approvalRequired ? "checked" : ""}
+    />
+    Require admin approval before messages are delivered
+  </label>
+
+  <p>
+    Users still see their own messages immediately. Their partner only sees them after approval.
+  </p>
 </div>
 
 <div id="adminPairTranscript" class="adminPairTranscript">
@@ -3648,6 +3942,31 @@ content
       renderAdminPairingsWorkspace(content);
     }
   });
+
+content.querySelector("#adminApprovalToggle")?.addEventListener("change", async event => {
+  const toggle = event.currentTarget;
+  const enabled = toggle.checked;
+
+  toggle.disabled = true;
+
+  try {
+    await setAdminMessageApprovalSetting(userAId, userBId, enabled);
+    if (
+  typeof refreshCurrentThreadApprovalRequired === "function" &&
+  me?.id &&
+  them?.id &&
+  pairKey(me.id, them.id) === pairKey(userAId, userBId)
+) {
+  await refreshCurrentThreadApprovalRequired(me.id, them.id);
+}
+  } catch (error) {
+    console.error("Could not update approval setting", error);
+    alert(error?.message || "Could not update approval setting.");
+    toggle.checked = !enabled;
+  } finally {
+    toggle.disabled = false;
+  }
+});
 
 content.querySelector("#adminSystemComposer")?.addEventListener("submit", async event => {
   event.preventDefault();

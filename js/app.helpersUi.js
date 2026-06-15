@@ -1113,12 +1113,13 @@ async function typeOnText(el, text, speed = 18) {
 
 async function markThreadAsRead(myId, otherId) {
 
-  const { error } = await sb
-    .from("messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("sender_id", otherId)
-    .eq("recipient_id", myId)
-    .is("read_at", null);
+const { error } = await sb
+  .from("messages")
+  .update({ read_at: new Date().toISOString() })
+  .eq("sender_id", otherId)
+  .eq("recipient_id", myId)
+  .is("read_at", null)
+  .or(`visible_to_user_id.is.null,visible_to_user_id.eq.${myId}`);
 
   if (error) console.warn("markThreadAsRead failed", error);
 
@@ -1126,11 +1127,12 @@ async function markThreadAsRead(myId, otherId) {
 
 async function getUnreadCounts(){
 
-  const { data, error } = await sb
-    .from("messages")
-    .select("sender_id")
-    .eq("recipient_id", me.id)
-    .is("read_at", null);
+const { data, error } = await sb
+  .from("messages")
+  .select("sender_id")
+  .eq("recipient_id", me.id)
+  .is("read_at", null)
+  .or(`visible_to_user_id.is.null,visible_to_user_id.eq.${me.id}`);
 
   if (error){
     console.warn(error);

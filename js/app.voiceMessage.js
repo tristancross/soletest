@@ -12,24 +12,27 @@ let voiceSendInFlight = false;
 
 let currentVoiceMimeType = "";
 
+function canCurrentBrowserPlayMimeType(mimeType) {
+  const audio = document.createElement("audio");
+  const baseMimeType = String(mimeType).split(";")[0].trim();
+
+  return Boolean(
+    audio.canPlayType(mimeType) ||
+    audio.canPlayType(baseMimeType)
+  );
+}
+
 function pickVoiceMimeType() {
   if (!window.MediaRecorder) return "";
 
   const preferredTypes = [
-    // Best chance of iPhone/Safari playback
     "audio/mp4;codecs=mp4a.40.2",
-    "audio/mp4",
-
-    // Android/Chrome/Firefox fallback
-    "audio/webm;codecs=opus",
-    "audio/webm",
-
-    // Other fallback
-    "audio/ogg;codecs=opus"
+    "audio/mp4"
   ];
 
   return preferredTypes.find(type =>
-    MediaRecorder.isTypeSupported?.(type)
+    MediaRecorder.isTypeSupported?.(type) &&
+    canCurrentBrowserPlayMimeType(type)
   ) || "";
 }
 

@@ -3361,17 +3361,43 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
   const isVoiceMessage = message.message_type === "voice";
   const adminAudioSrc = message.audio_path || message.audio_url || "";
 
-  const adminMessageBody = isVoiceMessage && adminAudioSrc
-    ? `
-      <div class="adminVoiceMessage">
-        <audio
-          controls
-          preload="metadata"
-          src="${escapeAttr(adminAudioSrc)}"
-        ></audio>
-        <span>${escapeHtml(formatDuration(Number(message.audio_duration_seconds) || 0))}</span>
-      </div>
-    `
+  const isVoiceMessage =
+    message.message_type === "voice" ||
+    !!message.audio_url ||
+    !!message.audio_path ||
+    !!message.audio_duration_seconds;
+
+  const rawAdminAudioSrc =
+    message.audio_url ||
+    message.audio_path ||
+    message.voice_url ||
+    message.voice_path ||
+    "";
+
+  const adminAudioSrc =
+    rawAdminAudioSrc && /^https?:\/\//i.test(rawAdminAudioSrc)
+      ? rawAdminAudioSrc
+      : rawAdminAudioSrc
+        ? sb.storage.from("voice-notes").getPublicUrl(rawAdminAudioSrc).data.publicUrl
+        : "";
+
+  const adminMessageBody = isVoiceMessage
+    ? adminAudioSrc
+      ? `
+        <div class="adminVoiceMessage">
+          <audio
+            controls
+            preload="metadata"
+            src="${escapeAttr(adminAudioSrc)}"
+          ></audio>
+          <span>${escapeHtml(formatDuration(Number(message.audio_duration_seconds) || 0))}</span>
+        </div>
+      `
+      : `
+        <div class="adminVoiceMessage adminVoiceMessageMissing">
+          <span>Voice note unavailable</span>
+        </div>
+      `
     : formatMessageText(message.text || "");
 
   const approvalActions = pendingApproval || rejectedApproval

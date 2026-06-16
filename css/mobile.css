@@ -2194,27 +2194,11 @@ font-size: 14px !important;
       display: none;
     }
 }
+/* Android WebView: prevent automatic text inflation, but do not upscale the UI */
+html.isCapacitorApp,
 html.isCapacitorApp body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-}
-
-/* Gentle first-pass correction for Android WebView */
-html.isCapacitorApp .soleDashboardGreeting h2 {
-  font-size: clamp(36px, 8.4vw, 54px);
-}
-
-html.isCapacitorApp .soleDailyHero h3 {
-  font-size: clamp(54px, 13vw, 86px);
-}
-
-html.isCapacitorApp .soleDailyHero p,
-html.isCapacitorApp .soleModuleTile p {
-  font-size: clamp(24px, 5.4vw, 38px);
-}
-
-html.isCapacitorApp .soleModuleTile h4 {
-  font-size: clamp(34px, 8vw, 52px);
 }
 
 @media (max-height: 950px){

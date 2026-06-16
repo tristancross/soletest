@@ -22,17 +22,38 @@ function canCurrentBrowserPlayMimeType(mimeType) {
   );
 }
 
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (
+      navigator.platform === "MacIntel" &&
+      navigator.maxTouchPoints > 1
+    );
+}
+
 function pickVoiceMimeType() {
   if (!window.MediaRecorder) return "";
 
-  const preferredTypes = [
-    "audio/mp4;codecs=mp4a.40.2",
-    "audio/mp4"
-  ];
+  const isIOS = isIOSDevice();
+
+  const preferredTypes = isIOS
+    ? [
+        // iOS must not fall back to WebM
+        "audio/mp4;codecs=mp4a.40.2",
+        "audio/mp4"
+      ]
+    : [
+        // Prefer iPhone-playable where available
+        "audio/mp4;codecs=mp4a.40.2",
+        "audio/mp4",
+
+        // Non-iOS fallback
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus"
+      ];
 
   return preferredTypes.find(type =>
-    MediaRecorder.isTypeSupported?.(type) &&
-    canCurrentBrowserPlayMimeType(type)
+    MediaRecorder.isTypeSupported?.(type)
   ) || "";
 }
 
@@ -329,13 +350,45 @@ setTimeout(() => {
   // start fresh recording
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
- currentVoiceMimeType = pickVoiceMimeType();
+currentVoiceMimeType = pickVoiceMimeType();
 
-mediaRecorder = currentVoiceMimeType
-  ? new MediaRecorder(stream, { mimeType: currentVoiceMimeType })
-  : new MediaRecorder(stream);
+if (!currentVoiceMimeType) {
+  stream.getTracks().forEach(track => track.stop());
 
-currentVoiceMimeType = mediaRecorder.mimeType || currentVoiceMimeType || "audio/webm";
+  showSoleNotice?.(
+    "Voice notes are not supported on this browser yet.",
+    {
+      title: "Voice unavailable",
+      type: "warning"
+    }
+  );
+
+  updateSendButton();
+  return;
+}
+
+mediaRecorder = new MediaRecorder(stream, {
+  mimeType: currentVoiceMimeType
+});
+
+currentVoiceMimeType = mediaRecorder.mimeType || currentVoiceMimeType;
+
+if (isIOSDevice() && /webm|ogg/i.test(currentVoiceMimeType)) {
+  stream.getTracks().forEach(track => track.stop());
+  mediaRecorder = null;
+  currentVoiceMimeType = "";
+
+  showSoleNotice?.(
+    "Voice notes are not supported on this browser yet.",
+    {
+      title: "Voice unavailable",
+      type: "warning"
+    }
+  );
+
+  updateSendButton();
+  return;
+}
   audioChunks = [];
   recordingStartTime = null;
   pausedElapsedMs = 0;

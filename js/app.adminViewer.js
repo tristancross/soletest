@@ -3358,6 +3358,22 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
   const messageId = escapeAttr(message.id || "");
   const recipientId = escapeAttr(message.recipient_id || "");
 
+  const isVoiceMessage = message.message_type === "voice";
+  const adminAudioSrc = message.audio_path || message.audio_url || "";
+
+  const adminMessageBody = isVoiceMessage && adminAudioSrc
+    ? `
+      <div class="adminVoiceMessage">
+        <audio
+          controls
+          preload="metadata"
+          src="${escapeAttr(adminAudioSrc)}"
+        ></audio>
+        <span>${escapeHtml(formatDuration(Number(message.audio_duration_seconds) || 0))}</span>
+      </div>
+    `
+    : formatMessageText(message.text || "");
+
   const approvalActions = pendingApproval || rejectedApproval
     ? `
       <button
@@ -3474,7 +3490,7 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
       </div>
 
       <div class="adminTranscriptLineBody">
-        ${formatMessageText(message.text || "")}
+        ${adminMessageBody}
       </div>
 
       ${renderAdminOverrideSummary(message)}

@@ -312,7 +312,7 @@ audio.addEventListener("seeked", updateVoiceUI);
 audio.load();
 updateVoiceUI();
 
-  playBtn.addEventListener("click", () => {
+  playBtn.addEventListener("click", async () => {
     document.querySelectorAll(".voiceBubble audio").forEach(otherAudio => {
       if (otherAudio !== audio) otherAudio.pause();
     });
@@ -323,11 +323,26 @@ updateVoiceUI();
       }
     });
 
-    if (audio.paused) {
-      audio.play();
-      playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-    } else {
-      audio.pause();
+    try {
+      if (audio.paused) {
+        await audio.play();
+        playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      } else {
+        audio.pause();
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+      }
+    } catch (error) {
+      console.warn("Voice note playback failed", {
+        error,
+        src: audio.currentSrc || audio.src,
+        type: audio.getAttribute("type")
+      });
+
+      showSoleNotice?.("This voice note could not be played on this device.", {
+        title: "Playback unavailable",
+        type: "warning"
+      });
+
       playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
     }
 

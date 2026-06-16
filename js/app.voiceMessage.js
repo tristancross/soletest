@@ -10,6 +10,49 @@ const deleteRecordBtn = document.getElementById("deleteRecordBtn");
 let voiceMessagesEnabled = true;
 let voiceSendInFlight = false;
 
+let currentVoiceMimeType = "";
+
+function pickVoiceMimeType() {
+  if (!window.MediaRecorder) return "";
+
+  const preferredTypes = [
+    // Best chance of iPhone/Safari playback
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+
+    // Android/Chrome/Firefox fallback
+    "audio/webm;codecs=opus",
+    "audio/webm",
+
+    // Other fallback
+    "audio/ogg;codecs=opus"
+  ];
+
+  return preferredTypes.find(type =>
+    MediaRecorder.isTypeSupported?.(type)
+  ) || "";
+}
+
+function getVoiceExtensionFromMimeType(mimeType = "") {
+  const clean = String(mimeType).split(";")[0].trim().toLowerCase();
+
+  if (clean === "audio/mp4") return "m4a";
+  if (clean === "audio/aac") return "aac";
+  if (clean === "audio/ogg") return "ogg";
+  if (clean === "audio/webm") return "webm";
+
+  return "webm";
+}
+
+function buildVoiceBlobFromChunks() {
+  const mimeType =
+    currentVoiceMimeType ||
+    mediaRecorder?.mimeType ||
+    "audio/webm";
+
+  return new Blob(audioChunks, { type: mimeType });
+}
+
 function syncVoiceComposerAvailability() {
   const enabled = voiceMessagesEnabled !== false;
 
@@ -116,8 +159,9 @@ function resetRecordingState() {
   textInput.hidden = false;
 syncVoiceComposerAvailability();
 
-  micBtn.classList.remove("recording");
-  micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+micBtn.classList.remove("recording");
+micBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
+micBtn.setAttribute("aria-label", "Continue recording");
 
   recordingTimerEl.hidden = true;
   recordingTimerEl.textContent = "0:00";
@@ -173,7 +217,8 @@ function showPreviewState() {
   micBtn.hidden = false;
 
   micBtn.classList.remove("recording");
-  micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+micBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
+micBtn.setAttribute("aria-label", "Continue recording");
 
   recordingTimerEl.hidden = false;
   recordingTimerEl.textContent = formatDuration(recordingDurationSeconds);
@@ -201,7 +246,7 @@ function showPreviewState() {
 function buildVoicePreviewFromChunks() {
   if (!audioChunks.length) return;
 
-  recordingBlob = new Blob(audioChunks, { type: "audio/webm" });
+recordingBlob = buildVoiceBlobFromChunks();
   recordingDurationSeconds = getCurrentRecordingDurationSeconds();
 
   if (previewAudioUrl) URL.revokeObjectURL(previewAudioUrl);
@@ -263,8 +308,9 @@ micBtn.onclick = async () => {
     recordingState = "preview";
     updateRecordingVisualState();
 
-    micBtn.classList.remove("recording");
-    micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+micBtn.classList.remove("recording");
+micBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
+micBtn.setAttribute("aria-label", "Continue recording");
 
     stopRecordingTimer();
 
@@ -280,7 +326,13 @@ setTimeout(() => {
   // start fresh recording
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  mediaRecorder = new MediaRecorder(stream);
+ currentVoiceMimeType = pickVoiceMimeType();
+
+mediaRecorder = currentVoiceMimeType
+  ? new MediaRecorder(stream, { mimeType: currentVoiceMimeType })
+  : new MediaRecorder(stream);
+
+currentVoiceMimeType = mediaRecorder.mimeType || currentVoiceMimeType || "audio/webm";
   audioChunks = [];
   recordingStartTime = null;
   pausedElapsedMs = 0;
@@ -324,7 +376,7 @@ setTimeout(() => {
       return;
     }
 
-    recordingBlob = new Blob(audioChunks, { type: "audio/webm" });
+   recordingBlob = buildVoiceBlobFromChunks();
     recordingDurationSeconds = Math.max(1, duration);
 
     if (previewAudioUrl) URL.revokeObjectURL(previewAudioUrl);
@@ -451,12 +503,18 @@ function discardRecording() {
 async function uploadVoiceMessage(blob, duration) {
   if (!me || !them) return null;
 
-  const fileName = `${crypto.randomUUID()}.webm`;
-  const path = `${me.id}/${fileName}`;
+const mimeType = blob.type || currentVoiceMimeType || "audio/webm";
+const ext = getVoiceExtensionFromMimeType(mimeType);
 
-  const { error: uploadError } = await sb.storage
-    .from("voice-notes")
-    .upload(path, blob);
+const fileName = `${crypto.randomUUID()}.${ext}`;
+const path = `${me.id}/${fileName}`;
+
+const { error: uploadError } = await sb.storage
+  .from("voice-notes")
+  .upload(path, blob, {
+    contentType: mimeType,
+    upsert: false
+  });
 
   if (uploadError) {
     alert(uploadError.message);

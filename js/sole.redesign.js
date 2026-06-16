@@ -117,7 +117,7 @@ hero.innerHTML = `
   data-dashboard-screen="solemate"
   aria-label="Open Solemate"
 >
-  <span>What you're really looking for</span>
+  <span>Explore</span>
   <i class="fa-solid fa-arrow-right"></i>
 </button>
   </div>

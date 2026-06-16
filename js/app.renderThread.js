@@ -309,6 +309,70 @@ audio.addEventListener("canplay", updateVoiceUI);
 audio.addEventListener("timeupdate", updateVoiceUI);
 audio.addEventListener("seeked", updateVoiceUI);
 
+function seekVoiceFromPointer(event) {
+  const duration =
+    Number.isFinite(audio.duration) && audio.duration > 0
+      ? audio.duration
+      : resolvedDuration;
+
+  if (!duration || duration <= 0) return;
+
+  const rect = progressBar.getBoundingClientRect();
+  const clientX = event.clientX ?? event.touches?.[0]?.clientX;
+
+  if (typeof clientX !== "number") return;
+
+  const ratio = Math.min(
+    1,
+    Math.max(0, (clientX - rect.left) / rect.width)
+  );
+
+  audio.currentTime = ratio * duration;
+  updateVoiceUI();
+}
+
+let isVoiceSeeking = false;
+
+progressBar.addEventListener("pointerdown", event => {
+  event.preventDefault();
+
+  isVoiceSeeking = true;
+  progressBar.classList.add("isSeeking");
+
+  try {
+    progressBar.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // harmless on browsers that don't support pointer capture
+  }
+
+  seekVoiceFromPointer(event);
+});
+
+progressBar.addEventListener("pointermove", event => {
+  if (!isVoiceSeeking) return;
+  event.preventDefault();
+  seekVoiceFromPointer(event);
+});
+
+function stopVoiceSeeking(event) {
+  if (!isVoiceSeeking) return;
+
+  isVoiceSeeking = false;
+  progressBar.classList.remove("isSeeking");
+
+  try {
+    progressBar.releasePointerCapture?.(event.pointerId);
+  } catch (error) {
+    // harmless on browsers that don't support pointer capture
+  }
+
+  updateVoiceUI();
+}
+
+progressBar.addEventListener("pointerup", stopVoiceSeeking);
+progressBar.addEventListener("pointercancel", stopVoiceSeeking);
+progressBar.addEventListener("lostpointercapture", stopVoiceSeeking);
+
 audio.load();
 updateVoiceUI();
 
@@ -349,21 +413,24 @@ updateVoiceUI();
     updateVoiceUI();
   });
 
-  audio.addEventListener("ended", () => {
-    playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-    audio.currentTime = 0;
-    updateVoiceUI();
-  });
+audio.addEventListener("ended", () => {
+  playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+  bubble.classList.remove("isPlaying");
+  audio.currentTime = 0;
+  updateVoiceUI();
+});
 
-  audio.addEventListener("pause", () => {
-    if (!audio.ended) playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-    updateVoiceUI();
-  });
+audio.addEventListener("pause", () => {
+  if (!audio.ended) playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+  bubble.classList.remove("isPlaying");
+  updateVoiceUI();
+});
 
-  audio.addEventListener("play", () => {
-    playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-    updateVoiceUI();
-  });
+audio.addEventListener("play", () => {
+  playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+  bubble.classList.add("isPlaying");
+  updateVoiceUI();
+});
 
   wrap.appendChild(bubble);
 

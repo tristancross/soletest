@@ -160,8 +160,8 @@ function resetRecordingState() {
 syncVoiceComposerAvailability();
 
 micBtn.classList.remove("recording");
-micBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
-micBtn.setAttribute("aria-label", "Continue recording");
+micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+micBtn.setAttribute("aria-label", "Record voice message");
 
   recordingTimerEl.hidden = true;
   recordingTimerEl.textContent = "0:00";

@@ -187,7 +187,7 @@ const SOLE_MATRIX_DEFINITIONS = {
         key: "attraction_romance_destiny",
         label: "Destiny",
         description:
-          "Measures belief in â€œThe One,â€ fated connection and romantic inevitability.",
+          "Measures belief in The One, fated connection and romantic inevitability.",
         lowDescription:
           "Romance does not need to feel fated to matter. Practical compatibility, lived experience and ordinary closeness may feel more meaningful than signs or coincidence.",
         highDescription:

@@ -120,7 +120,7 @@ function showSoleNotice(message, {
     </div>
 
     <button type="button" class="soleNoticeClose" aria-label="Dismiss notice">
-      Ãƒâ€”
+      ×
     </button>
   `;
 

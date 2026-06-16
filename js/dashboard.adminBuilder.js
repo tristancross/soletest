@@ -1398,7 +1398,7 @@ messagesEl.querySelectorAll(".quizRankingList").forEach(list => {
                 data-value="${escapeAttr(option.value)}"
                 ${index === 0 ? "disabled" : ""}
               >
-                â†‘
+                  <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
               </button>
               <button
                 type="button"
@@ -1408,7 +1408,7 @@ messagesEl.querySelectorAll(".quizRankingList").forEach(list => {
                 data-value="${escapeAttr(option.value)}"
                 ${index === orderedOptions.length - 1 ? "disabled" : ""}
               >
-                â†“
+              <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
               </button>
             </div>
           </div>

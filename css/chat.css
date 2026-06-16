@@ -2213,7 +2213,7 @@ body.isVoiceRecording .sendBtnIcon {
 
   body.isVoiceRecording .voiceRecordingWaveform {
     min-width: 70px;
-    justify-content: flex-start;
+    justify-content: center;
     padding-left: 6px;
     padding-right: 4px;
     gap: 2.5px;
@@ -2228,5 +2228,95 @@ body.isVoiceRecording .sendBtnIcon {
   .voiceRecordingWaveform span {
     animation: none;
     opacity: .7;
+  }
+}
+
+/* =========================================================
+   VOICE NOTE SEEKING
+   Makes sent voice-note progress bars draggable.
+   ========================================================= */
+
+.voiceProgress {
+  position: relative;
+  height: 8px;
+  overflow: visible;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.voiceProgress::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  bottom: -12px;
+  z-index: 2;
+}
+
+.voiceProgressFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  min-width: 0;
+  background: #111;
+  border-radius: inherit;
+  transition: width 80ms linear;
+  pointer-events: none;
+}
+
+.voiceProgressFill::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+
+  width: 12px;
+  height: 12px;
+
+  border-radius: 999px;
+
+  background: var(--sole-ink);
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,.72),
+    0 4px 12px rgba(76,49,31,.16);
+
+  opacity: 0;
+  transform: translateY(-50%) scale(.72);
+
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.voiceBubble:hover .voiceProgressFill::after,
+.voiceProgress.isSeeking .voiceProgressFill::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.voiceProgress.isSeeking .voiceProgressFill {
+  transition: none;
+}
+
+.voiceBubble {
+  min-width: 260px;
+  max-width: 400px;
+}
+
+.voiceMain {
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  .voiceBubble {
+    min-width: 250px;
+    max-width: 78vw;
+  }
+
+  .voiceProgressFill::after {
+    opacity: 1;
+    transform: translateY(-50%) scale(.86);
   }
 }

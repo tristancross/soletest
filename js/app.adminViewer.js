@@ -3358,9 +3358,6 @@ function renderAdminTranscriptMessage(message, userAId, userBId) {
   const messageId = escapeAttr(message.id || "");
   const recipientId = escapeAttr(message.recipient_id || "");
 
-  const isVoiceMessage = message.message_type === "voice";
-  const adminAudioSrc = message.audio_path || message.audio_url || "";
-
   const isVoiceMessage =
     message.message_type === "voice" ||
     !!message.audio_url ||

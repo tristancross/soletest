@@ -354,12 +354,31 @@
       <i class="fa-regular fa-trash-can"></i>
     </button>
 
-    <div class="recordingMeta" id="recordingMeta" hidden>
-      <span class="recordDot"></span>
-      <span class="recordingTimer" id="recordingTimer">0:00</span>
-    </div>
+<div class="recordingMeta" id="recordingMeta" hidden>
+  <span class="recordDot"></span>
+  <span class="recordingTimer" id="recordingTimer">0:00</span>
+</div>
 
-    <div class="recordingPreview" id="recordingPreview" hidden>
+<div class="voiceRecordingWaveform" aria-hidden="true">
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
+
+<div class="recordingPreview" id="recordingPreview" hidden>
 <button id="previewPlayBtn" class="previewPlayBtn" type="button" aria-label="Play recording">
   <i class="fa-solid fa-play"></i>
 </button>
@@ -476,6 +495,7 @@
   <script src="js/app.chatHeader.js"></script>
   <script src="js/app.statusUpdates.js"></script>
   <script src="js/app.normalChat.js"></script>
+  <script src="js/app.aliases.js"></script>
   <script src="js/app.renderThread.js"></script>
   <script src="js/app.realtime.js"></script>
   <script src="js/firstTimeUser.js"></script>

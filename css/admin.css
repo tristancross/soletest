@@ -2544,3 +2544,36 @@ body:has(.app.isAdminMode) .messages {
   text-transform: uppercase;
   letter-spacing: .06em;
 }
+
+/* =========================================================
+   ADMIN VOICE MESSAGE PLAYBACK
+   Native controls inside admin chat transcript.
+   ========================================================= */
+
+.adminVoiceMessage {
+  display: grid;
+  gap: 6px;
+  min-width: min(360px, 70vw);
+}
+
+.adminVoiceMessage audio {
+  width: 100%;
+  max-width: 360px;
+  display: block;
+}
+
+.adminVoiceMessage span {
+  color: rgba(25,24,23,.48);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.adminVoiceMessageMissing {
+  min-width: 0;
+  padding: 4px 2px;
+}
+
+.adminVoiceMessageMissing span {
+  color: rgba(25,24,23,.42);
+  font-style: italic;
+}

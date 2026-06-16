@@ -2125,3 +2125,108 @@ height: auto;
   display: none !important;
 }
 
+
+/* =========================================================
+   VOICE RECORDING WAVEFORM
+   Fake live waveform shown while actively recording.
+   ========================================================= */
+
+.voiceRecordingWaveform {
+  display: none;
+}
+
+body.isVoiceRecording .voiceRecordingWaveform {
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+
+  padding: 0 10px;
+  overflow: hidden;
+}
+
+.voiceRecordingWaveform span {
+  width: 3px;
+  height: 10px;
+  flex: 0 0 auto;
+
+  border-radius: 999px;
+
+  background: rgba(25, 24, 23, .18);
+
+  transform-origin: center;
+  animation: voiceWavePulse 900ms ease-in-out infinite;
+}
+
+.voiceRecordingWaveform span:nth-child(1) { height: 7px; animation-delay: -0.75s; }
+.voiceRecordingWaveform span:nth-child(2) { height: 12px; animation-delay: -0.60s; }
+.voiceRecordingWaveform span:nth-child(3) { height: 18px; animation-delay: -0.45s; }
+.voiceRecordingWaveform span:nth-child(4) { height: 10px; animation-delay: -0.30s; }
+.voiceRecordingWaveform span:nth-child(5) { height: 22px; animation-delay: -0.15s; }
+.voiceRecordingWaveform span:nth-child(6) { height: 14px; animation-delay: 0s; }
+.voiceRecordingWaveform span:nth-child(7) { height: 9px; animation-delay: -0.70s; }
+.voiceRecordingWaveform span:nth-child(8) { height: 20px; animation-delay: -0.55s; }
+.voiceRecordingWaveform span:nth-child(9) { height: 11px; animation-delay: -0.40s; }
+.voiceRecordingWaveform span:nth-child(10) { height: 17px; animation-delay: -0.25s; }
+.voiceRecordingWaveform span:nth-child(11) { height: 8px; animation-delay: -0.10s; }
+.voiceRecordingWaveform span:nth-child(12) { height: 19px; animation-delay: -0.80s; }
+.voiceRecordingWaveform span:nth-child(13) { height: 13px; animation-delay: -0.65s; }
+.voiceRecordingWaveform span:nth-child(14) { height: 23px; animation-delay: -0.50s; }
+.voiceRecordingWaveform span:nth-child(15) { height: 10px; animation-delay: -0.35s; }
+.voiceRecordingWaveform span:nth-child(16) { height: 15px; animation-delay: -0.20s; }
+
+@keyframes voiceWavePulse {
+  0%, 100% {
+    transform: scaleY(.45);
+    opacity: .45;
+  }
+
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+body.isVoiceRecording .composerInner {
+  align-items: center;
+}
+
+body.isVoiceRecording .recordingMeta {
+  margin-right: 2px;
+}
+
+body.isVoiceRecording .micBtn,
+body.isVoiceRecording .sendBtnIcon {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+  body.isVoiceRecording .composerInner {
+    gap: 7px;
+    padding-left: 14px;
+    padding-right: 10px;
+  }
+
+  body.isVoiceRecording .voiceRecordingWaveform {
+    min-width: 70px;
+    justify-content: flex-start;
+    padding-left: 6px;
+    padding-right: 4px;
+    gap: 2.5px;
+  }
+
+  .voiceRecordingWaveform span {
+    width: 2.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voiceRecordingWaveform span {
+    animation: none;
+    opacity: .7;
+  }
+}

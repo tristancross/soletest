@@ -2320,3 +2320,10 @@ body.isVoiceRecording .sendBtnIcon {
     transform: translateY(-50%) scale(.86);
   }
 }
+body.isVoiceRecording .micBtn {
+  flex: 0 0 auto;
+}
+
+body.isVoiceRecording .sendBtnIcon {
+  display: none !important;
+}

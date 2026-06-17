@@ -426,7 +426,7 @@ if (isIOSDevice() && /webm|ogg/i.test(currentVoiceMimeType)) {
 
     recordingStartTime = null;
 
-    if (duration > 120) {
+    if (duration > 600) {
       alert("Voice messages must be under 2 minutes.");
       resetRecordingState();
       return;
@@ -448,11 +448,11 @@ if (isIOSDevice() && /webm|ogg/i.test(currentVoiceMimeType)) {
   */
   mediaRecorder.start(250);
 
-  setTimeout(() => {
-    if (isRecording) {
-      stopRecording();
-    }
-  }, 120000);
+setTimeout(() => {
+  if (isRecording) {
+    stopRecording();
+  }
+}, 600000);
 
   updateSendButton();
 };
@@ -492,7 +492,7 @@ async function sendRecordedVoiceMessage() {
       ? recordingDurationSeconds
       : getCurrentRecordingDurationSeconds();
 
-  if (duration > 120) {
+  if (duration > 600) {
     alert("Voice messages must be under 2 minutes.");
     return;
   }
